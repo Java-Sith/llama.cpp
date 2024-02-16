@@ -14891,7 +14891,7 @@ static void ggml_compute_forward_cross_entropy_loss_back(
 
 /////////////////////////////////
 /////////////////////////////////
-int operationCounters[TOTAL_OPERATIONS] = {0};
+int operationCounters[GGML_OP_COUNT] = {0};
 FILE *outputFile;
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
@@ -14930,7 +14930,6 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         return;
     }
 #endif // GGML_USE_SYCL
-    auto duration;
     switch (tensor->op) {
         case GGML_OP_DUP:
             {

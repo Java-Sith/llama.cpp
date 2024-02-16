@@ -478,7 +478,6 @@ extern "C" {
         GGML_OP_CROSS_ENTROPY_LOSS_BACK,
 
         GGML_OP_COUNT,
-        TOTAL_OPERATIONS,
     };
 
     enum ggml_unary_op {
