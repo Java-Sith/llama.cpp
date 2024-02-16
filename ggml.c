@@ -14925,6 +14925,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         return;
     }
 #endif // GGML_USE_SYCL
+    printf("Hello, World!");
     switch (tensor->op) {
         case GGML_OP_DUP:
             {
