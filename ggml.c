@@ -15465,7 +15465,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     }
     operationCounters[tensor->op]++;
 
-    outputFile = fopen("output.txt", "a");
+    /*outputFile = fopen("output.txt", "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error opening file for writing.\n");
         return;
@@ -15473,7 +15473,8 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
 
     fprintf(outputFile, "Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
 
-    fclose(outputFile);
+    fclose(outputFile);*/
+    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
