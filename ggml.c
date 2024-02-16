@@ -23,6 +23,8 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <fstream>
+#include <chrono>
 
 #ifdef GGML_USE_METAL
 #include <unistd.h>
@@ -14890,6 +14892,9 @@ static void ggml_compute_forward_cross_entropy_loss_back(
 }
 
 /////////////////////////////////
+int operationCount[TOTAL_OPERATIONS] = {0};
+std::ofstream outputFile;
+std::ofstream outputFile2;
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     GGML_ASSERT(params);
@@ -14925,316 +14930,600 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         return;
     }
 #endif // GGML_USE_SYCL
-    printf("Hello, World!");
+    auto duration;
     switch (tensor->op) {
         case GGML_OP_DUP:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_dup(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_DUP]++;
             } break;
         case GGML_OP_ADD:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_add(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ADD]++;
             } break;
         case GGML_OP_ADD1:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_add1(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ADD1]++;
             } break;
         case GGML_OP_ACC:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_acc(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ACC]++;
             } break;
         case GGML_OP_SUB:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_sub(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SUB]++;
             } break;
         case GGML_OP_MUL:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_mul(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MUL]++;
             } break;
         case GGML_OP_DIV:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_div(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_DIV]++;
             } break;
         case GGML_OP_SQR:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_sqr(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SQR]++;
             } break;
         case GGML_OP_SQRT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_sqrt(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SQRT]++;
             } break;
         case GGML_OP_LOG:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_log(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_LOG]++;
             } break;
         case GGML_OP_SUM:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_sum(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SUM]++;
             } break;
         case GGML_OP_SUM_ROWS:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_sum_rows(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SUM_ROWS]++;
             } break;
         case GGML_OP_MEAN:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_mean(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MEAN]++;
             } break;
         case GGML_OP_ARGMAX:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_argmax(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ARGMAX]++;
             } break;
         case GGML_OP_REPEAT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_repeat(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_REPEAT]++;
             } break;
         case GGML_OP_REPEAT_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_repeat_back(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_REPEAT_BACK]++;
             } break;
         case GGML_OP_CONCAT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_concat(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CONCAT]++;
             } break;
         case GGML_OP_SILU_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_silu_back(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SILU_BACK]++;
             } break;
         case GGML_OP_NORM:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_norm(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_NORM]++;
             } break;
         case GGML_OP_RMS_NORM:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_rms_norm(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_RMS_NORM]++;
             } break;
         case GGML_OP_RMS_NORM_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_rms_norm_back(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_RMS_NORM_BACK]++;
             } break;
         case GGML_OP_GROUP_NORM:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_group_norm(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_GROUP_NORM]++;
             } break;
         case GGML_OP_MUL_MAT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_mul_mat(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MUL_MAT]++;
             } break;
         case GGML_OP_MUL_MAT_ID:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_mul_mat_id(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MUL_MAT_ID]++;
             } break;
         case GGML_OP_OUT_PROD:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_out_prod(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_OUT_PROD]++;
             } break;
         case GGML_OP_SCALE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_scale(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SCALE]++;
             } break;
         case GGML_OP_SET:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_set(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SET]++;
             } break;
         case GGML_OP_CPY:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_cpy(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CPY]++;
             } break;
         case GGML_OP_CONT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_cont(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CONT]++;
             } break;
         case GGML_OP_RESHAPE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_reshape(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_RESHAPE]++;
             } break;
         case GGML_OP_VIEW:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_view(params, tensor->src[0]);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_VIEW]++;
             } break;
         case GGML_OP_PERMUTE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_permute(params, tensor->src[0]);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_PERMUTE]++;
             } break;
         case GGML_OP_TRANSPOSE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_transpose(params, tensor->src[0]);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_TRANSPOSE]++;
             } break;
         case GGML_OP_GET_ROWS:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_get_rows(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_GET_ROWS]++;
             } break;
         case GGML_OP_GET_ROWS_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_get_rows_back(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_GET_ROWS_BACK]++;
             } break;
         case GGML_OP_DIAG:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_diag(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_DIAG]++;
             } break;
         case GGML_OP_DIAG_MASK_INF:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_diag_mask_inf(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_DIAG_MASK_INF]++;
             } break;
         case GGML_OP_DIAG_MASK_ZERO:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_diag_mask_zero(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_DIAG_MASK_ZERO]++;
             } break;
         case GGML_OP_SOFT_MAX:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_soft_max(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SOFT_MAX]++;
             } break;
         case GGML_OP_SOFT_MAX_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_soft_max_back(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_SOFT_MAX_BACK]++;
             } break;
         case GGML_OP_ROPE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_rope(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ROPE]++;
             } break;
         case GGML_OP_ROPE_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_rope_back(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ROPE_BACK]++;
             } break;
         case GGML_OP_ALIBI:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_alibi(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ALIBI]++;
             } break;
         case GGML_OP_CLAMP:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_clamp(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CLAMP]++;
             } break;
         case GGML_OP_CONV_TRANSPOSE_1D:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_conv_transpose_1d(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CONV_TRANSPOSE_1D]++;
             } break;
         case GGML_OP_IM2COL:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_im2col(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_IM2COL]++;
             } break;
         case GGML_OP_CONV_TRANSPOSE_2D:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_conv_transpose_2d(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CONV_TRANSPOSE_2D]++;
             } break;
         case GGML_OP_POOL_1D:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_pool_1d(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_POOL_1D]++;
             } break;
         case GGML_OP_POOL_2D:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_pool_2d(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_POOL_2D]++;
             } break;
         case GGML_OP_UPSCALE:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_upscale(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_UPSCALE]++;
             } break;
         case GGML_OP_PAD:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_pad(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_PAD]++;
             } break;
         case GGML_OP_ARGSORT:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_argsort(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ARGSORT]++;
             } break;
         case GGML_OP_LEAKY_RELU:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_leaky_relu(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_LEAKY_RELU]++;
             } break;
         case GGML_OP_FLASH_ATTN:
             {
                 const int32_t t = ggml_get_op_params_i32(tensor, 0);
                 GGML_ASSERT(t == 0 || t == 1);
                 const bool masked = t != 0;
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_flash_attn(params, tensor->src[0], tensor->src[1], tensor->src[2], masked, tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_FLASH_ATTN]++;
             } break;
         case GGML_OP_FLASH_FF:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_flash_ff(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor->src[3], tensor->src[4], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_FLASH_FF]++;
             } break;
         case GGML_OP_FLASH_ATTN_BACK:
             {
                 int32_t t = ggml_get_op_params_i32(tensor, 0);
                 GGML_ASSERT(t == 0 || t == 1);
                 bool masked = t != 0;
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_flash_attn_back(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor->src[3], masked, tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_FLASH_ATTN_BACK]++;
             } break;
         case GGML_OP_WIN_PART:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_win_part(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_WIN_PART]++;
             } break;
         case GGML_OP_WIN_UNPART:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_win_unpart(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_WIN_UNPART]++;
             } break;
         case GGML_OP_UNARY:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_unary(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_UNARY]++;
             } break;
         case GGML_OP_GET_REL_POS:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_get_rel_pos(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_GET_REL_POS]++;
             } break;
         case GGML_OP_ADD_REL_POS:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_add_rel_pos(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_ADD_REL_POS]++;
             } break;
         case GGML_OP_MAP_UNARY:
             {
                 ggml_unary_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_unary(params, tensor->src[0], tensor, fun);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_UNARY]++;
             }
             break;
         case GGML_OP_MAP_BINARY:
             {
                 ggml_binary_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_binary(params, tensor->src[0], tensor->src[1], tensor, fun);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_BINARY]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM1_F32:
             {
                 ggml_custom1_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom1_f32(params, tensor->src[0], tensor, fun);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM1_F32]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM2_F32:
             {
                 ggml_custom2_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom2_f32(params, tensor->src[0], tensor->src[1], tensor, fun);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM2_F32]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM3_F32:
             {
                 ggml_custom3_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom3_f32(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor, fun);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM3_F32]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM1:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom1(params, tensor->src[0], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM1]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM2:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom2(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM2]++;
             }
             break;
         case GGML_OP_MAP_CUSTOM3:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_map_custom3(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_MAP_CUSTOM3]++;
             }
             break;
         case GGML_OP_CROSS_ENTROPY_LOSS:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_cross_entropy_loss(params, tensor->src[0], tensor->src[1], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CROSS_ENTROPY_LOSS]++;
             }
             break;
         case GGML_OP_CROSS_ENTROPY_LOSS_BACK:
             {
+                auto start_time = std::chrono::high_resolution_clock::now();
                 ggml_compute_forward_cross_entropy_loss_back(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
+                auto end_time = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+                operationCount[GGML_OP_CROSS_ENTROPY_LOSS_BACK]++;
             }
             break;
         case GGML_OP_NONE:
@@ -15245,6 +15534,20 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
             {
                 GGML_ASSERT(false);
             } break;
+    }
+    if (!outputFile.is_open()) {
+        outputFile.open("output.txt");
+    }
+    outputFile << "Operation " << tensor->op << " Count: " << operationCount[tensor->op] << "\n";
+    if (outputFile.is_open()) {
+        outputFile.close();
+    }
+    if (!outputFile2.is_open()) {
+        outputFile.open("output.txt");
+    }
+    outputFile2 << "Operation " << tensor->op << " Duration: " << duration << "\n";
+    if (outputFile2.is_open()) {
+        outputFile2.close();
     }
 }
 
