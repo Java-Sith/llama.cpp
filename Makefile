@@ -178,6 +178,10 @@ else
 	MK_CPPFLAGS += -DNDEBUG
 endif
 
+ifdef LLAMA_CLOCK
+	MK_CPPFLAGS  += -DCLOCK
+endif
+
 ifdef LLAMA_SANITIZE_THREAD
 	MK_CFLAGS   += -fsanitize=thread -g
 	MK_CXXFLAGS += -fsanitize=thread -g
@@ -470,10 +474,6 @@ ifdef LLAMA_VULKAN_CHECK_RESULTS
 	MK_CPPFLAGS  += -DGGML_VULKAN_CHECK_RESULTS
 endif
 
-ifdef LLAMA_CLOCK
-	MK_CPPFLAGS  += -DCLOCK
-endif
-
 ifdef LLAMA_VULKAN_DEBUG
 	MK_CPPFLAGS  += -DGGML_VULKAN_DEBUG
 endif
@@ -561,8 +561,6 @@ endif
 # Print build information
 #
 
-$(info VULKAN="$(LLAMA_VULKAN_DEBUG)")
-$(info CLOCK="$(LLAMA_CLOCK)")
 $(info I llama.cpp build info: )
 $(info I UNAME_S:   $(UNAME_S))
 $(info I UNAME_P:   $(UNAME_P))
