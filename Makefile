@@ -465,7 +465,6 @@ ifdef LLAMA_VULKAN
 	MK_CPPFLAGS  += -DGGML_USE_VULKAN
 	MK_LDFLAGS += -lvulkan
 	OBJS    += ggml-vulkan.o
-	$(info VULKAN="$(LLAMA_VULKAN)")
 
 ifdef LLAMA_VULKAN_CHECK_RESULTS
 	MK_CPPFLAGS  += -DGGML_VULKAN_CHECK_RESULTS
@@ -563,6 +562,8 @@ endif
 # Print build information
 #
 
+$(info VULKAN="$(LLAMA_VULKAN)")
+$(info CLOCK="$(LLAMA_CLOCK)")
 $(info I llama.cpp build info: )
 $(info I UNAME_S:   $(UNAME_S))
 $(info I UNAME_P:   $(UNAME_P))
