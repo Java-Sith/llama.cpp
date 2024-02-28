@@ -14930,528 +14930,458 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         return;
     }
 #endif // GGML_USE_SYCL
+#ifdef CLOCK
+    start = clock();
+#endif
     switch (tensor->op) {
         case GGML_OP_DUP:
             {
-                start = clock();
+                
                 ggml_compute_forward_dup(params, tensor->src[0], tensor);
-                end = clock();
+                
                 cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ADD:
             {
-                start = clock();
+                
                 ggml_compute_forward_add(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
+                
                 cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ADD1:
             {
-                start = clock();
+                
                 ggml_compute_forward_add1(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
+                
                 cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ACC:
             {
-                start = clock();
+                
                 ggml_compute_forward_acc(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
+                
                 cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_SUB:
             {
-                start = clock();
+                
                 ggml_compute_forward_sub(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_MUL:
             {
-                start = clock();
+                
                 ggml_compute_forward_mul(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_DIV:
             {
-                start = clock();
+                
                 ggml_compute_forward_div(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SQR:
             {
-                start = clock();
+                
                 ggml_compute_forward_sqr(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SQRT:
             {
-                start = clock();
+                
                 ggml_compute_forward_sqrt(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_LOG:
             {
-                start = clock();
+                
                 ggml_compute_forward_log(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SUM:
             {
-                start = clock();
+                
                 ggml_compute_forward_sum(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SUM_ROWS:
             {
-                start = clock();
+                
                 ggml_compute_forward_sum_rows(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_MEAN:
             {
-                start = clock();
+                
                 ggml_compute_forward_mean(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_ARGMAX:
             {
-                start = clock();
+                
                 ggml_compute_forward_argmax(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_REPEAT:
             {
-                start = clock();
+                
                 ggml_compute_forward_repeat(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_REPEAT_BACK:
             {
-                start = clock();
+                
                 ggml_compute_forward_repeat_back(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_CONCAT:
             {
-                start = clock();
+                
                 ggml_compute_forward_concat(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SILU_BACK:
             {
-                start = clock();
+                
                 ggml_compute_forward_silu_back(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_NORM:
             {
-                start = clock();
+                
                 ggml_compute_forward_norm(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_RMS_NORM:
             {
-                start = clock();
+                
                 ggml_compute_forward_rms_norm(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_RMS_NORM_BACK:
             {
-                start = clock();
+                
                 ggml_compute_forward_rms_norm_back(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_GROUP_NORM:
             {
-                start = clock();
+                
                 ggml_compute_forward_group_norm(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_MUL_MAT:
             {
-                start = clock();
+                
                 ggml_compute_forward_mul_mat(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_MUL_MAT_ID:
             {
-                start = clock();
+                
                 ggml_compute_forward_mul_mat_id(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_OUT_PROD:
             {
-                start = clock();
+                
                 ggml_compute_forward_out_prod(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SCALE:
             {
-                start = clock();
+                
                 ggml_compute_forward_scale(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SET:
             {
-                start = clock();
+                
                 ggml_compute_forward_set(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_CPY:
             {
-                start = clock();
+                
                 ggml_compute_forward_cpy(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_CONT:
             {
-                start = clock();
+                
                 ggml_compute_forward_cont(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_RESHAPE:
             {
-                start = clock();
+                
                 ggml_compute_forward_reshape(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_VIEW:
             {
-                start = clock();
+                
                 ggml_compute_forward_view(params, tensor->src[0]);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_PERMUTE:
             {
-                start = clock();
+                
                 ggml_compute_forward_permute(params, tensor->src[0]);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_TRANSPOSE:
             {
-                start = clock();
+                
                 ggml_compute_forward_transpose(params, tensor->src[0]);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_GET_ROWS:
             {
-                start = clock();
+                
                 ggml_compute_forward_get_rows(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_GET_ROWS_BACK:
             {
-                start = clock();
+                
                 ggml_compute_forward_get_rows_back(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_DIAG:
             {
-                start = clock();
+                
                 ggml_compute_forward_diag(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_DIAG_MASK_INF:
             {
-                start = clock();
+                
                 ggml_compute_forward_diag_mask_inf(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_DIAG_MASK_ZERO:
             {
-                start = clock();
+                
                 ggml_compute_forward_diag_mask_zero(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SOFT_MAX:
             {
-                start = clock();
+                
                 ggml_compute_forward_soft_max(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_SOFT_MAX_BACK:
             {
-                start = clock();
                 ggml_compute_forward_soft_max_back(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ROPE:
             {
-                start = clock();
                 ggml_compute_forward_rope(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ROPE_BACK:
             {
-                start = clock();
                 ggml_compute_forward_rope_back(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ALIBI:
             {
-                start = clock();
                 ggml_compute_forward_alibi(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_CLAMP:
             {
-                start = clock();
+                
                 ggml_compute_forward_clamp(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_CONV_TRANSPOSE_1D:
             {
-                start = clock();
+                
                 ggml_compute_forward_conv_transpose_1d(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_IM2COL:
             {
-                start = clock();
+                
                 ggml_compute_forward_im2col(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_CONV_TRANSPOSE_2D:
             {
-                start = clock();
+                
                 ggml_compute_forward_conv_transpose_2d(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_POOL_1D:
             {
-                start = clock();
+                
                 ggml_compute_forward_pool_1d(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_POOL_2D:
             {
-                start = clock();
+                
                 ggml_compute_forward_pool_2d(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
             } break;
         case GGML_OP_UPSCALE:
-            {
-                start = clock();
+            { 
                 ggml_compute_forward_upscale(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_PAD:
             {
-                start = clock();
+                
                 ggml_compute_forward_pad(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_ARGSORT:
             {
-                start = clock();
+                
                 ggml_compute_forward_argsort(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+                
+                
             } break;
         case GGML_OP_LEAKY_RELU:
             {
-                start = clock();
                 ggml_compute_forward_leaky_relu(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_FLASH_ATTN:
             {
                 const int32_t t = ggml_get_op_params_i32(tensor, 0);
                 GGML_ASSERT(t == 0 || t == 1);
                 const bool masked = t != 0;
-                start = clock();
                 ggml_compute_forward_flash_attn(params, tensor->src[0], tensor->src[1], tensor->src[2], masked, tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_FLASH_FF:
             {
-                start = clock();
                 ggml_compute_forward_flash_ff(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor->src[3], tensor->src[4], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_FLASH_ATTN_BACK:
             {
                 int32_t t = ggml_get_op_params_i32(tensor, 0);
                 GGML_ASSERT(t == 0 || t == 1);
                 bool masked = t != 0;
-                start = clock();
                 ggml_compute_forward_flash_attn_back(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor->src[3], masked, tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_WIN_PART:
             {
-                start = clock();
                 ggml_compute_forward_win_part(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_WIN_UNPART:
             {
-                start = clock();
                 ggml_compute_forward_win_unpart(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_UNARY:
             {
-                start = clock();
                 ggml_compute_forward_unary(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_GET_REL_POS:
             {
-                start = clock();
                 ggml_compute_forward_get_rel_pos(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_ADD_REL_POS:
             {
-                start = clock();
                 ggml_compute_forward_add_rel_pos(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             } break;
         case GGML_OP_MAP_UNARY:
             {
                 ggml_unary_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
-                start = clock();
                 ggml_compute_forward_map_unary(params, tensor->src[0], tensor, fun);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_BINARY:
             {
                 ggml_binary_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
-                start = clock();
                 ggml_compute_forward_map_binary(params, tensor->src[0], tensor->src[1], tensor, fun);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM1_F32:
             {
                 ggml_custom1_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
-                start = clock();
                 ggml_compute_forward_map_custom1_f32(params, tensor->src[0], tensor, fun);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM2_F32:
             {
                 ggml_custom2_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
-                start = clock();
                 ggml_compute_forward_map_custom2_f32(params, tensor->src[0], tensor->src[1], tensor, fun);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM3_F32:
             {
                 ggml_custom3_op_f32_t fun;
                 memcpy(&fun, tensor->op_params, sizeof(fun));
-                start = clock();
                 ggml_compute_forward_map_custom3_f32(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor, fun);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM1:
             {
-                start = clock();
                 ggml_compute_forward_map_custom1(params, tensor->src[0], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM2:
             {
-                start = clock();
                 ggml_compute_forward_map_custom2(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_MAP_CUSTOM3:
             {
-                start = clock();
                 ggml_compute_forward_map_custom3(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_CROSS_ENTROPY_LOSS:
             {
-                start = clock();
                 ggml_compute_forward_cross_entropy_loss(params, tensor->src[0], tensor->src[1], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_CROSS_ENTROPY_LOSS_BACK:
             {
-                start = clock();
                 ggml_compute_forward_cross_entropy_loss_back(params, tensor->src[0], tensor->src[1], tensor->src[2], tensor);
-                end = clock();
-                cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
             }
             break;
         case GGML_OP_NONE:
@@ -15463,18 +15393,12 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
                 GGML_ASSERT(false);
             } break;
     }
-    operationCounters[tensor->op]++;
-
-    /*outputFile = fopen("output.txt", "a");
-    if (outputFile == NULL) {
-        fprintf(stderr, "Error opening file for writing.\n");
-        return;
-    }
-
-    fprintf(outputFile, "Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
-
-    fclose(outputFile);*/
-    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
+    #ifdef CLOCK
+        end = clock();
+        cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+        operationCounters[tensor->op]++;
+        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
+    #endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
