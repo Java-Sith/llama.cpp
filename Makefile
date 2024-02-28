@@ -472,7 +472,6 @@ endif
 
 ifdef LLAMA_CLOCK
 	MK_CPPFLAGS  += -DCLOCK
-	$(info CLOCK="$(LLAMA_CLOCK)")
 endif
 
 ifdef LLAMA_VULKAN_DEBUG
@@ -562,7 +561,7 @@ endif
 # Print build information
 #
 
-$(info VULKAN="$(LLAMA_VULKAN)")
+$(info VULKAN="$(LLAMA_VULKAN_DEBUG)")
 $(info CLOCK="$(LLAMA_CLOCK)")
 $(info I llama.cpp build info: )
 $(info I UNAME_S:   $(UNAME_S))
