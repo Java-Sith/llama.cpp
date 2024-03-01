@@ -1,6 +1,8 @@
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import os
 
 operation_mapping = {
     2: 'ADD',
@@ -65,6 +67,9 @@ def process_file(file_path):
               f"its highest execution time is {highest_execution_time:.6f} "
               f"and the highest count is {highest_count}")
 
+    return operation_details
+
+def create_plots(operation_details, output_filename):
     # Sort data by operation number
     sorted_operation_details = dict(sorted(operation_details.items()))
 
@@ -75,7 +80,7 @@ def process_file(file_path):
     # Extract operation names and corresponding execution times for boxplot
     execution_times_data = [details["execution_times"] for details in sorted_operation_details.values()]
 
-    # Create histogram
+    # Create histogram of highest counts
     plt.figure(figsize=(10, 5))
     plt.bar(operation_names, highest_counts, color='skyblue')
     plt.xlabel('Operation Name')
@@ -83,9 +88,9 @@ def process_file(file_path):
     plt.title('Histogram of Highest Counts')
     plt.xticks(rotation=45, ha="right")  # Rotate x-axis labels for better readability
     plt.tight_layout()
-    plt.savefig('histogram.png')  # Save the figure
+    plt.savefig(output_filename + '_histogram.png')  # Save the figure
 
-    # Create boxplot
+    # Create boxplot of execution times
     plt.figure(figsize=(10, 5))
     plt.boxplot(execution_times_data, labels=operation_names)
     plt.xlabel('Operation Name')
@@ -93,14 +98,41 @@ def process_file(file_path):
     plt.title('Boxplot of Execution Times')
     plt.xticks(rotation=45, ha="right")  # Rotate x-axis labels for better readability
     plt.tight_layout()
-    plt.savefig('boxplot.png')  # Save the figure
+    plt.savefig(output_filename + '_boxplot.png')  # Save the figure
+
+    # Specify the operation for the third histogram
+    target_operation_number = 23  # Specify the operation number you want to plot
+    target_execution_times = sorted_operation_details[target_operation_number]["execution_times"]
+
+    # Create histogram for specific operation
+    step = 2000
+    indexes = np.arange(0, len(target_execution_times), step)
+    plt.figure(figsize=(8, 4))
+    plt.bar(indexes, [target_execution_times[i] for i in indexes], color='skyblue', edgecolor='black')
+    plt.xlabel('Index')
+    plt.ylabel('Execution Time')
+    plt.title(f'Histogram of Execution Times for {sorted_operation_details[target_operation_number]["operation_name"]} (Step={step})')
+    plt.tight_layout()
+
+    # Save the figure with a user-specified filename based on the input filename
+    input_filename_base = os.path.splitext(os.path.basename(output_filename))[0]
+    plt.savefig(input_filename_base + '_specific_histogram.png')  # Save the figure
 
     # Show the plots
     plt.show()
     
 if __name__ == "__main__":
-    file_path = "output_gpu.txt"
-    process_file(file_path)
+
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Create histograms and boxplots from operation details.')
+    parser.add_argument('input_file', type=str, help='Path to the input file with operation details')
+    
+    # Parse command-line arguments
+    args = parser.parse_args()
+    
+    operations = process_file(args.input_file)
+
+    create_plots(operations, args.input_file)
 
 
 
