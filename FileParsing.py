@@ -99,7 +99,7 @@ def process_file(file_path):
     plt.show()
     
 if __name__ == "__main__":
-    file_path = "output.txt"
+    file_path = "output_gpu.txt"
     process_file(file_path)
 
 
