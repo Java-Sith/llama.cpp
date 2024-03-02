@@ -1,4 +1,4 @@
-# Eulerian Video Magnification algorithm applied to industrial machinery monitoring
+# Code instrumentation used to measure model inference performance and plotting results
 
 ## :clipboard: Installation
 The first thing we need to do is to clone the repository and set it up, to do so, open a new terminal and type the following commands:
