@@ -6,10 +6,11 @@ The first thing we need to do is to clone the repository and set it up, to do so
 git clone https://github.com/ECASLab/llama.cpp
 ```
 ```
-git checkout feature/add-instrumentation
-```
-```
 cd llama.cpp
+```
+```
+git checkout feature/add-instrumentation
+
 ```
 In order to use the GPU, we need to export the following env variable:
 
