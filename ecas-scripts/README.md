@@ -3,7 +3,7 @@
 ## :clipboard: Installation
 The first thing we need to do is to clone the repository and set it up, to do so, open a new terminal and type the following commands:
 ```
-git clone https://github.com/Java-Sith/llama.cpp
+git clone https://github.com/ECASLab/llama.cpp
 ```
 ```
 git checkout feature/add-instrumentation
