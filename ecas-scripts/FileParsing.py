@@ -5,20 +5,19 @@ import argparse
 import os
 
 operation_mapping = {
-    2: 'ADD',
-    6: 'MUL',
-    20: 'RMS NORM',
-    23: 'MUL MAT',
-    28: 'CPY',
-    29: 'CONT',
-    30: 'RESHAPE',
-    31: 'VIEW',
-    32: 'PERMUTE',
-    33: 'TRANSPOSE',
-    34: 'GET ROWS',
-    39: 'SOFTMAX',
-    41: 'ROPE',
-    61: 'UNARY',
+    0: 'NONE', 1: 'DUP', 2: 'ADD', 3: 'ADD1', 4: 'ACC', 5: 'SUB', 6: 'MUL', 7: 'DIV',
+    8: 'SQR', 9: 'SQRT', 10: 'LOG', 11: 'SUM', 12: 'SUM ROWS', 13: 'MEAN', 14: 'ARGMAX', 
+    15: 'REPEAT', 16: 'REPEAT BACK', 17: 'CONCAT', 18: 'SILU BACK', 19: 'NORM', 20: 'RMS NORM',
+    21: 'RMS NORM BACK', 22: 'GROUP NORM', 23: 'MUL MAT', 24: 'MUL MAT ID', 25: 'OUT PROD', 26: 'SCALE',
+    27: 'SET', 28: 'CPY', 29: 'CONT', 30: 'RESHAPE', 31: 'VIEW', 32: 'PERMUTE', 33: 'TRANSPOSE', 
+    34: 'GET ROWS', 35: 'GET ROWS BACK', 36: 'DIAG', 37: 'DIAG MASK INF', 38: 'DIAG MASK ZERO', 
+    39: 'SOFTMAX', 40: 'SOFTMAX BACK', 41: 'ROPE', 42: 'ROPE BACK', 43: 'ALIBI', 44: 'CLAMP',
+    45: 'CONV TRANSPOSE 1D', 46: 'IM2COL', 47: 'CONV TRANSPOSE 2D', 48: 'POOL 1D', 49: 'POOL 2D',
+    50: 'UPSCALE', 51: 'PAD', 52: 'ARGSORT', 53: 'LEAKY RELU', 54: 'FLASH ATTN', 55: 'FLASH FF',
+    56: 'FLASH ATTN BACK', 57: 'WIN PART', 58: 'WIN UNPART', 59: 'GET REL POS', 60: 'ADD REL POS', 
+    61: 'UNARY', 62: 'MAP UNARY', 63: 'MAP BINARY', 64: 'CUSTOM1 F32', 65: 'CUSTOM2 F32', 66: 'CUSTOM3 F32',
+    67: 'MAP CUSTOM1', 68: 'MAP CUSTOM2', 69: 'MAP CUSTOM3', 70: 'CROSS ENTROY LOSS', 71: 'CROSS ENTROPY LOSS BACK',
+    72: 'COUNT'
 }
 
 def process_file(file_path):
@@ -62,8 +61,10 @@ def process_file(file_path):
         highest_execution_time = max(details['execution_times'])
         highest_count = details['count']
         operation_name = details['operation_name']
+        median_execution_time = np.median(details['execution_times'])
         print(f"Operation {operation_number}, named {operation_name} has a microseconds mean of {mean_execution_time:.6f}, "
               f"its lowest execution time is {lowest_execution_time:.6f}, "
+              f"its medium execution time is {median_execution_time:.6f}, "
               f"its highest execution time is {highest_execution_time:.6f} "
               f"and the highest count is {highest_count}")
 
@@ -88,13 +89,14 @@ def create_plots(operation_details, output_filename):
     plt.title('Histogram of Highest Counts')
     plt.xticks(rotation=45, ha="right")  # Rota el eje X por legibilidad
     plt.tight_layout()
+    plt.yscale('log')
     plt.savefig(output_filename + '_histogram.png') 
 
     # Crea el diagrama de bigotes del tiempo de ejecución
     plt.figure(figsize=(10, 5))
     plt.boxplot(execution_times_data, labels=operation_names)
     plt.xlabel('Operation Name')
-    plt.ylabel('Execution Times')
+    plt.ylabel('Execution Times (µs)')
     plt.title('Boxplot of Execution Times')
     plt.xticks(rotation=45, ha="right")  # Rota el eje X por legibilidad
     plt.tight_layout()
@@ -110,9 +112,10 @@ def create_plots(operation_details, output_filename):
     plt.figure(figsize=(8, 4))
     plt.bar(indexes, [target_execution_times[i] for i in indexes], color='skyblue', edgecolor='black')
     plt.xlabel('Index')
-    plt.ylabel('Execution Time')
+    plt.ylabel('Execution Time (µs)')
     plt.title(f'Histogram of Execution Times for {sorted_operation_details[target_operation_number]["operation_name"]} (Step={step})')
     plt.tight_layout()
+    plt.yscale('log')
     plt.savefig(output_filename + '_specific_histogram.png') 
 
     plt.show()
