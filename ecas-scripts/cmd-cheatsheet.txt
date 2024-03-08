@@ -1,0 +1,48 @@
+For accesing server:
+ sslvpn.ethz.ch/inf-docking
+ lprieto@inf-systems.ethz.ch
+ password
+ ssh lprieto@hacc-box-02
+ ssh lprieto@alveo-u250-01
+ ls
+ cd /pub/scratch/lprieto
+ ls
+ 
+For LLAMA repo:
+ git clone https://github.com/ECASLab/llama.cpp
+ git checkout feature/add-instrumentation
+ cd llama.cpp
+ export HIP_VISIBLE_DEVICES=1 
+ make LLAMA_CLOCK=1 OR make LLAMA_HIPBLAS=1 LLAMA_CLOCK=1 -j
+ cd models
+ wget https://huggingface.co/TheBloke/Llama-2-7B-GGUF/resolve/main/llama-2-7b.Q4_K_S.gguf
+ cd ..
+ ./main -m ./models/llama-2-7b.Q4_K_S.gguf -n 128 | tee output.txt OR HIP_VISIBLE_DEVICES=1 ./main -m ./models/llama-2-7b.Q4_K_S.gguf -n 128 | tee output.txt
+ scp lprieto@hacc-box-02:/pub/scratch/lprieto/llama.cpp/output.txt /home/zuckerberg/Documentos
+ cd ..
+ rm -rf llama.cpp
+
+For XRT repo:
+ git clone https://github.com/Java-Sith/Vitis_Accel_Examples/
+ cd Vitis_Accel_Examples
+ git checkout 2022.1
+ # branch: 2022.1
+ cd host_xrt/hello_world_xrt
+ make all TARGET=hw PLATFORM=xilinx_u250_gen3x16_xdma_4_1_202210_1 EDGE_COMMON_SW=src
+ make host TARGET=hw PLATFORM=xilinx_u250_gen3x16_xdma_4_1_202210_1 EDGE_COMMON_SW=src
+ ./hello_world_xrt -x build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/vadd.xclbin
+
+For Vitis repo:
+ git clone https://github.com/Java-Sith/Vitis_Libraries.git
+ cd Vitis_Libraries
+ git checkout main
+ cd blas
+ 
+For GGML repo:
+ git clone https://github.com/Java-Sith/ggml
+ cd ggml/tests
+ mkdir build
+ cd build
+ cmake ..
+ cmake --build . --config Release (?)
+ ./tests/test-mul-mat2 1 (?)
