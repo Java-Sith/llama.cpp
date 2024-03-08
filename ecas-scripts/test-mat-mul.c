@@ -45,25 +45,6 @@ void mul_mat(float* restrict src0, float* restrict src1, float *dst, int m, int 
     }
 }
 
-/*static inline int quantize_1_blocks_per_row(int k) {
-    return k/QK;
-}
-
-static inline int quantize_1_quants_per_block(void) {
-    return QK/gq_t_bits;
-}
-
-static inline int quantize_1_row_size(int k) {
-    const int nb = quantize_1_blocks_per_row(k);
-    const int nq = quantize_1_quants_per_block();
-
-    return nb*(2*sizeof(gq_scale_t) + nq*QB*sizeof(gq_quant_t));
-}
-
-void quantize_1() {
-
-}*/
-
 void mul_mat_gq1(void* src0, void* src1, float* dst, int m, int n, int k) {
     const int kp = k & ~(gq_t_bits - 1);
 
@@ -86,14 +67,49 @@ void mul_mat_gq1(void* src0, void* src1, float* dst, int m, int n, int k) {
             for (int i = 0; i < kp/QK; i++)
             {
                 float min0, d0, min1, d1;
-                            s0[0] = min0;
+                memcpy(&min0, pp0, sizeof(float)); pp0 += sizeof(float);
+                memcpy(&d0,   pp0, sizeof(float)); pp0 += sizeof(float);
+                memcpy(&min1, pp1, sizeof(float)); pp1 += sizeof(float);
+                memcpy(&d1,   pp1, sizeof(float)); pp1 += sizeof(float);
+                s0[0] = min0;
                 s1[0] = min1;
 
                 for (int b = 0; b < QB; b++) {
                     s0[b + 1] = d0*(1 << b);
                     s1[b + 1] = d1*(1 << b);
                 }
+                m0[0] = 0-1ULL;
+                m1[0] = 0-1ULL;
+
+                for (int s = 0; s < QK/gq_t_bits; ++s) {
+                    for (int b = 0; b < QB; b++) {
+                        memcpy(&m0[b + 1], pp0, sizeof(gq_quant_t)); pp0 += sizeof(gq_quant_t);
+                        memcpy(&m1[b + 1], pp1, sizeof(gq_quant_t)); pp1 += sizeof(gq_quant_t);
+                    }
+
+                    for (int q0 = 0; q0 < QB + 1; q0++) {
+                        for (int q1 = 0; q1 < QB + 1; q1++) {
+                            sum += s0[q0]*s1[q1]*__builtin_popcountll(m0[q0] & m1[q1]);
+                        }
+                    }
+                }
             }
+            dst[i0*n + i1] = sum;
         }
     }
 }
+
+void mul_mat_gq_2(void * src0, void * src1, float * dst, int m, int n, int k) {
+    assert(k % QK == 0);
+    for (int i0 = 0; i0 < m; i0++) {
+        for (int i1 = 0; i1 < n; i1++) {
+            vec_dot_gq_2(k, dst + i1, src0, src1);
+            src1 = (const char *) src1 + quantize_2_row_size(k);
+        }
+        src0 = (const char *) src0 +   quantize_2_row_size(k);
+        src1 = (const char *) src1 - n*quantize_2_row_size(k);
+
+        dst = (float *) dst + n;
+    }
+}
+
