@@ -15310,11 +15310,11 @@ static void ggml_compute_forward_cross_entropy_loss_back(
 }
 
 /////////////////////////////////
+int operationCounters[GGML_OP_COUNT] = {0};
+clock_t start, end;
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     GGML_ASSERT(params);
-    int operationCounters[GGML_OP_COUNT] = {0};
-    clock_t start, end;
     double cpu_time_used;
     if (tensor->op == GGML_OP_NONE) {
         return;
