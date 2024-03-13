@@ -15,9 +15,15 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+#if defined(GGML_GQ_USE_FP16_SCALE)
+#define gq_scale_t ggml_fp16_t
+#define GGML_FP32_TO_GQ(x) ggml_fp32_to_fp16(x)
+#define GGML_GQ_TO_FP32(x) ggml_fp16_to_fp32(x)
+#else
 #define gq_scale_t float
 #define GGML_FP32_TO_GQ(x) (x)
 #define GGML_GQ_TO_FP32(x) (x)
+#endif
 
 const int M = 1280;
 const int N = 1536;
@@ -27,10 +33,6 @@ const int K = 1280;
 #define QB 4
 #define gq_t_bits 64
 #define gq_quant_t uint64_t
-
-float frand(void) {
-    return (float) rand() / (float) RAND_MAX;
-}
 
 //Naive implementation of Mul Mat
 void mul_mat(float* restrict src0, float* restrict src1, float *dst, int m, int n, int k) {
@@ -45,71 +47,161 @@ void mul_mat(float* restrict src0, float* restrict src1, float *dst, int m, int 
     }
 }
 
-void mul_mat_gq1(void* src0, void* src1, float* dst, int m, int n, int k) {
-    const int kp = k & ~(gq_t_bits - 1);
-
-    const char * restrict p0 = src0;
-    const char * restrict p1 = src1;
-
-    float s0[QB + 1];
-    float s1[QB + 1];
-
-    gq_quant_t m0[QB + 1];
-    gq_quant_t m1[QB + 1];
-
-    for (int i0 = 0; i0 < m; i0++)
-    {
-        for (int i1 = 0; i1 < n; i1++)
-        {
-            float sum = 0.0;
-            const char * restrict pp0 = p0 + i0*((2*sizeof(float) + (QK/gq_t_bits)*QB*sizeof(gq_quant_t))*(k/QK));
-            const char * restrict pp1 = p1 + i1*((2*sizeof(float) + (QK/gq_t_bits)*QB*sizeof(gq_quant_t))*(k/QK));
-            for (int i = 0; i < kp/QK; i++)
-            {
-                float min0, d0, min1, d1;
-                memcpy(&min0, pp0, sizeof(float)); pp0 += sizeof(float);
-                memcpy(&d0,   pp0, sizeof(float)); pp0 += sizeof(float);
-                memcpy(&min1, pp1, sizeof(float)); pp1 += sizeof(float);
-                memcpy(&d1,   pp1, sizeof(float)); pp1 += sizeof(float);
-                s0[0] = min0;
-                s1[0] = min1;
-
-                for (int b = 0; b < QB; b++) {
-                    s0[b + 1] = d0*(1 << b);
-                    s1[b + 1] = d1*(1 << b);
-                }
-                m0[0] = 0-1ULL;
-                m1[0] = 0-1ULL;
-
-                for (int s = 0; s < QK/gq_t_bits; ++s) {
-                    for (int b = 0; b < QB; b++) {
-                        memcpy(&m0[b + 1], pp0, sizeof(gq_quant_t)); pp0 += sizeof(gq_quant_t);
-                        memcpy(&m1[b + 1], pp1, sizeof(gq_quant_t)); pp1 += sizeof(gq_quant_t);
-                    }
-
-                    for (int q0 = 0; q0 < QB + 1; q0++) {
-                        for (int q1 = 0; q1 < QB + 1; q1++) {
-                            sum += s0[q0]*s1[q1]*__builtin_popcountll(m0[q0] & m1[q1]);
-                        }
-                    }
-                }
-            }
-            dst[i0*n + i1] = sum;
-        }
-    }
+static inline int quantize_4_blocks_per_row(int k) {
+    return k/QK;
 }
 
-void mul_mat_gq_2(void * src0, void * src1, float * dst, int m, int n, int k) {
-    assert(k % QK == 0);
-    for (int i0 = 0; i0 < m; i0++) {
-        for (int i1 = 0; i1 < n; i1++) {
-            vec_dot_gq_2(k, dst + i1, src0, src1);
-            src1 = (const char *) src1 + quantize_2_row_size(k);
-        }
-        src0 = (const char *) src0 +   quantize_2_row_size(k);
-        src1 = (const char *) src1 - n*quantize_2_row_size(k);
+static inline int quantize_4_row_size(int k) {
+    const int nb = quantize_4_blocks_per_row(k);
 
+    return nb*(2*sizeof(gq_scale_t) + QK/2);
+}
+
+void vec_dot_gq_4 (const int n, float * restrict s, const float * restrict x, const float * restrict y) {
+    const int nb = quantize_4_blocks_per_row(n);
+
+    const gq_scale_t * restrict pm0 = (const gq_scale_t *) x;
+    const gq_scale_t * restrict pm1 = (const gq_scale_t *) y;
+
+    const gq_scale_t * restrict pd0 = pm0 + nb;
+    const gq_scale_t * restrict pd1 = pm1 + nb;
+
+    const uint8_t * restrict pb0 = (const uint8_t *) (pd0 + nb);
+    const uint8_t * restrict pb1 = (const uint8_t *) (pd1 + nb);
+
+    float sumf = 0.0;
+
+    for (int i = 0; i < nb; i++) {
+        const float m0 = GGML_GQ_TO_FP32(pm0[i]);
+        const float d0 = GGML_GQ_TO_FP32(pd0[i]);
+
+        const float m1 = GGML_GQ_TO_FP32(pm1[i]);
+        const float d1 = GGML_GQ_TO_FP32(pd1[i]);
+
+        const uint8_t * restrict p0 = pb0 + i*QK/2;
+        const uint8_t * restrict p1 = pb1 + i*QK/2;
+
+        for (int j = 0; j < QK/2; j++) {
+            const uint8_t v0 = p0[j];
+            const uint8_t v1 = p1[j];
+
+            const float f0 = d0*(v0 & 0xf) + m0;
+            const float f1 = d0*(v0 >> 4)  + m0;
+
+            const float f2 = d1*(v1 & 0xf) + m1;
+            const float f3 = d1*(v1 >> 4)  + m1;
+
+            sumf += f0*f2 + f1*f3;
+        }
+    }
+    *s = sumf;
+}
+
+void mul_mat_gq_4(const void * src0, const float * src1, float * dst, int m, int n, int k) {
+    assert(k % QK == 0);
+    const int nb = quantize_4_blocks_per_row(k);
+
+    for (int ir0 = 0; ir0 < m; ir0++) {
+        for (int ir1 = 0; ir1 < n; ir1++) {
+            vec_dot_gq_4(k, dst + ir1, src0, src1);
+            src1 = (const char *) src1 + quantize_4_row_size(k);
+        }
+        src0 = (const char *) src0 +   quantize_4_row_size(k);
+        src1 = (const char *) src1 - n*quantize_4_row_size(k);
         dst = (float *) dst + n;
     }
 }
 
+gq_scale_t *load_tensor(const char *filename, int rows, int cols) {
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    // Allocate memory for the tensor structure
+    float * tensor = malloc(sizeof(float)*rows*cols);
+    if (tensor == NULL) {
+        perror("Memory allocation error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read tensor data
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (fscanf(file, "%f", &(tensor[i * cols + j])) != 1) {
+                fprintf(stderr, "Error reading tensor data from file\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    fclose(file);
+
+    return tensor;
+}
+
+void save_tensor(const char *filename, gq_scale_t *tensor, int rows, int cols) {
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    // Write tensor data
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            fprintf(file, "%.6f ", tensor[i * cols + j]); // Adjust precision as needed
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
+int main(int argc, const char ** argv) {
+    assert(sizeof(gq_quant_t)*8 == gq_t_bits);
+    ggml_time_init();
+
+    float * src0 = load_tensor("tensor1.txt", M, K);
+    float * src1  = load_tensor("tensor2.txt", N, K);
+    float * dst  = malloc(sizeof(float)*M*N);
+
+    const int64_t start = ggml_cycles();
+    const int64_t start_us = ggml_time_us();
+
+    double iM = 1.0/M;
+    double sum = 0.0f;
+
+    int method = 0;
+    if (argc > 1) {
+        method = atoi(argv[1]);
+    }
+
+    if (method == 0) {
+        mul_mat(src0, src1, dst, M, N, K);
+        save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+    }
+
+    if (method == 1) {
+        mul_mat_gq_4(src0, src1, dst, M, N, K);
+        save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+    }
+    for (int i = 0; i < N; i++) {
+        sum += dst[i]*iM;
+    }
+    
+    for (int i = 0; i < 16; ++i) {
+        printf("%f\n", dst[i]);
+    }
+
+    const int64_t end = ggml_cycles();
+    const int64_t end_us = ggml_time_us();
+    printf("%s: elapsed ticks: %" PRIu64 "\n",  __func__, end - start);
+    printf("%s: elapsed us:    %d / %f ms\n",  __func__, (int)(end_us - start_us), (end_us - start_us) / 1000.0);
+    printf("%f\n", sum);
+
+    free(src0);
+    free(src1);
+    free(dst);
+
+    return 0;
+}
