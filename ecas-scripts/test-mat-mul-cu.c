@@ -14,10 +14,6 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#if defined(GGML_USE_OPENBLAS)
-#include <cblas.h>
-#endif
-
 #if defined(GGML_GQ_USE_FP16_SCALE)
 #define gq_scale_t ggml_fp16_t
 #define GGML_FP32_TO_GQ(x) ggml_fp32_to_fp16(x)
@@ -28,6 +24,12 @@
 #define GGML_GQ_TO_FP32(x) (x)
 #endif
 
+#if defined(GGML_USE_HIPBLAS)
+#include <hip/hip_runtime.h>
+#include <hipblas/hipblas.h>
+#include <hip/hip_fp16.h>
+#endif
+
 const int M = 1280;
 const int N = 1536;
 const int K = 1280;
@@ -36,6 +38,50 @@ const int K = 1280;
 #define QB 4
 #define gq_t_bits 64
 #define gq_quant_t uint64_t
+
+#if defined(GGML_USE_HIPBLAS)
+#ifndef CHECK_HIP_ERROR
+#define CHECK_HIP_ERROR(error)                    \
+    if(error != hipSuccess)                       \
+    {                                             \
+        fprintf(stderr,                           \
+                "Hip error: '%s'(%d) at %s:%d\n", \
+                hipGetErrorString(error),         \
+                error,                            \
+                __FILE__,                         \
+                __LINE__);                        \
+        exit(EXIT_FAILURE);                       \
+    }
+#endif
+
+#ifndef CHECK_HIPBLAS_ERROR
+#define CHECK_HIPBLAS_ERROR(error)                              \
+    if(error != HIPBLAS_STATUS_SUCCESS)                         \
+    {                                                           \
+        fprintf(stderr, "hipBLAS error: ");                     \
+        if(error == HIPBLAS_STATUS_NOT_INITIALIZED)             \
+            fprintf(stderr, "HIPBLAS_STATUS_NOT_INITIALIZED");  \
+        if(error == HIPBLAS_STATUS_ALLOC_FAILED)                \
+            fprintf(stderr, "HIPBLAS_STATUS_ALLOC_FAILED");     \
+        if(error == HIPBLAS_STATUS_INVALID_VALUE)               \
+            fprintf(stderr, "HIPBLAS_STATUS_INVALID_VALUE");    \
+        if(error == HIPBLAS_STATUS_MAPPING_ERROR)               \
+            fprintf(stderr, "HIPBLAS_STATUS_MAPPING_ERROR");    \
+        if(error == HIPBLAS_STATUS_EXECUTION_FAILED)            \
+            fprintf(stderr, "HIPBLAS_STATUS_EXECUTION_FAILED"); \
+        if(error == HIPBLAS_STATUS_INTERNAL_ERROR)              \
+            fprintf(stderr, "HIPBLAS_STATUS_INTERNAL_ERROR");   \
+        if(error == HIPBLAS_STATUS_NOT_SUPPORTED)               \
+            fprintf(stderr, "HIPBLAS_STATUS_NOT_SUPPORTED");    \
+        if(error == HIPBLAS_STATUS_INVALID_ENUM)                \
+            fprintf(stderr, "HIPBLAS_STATUS_INVALID_ENUM");     \
+        if(error == HIPBLAS_STATUS_UNKNOWN)                     \
+            fprintf(stderr, "HIPBLAS_STATUS_UNKNOWN");          \
+        fprintf(stderr, "\n");                                  \
+        exit(EXIT_FAILURE);                                     \
+    }
+#endif
+#endif
 
 //Naive implementation of Mul Mat
 void mul_mat(float* restrict src0, float* restrict src1, float *dst, int m, int n, int k) {
@@ -173,14 +219,32 @@ int main(int argc, const char ** argv) {
     double iM = 1.0/M;
     double sum = 0.0f;
 
+    #if defined(GGML_USE_HIPBLAS)
+        // allocate memory on device
+        float *dsrc_0, *dsrc_1, *ddst;
+        CHECK_HIP_ERROR(hipMalloc(&dsrc_0, M * K * sizeof(float)));
+        CHECK_HIP_ERROR(hipMalloc(&dsrc_1, N * K * sizeof(float)));
+        CHECK_HIP_ERROR(hipMalloc(&ddst, M * N * sizeof(float)));
+
+        // copy matrices from host to device
+        CHECK_HIP_ERROR(hipMemcpy(dsrc_0, src_0.data(), sizeof(float) * M * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(dsrc_1, src_1.data(), sizeof(float) * N * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(ddst, dst.data(), sizeof(float) * M * N, hipMemcpyHostToDevice));
+
+        hipblasHandle_t handle;
+        CHECK_HIPBLAS_ERROR(hipblasCreate(&handle)); 
+    #endif
+
     int method = 0;
     if (argc > 1) {
         method = atoi(argv[1]);
     }
 
     if (method == 0) {
-        #ifdef GGML_USE_OPENBLAS
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
+        #if defined(GGML_USE_HIPBLAS)
+            CHECK_HIPBLAS_ERROR(
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
+            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
             save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat(src0, src1, dst, M, N, K);
@@ -189,8 +253,10 @@ int main(int argc, const char ** argv) {
     }
 
     if (method == 1) {
-        #ifdef GGML_USE_OPENBLAS
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
+        #if defined(GGML_USE_HIPBLAS)
+            CHECK_HIPBLAS_ERROR(
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
+            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
             save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat_gq_4(src0, src1, dst, M, N, K);
@@ -210,6 +276,13 @@ int main(int argc, const char ** argv) {
     printf("%s: elapsed ticks: %" PRIu64 "\n",  __func__, end - start);
     printf("%s: elapsed us:    %d / %f ms\n",  __func__, (int)(end_us - start_us), (end_us - start_us) / 1000.0);
     printf("%f\n", sum);
+
+    #if defined(GGML_USE_HIPBLAS)
+        CHECK_HIP_ERROR(hipFree(dsrc_0));
+        CHECK_HIP_ERROR(hipFree(dsrc_1));
+        CHECK_HIP_ERROR(hipFree(ddst));
+        CHECK_HIPBLAS_ERROR(hipblasDestroy(handle));
+    #endif
 
     free(src0);
     free(src1);

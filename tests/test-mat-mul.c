@@ -9,11 +9,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifndef MIN
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 #if defined(GGML_USE_OPENBLAS)
 #include <cblas.h>
 #endif
