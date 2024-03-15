@@ -2,15 +2,15 @@
 BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
-	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o 
+	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
+	test-mat-mul test-mat-mul-cu test-xrt
 
 # Binaries only useful for tests
 TEST_TARGETS = \
 	tests/test-llama-grammar tests/test-grammar-parser tests/test-double-float tests/test-grad0 tests/test-opt \
 	tests/test-quantize-fns tests/test-quantize-perf tests/test-sampling tests/test-tokenizer-0-llama          \
 	tests/test-tokenizer-0-falcon tests/test-tokenizer-1-llama tests/test-tokenizer-1-bpe tests/test-rope      \
-	tests/test-backend-ops tests/test-model-load-cancel tests/test-autorelease \
-	tests/test-mat-mul tests/test-mat-mul-cu tests/test-xrt
+	tests/test-backend-ops tests/test-model-load-cancel tests/test-autorelease 
 
 # Code coverage output files
 COV_TARGETS = *.gcno tests/*.gcno *.gcda tests/*.gcda *.gcov tests/*.gcov lcov-report gcovr-report
