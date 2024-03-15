@@ -1,14 +1,25 @@
 #include "ggml-xrt.h"
 
-void mul_mat(float* src0, float* src1, float *dst, int m, int n, int k) {
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            float sum = 0;
-            for (int l = 0; l < k; l++) {
-                sum += src0[i*k + l] * src1[j*k + l];
-            }
-            dst[i*n + j] = sum;
+// Function to perform naive matrix multiplication
+float** naiveMatrixMultiply(float** matrix1, int rows1, int cols1, float** matrix2, int cols2) {
+    // Initialize the result matrix with zeros
+    float** result = new float*[rows1];
+    for (int i = 0; i < rows1; ++i) {
+        result[i] = new float[cols2];
+        for (int j = 0; j < cols2; ++j) {
+            result[i][j] = 0.0f;
         }
     }
+
+    // Perform matrix multiplication
+    for (int i = 0; i < rows1; ++i) {
+        for (int j = 0; j < cols2; ++j) {
+            for (int k = 0; k < cols1; ++k) {
+                result[i][j] += matrix1[i][k] * matrix2[k][j];
+            }
+        }
+    }
+
+    return result;
 }
 

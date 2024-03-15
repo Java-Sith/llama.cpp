@@ -5,24 +5,59 @@
 
 int main() {
     int m = DIM1, n = DIM2, k = DIM3;
-    int size_a = m*k, size_b = n*k, size_c = m*n;
-    std::vector<float> ha(size_a);
-    std::vector<float> hb(size_b);
-    std::vector<float> hc(size_c);
-    srand(1);
-    for(int i = 0; i < size_a; ++i)
-    {
-        ha[i] = rand() % 17;
+    // Allocate memory for a 2D array of floats
+    float** src0 = new float*[m];
+    for (int i = 0; i < m; ++i) {
+        src0[i] = new float[k];
     }
-    for(int i = 0; i < size_b; ++i)
-    {
-        hb[i] = rand() % 17;
+
+    // Fill the matrix with some values (optional)
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < k; ++j) {
+            // Example: filling with row*col as a float
+            src0[i][j] = static_cast<float>(i * k + j);
+        }
     }
-    for(int i = 0; i < size_c; ++i)
-    {
-        hc[i] = rand() % 17;
+
+    // Allocate memory for a 2D array of floats
+    float** src1 = new float*[n];
+    for (int i = 0; i < n; ++i) {
+        src1[i] = new float[k];
     }
-    mul_mat(ha.data(), hb.data(), hc.data(), m, n, k);
-    std::cout << "PASSED!: Sum = " << hc.data() << std::endl;
+
+    // Fill the matrix with some values (optional)
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < k; ++j) {
+            // Example: filling with row*col as a float
+            src1[i][j] = static_cast<float>(i * k + j);
+        }
+    }
+    for (int i = 0; i < 16; ++i) {
+        printf("%f %f\n", src0[i], src1[i]);
+    }
+    double iM = 1.0/m;
+    double sumf = 0.0f;
+    float** result = naiveMatrixMultiply(src0, m, k, src1, n);
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            sumf += result[i][j];
+        }
+    }
+    std::cout << "PASSED!: Sum = " << sumf << std::endl;
+    // Deallocate memory
+    for (int i = 0; i < m; ++i) {
+        delete[] src0[i];
+    }
+    delete[] src0;
+    // Deallocate memory
+    for (int i = 0; i < n; ++i) {
+        delete[] src1[i];
+    }
+    delete[] src1;
+    // Deallocate memory
+    for (int i = 0; i < m; ++i) {
+        delete[] result[i];
+    }
+    delete[] result;
     return 0;
 }

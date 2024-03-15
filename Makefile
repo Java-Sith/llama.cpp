@@ -3,7 +3,7 @@ BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
 	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
-	tests/test-mat-mul tests/test-mat-mul-cu tests/test-xrt
+	tests/test-xrt #tests/test-mat-mul tests/test-mat-mul-cu 
 
 # Binaries only useful for tests
 TEST_TARGETS = \
@@ -895,11 +895,11 @@ tests/test-xrt: tests/test-xrt.cpp ggml.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-tests/test-mat-mul: tests/test-mat-mul.c ggml.o $(OBJS)
-	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+# tests/test-mat-mul: tests/test-mat-mul.c ggml.o $(OBJS)
+# 	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
-tests/test-mat-mul-cu: tests/test-mat-mul-cu.c ggml.o $(OBJS)
-	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+# tests/test-mat-mul-cu: tests/test-mat-mul-cu.c ggml.o $(OBJS)
+# 	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)

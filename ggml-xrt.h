@@ -14,6 +14,6 @@
 #include <vector>
 #include <iostream>
 
-void mul_mat(float* src0, float* src1, float *dst, int m, int n, int k);
+float** naiveMatrixMultiply(float** matrix1, int rows1, int cols1, float** matrix2, int cols2);
 
 #endif 
