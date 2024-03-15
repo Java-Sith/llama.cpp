@@ -633,8 +633,8 @@ ggml-backend.o: ggml-backend.c ggml.h ggml-backend.h
 ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h
 	$(CC) $(CFLAGS)    -c $< -o $@
 
-ggml-xrt.o: ggml-xrt.c ggml.h ggml-xrt.h
-	$(CC) $(CFLAGS)    -c $< -o $@
+ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o ggml-xrt.o
 
