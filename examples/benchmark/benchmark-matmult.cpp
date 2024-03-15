@@ -58,7 +58,7 @@ struct benchmark_params_struct {
     int32_t n_iterations  = 10;
 };
 
-void save_matrices_to_binary(ggml_tensor* m11, ggml_tensor* m12, ggml_tensor* m2, int m, int n, int k) {
+/*void save_matrices_to_binary(ggml_tensor* m11, ggml_tensor* m12, ggml_tensor* m2, int m, int n, int k) {
     FILE* file1 = fopen("matrix1.bin", "wb");
     FILE* file2 = fopen("matrix2.bin", "wb");
     FILE* file3 = fopen("expected_result.bin", "wb");
@@ -75,7 +75,7 @@ void save_matrices_to_binary(ggml_tensor* m11, ggml_tensor* m12, ggml_tensor* m2
     fclose(file1);
     fclose(file2);
     fclose(file3);
-}
+}*/
 
 static void print_usage(int /*argc*/, char ** argv, struct benchmark_params_struct params) {
     fprintf(stderr, "usage: %s [options]\n", argv[0]);
@@ -184,7 +184,7 @@ int main(int argc, char ** argv)  {
     // printf("Creating new tensor m2\n");
     struct ggml_tensor * m2 = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, sizex, sizez);
     ggml_set_f32(m2, 2.0f);
-    save_matrices_to_binary(m11, m12, m2, sizex, sizey, sizez);
+    //save_matrices_to_binary(m11, m12, m2, sizex, sizey, sizez);
 
     printf("\n------ Test 1 - Matrix Mult via F32 code\n");
     // printf("Creating new tensor m11xm2\n");
