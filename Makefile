@@ -897,9 +897,11 @@ tests/test-c.o: tests/test-c.c llama.h
 
 tests/test-mat-mul: tests/test-mat-mul.c ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
+	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-mat-mul-cu: tests/test-mat-mul-cu.c ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
+	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
