@@ -29,9 +29,9 @@ typedef struct {
 } block_q4_1;
 static_assert(sizeof(block_q4_1) == 2 * sizeof(ggml_fp16_t) + QK4_1 / 2, "wrong q4_1 block size/padding");
 
-void quantize_row_q4_0(const float * restrict x, float * restrict y, int k);
-void quantize_row_q4_0_reference(const float * restrict x, block_q4_0 * restrict y, int k);
-void dequantize_row_q4_0(const block_q4_0 * restrict x, float * restrict y, int k);
+void quantize_row_q4_0(const float * x, float * y, int k);
+void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k);
+void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k);
 float** allocateMatrix(int rows, int cols);
 void deallocateMatrix(float** matrix, int rows);
 void initializeMatrix(float** matrix, int rows, int cols);

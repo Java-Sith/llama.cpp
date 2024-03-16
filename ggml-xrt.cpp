@@ -1,5 +1,8 @@
 #include "ggml-xrt.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 // Function to allocate memory for a matrix of size rows x cols
 float** allocateMatrix(int rows, int cols) {
     float** matrix = new float*[rows];
@@ -53,7 +56,7 @@ void printMatrix(float** matrix, int rows, int cols) {
     }
 }
 
-void quantize_row_q4_0_reference(const float * restrict x, block_q4_0 * restrict y, int k) {
+void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k) {
   static const int qk = QK4_0;
   assert(k % qk == 0);
   const int nb = k / qk;
@@ -73,7 +76,7 @@ void quantize_row_q4_0_reference(const float * restrict x, block_q4_0 * restrict
       const float d  = max / -8;
       const float id = d ? 1.0f/d : 0.0f;
 
-      y[i].d = GGML_FP32_TO_FP16(d);
+      y[i].d = ggml_fp32_to_fp16(d);
 
       for (int j = 0; j < qk/2; ++j) {
           const float x0 = x[i*qk + 0    + j]*id;
@@ -84,21 +87,21 @@ void quantize_row_q4_0_reference(const float * restrict x, block_q4_0 * restrict
 
           y[i].qs[j]  = xi0;
           y[i].qs[j] |= xi1 << 4;
-      }
+    }
   }
 }
 
-void quantize_row_q4_0(const float * restrict x, float * restrict y, int k) {
+void quantize_row_q4_0(const float * x, block_q4_0 * y, int k) {
     quantize_row_q4_0_reference(x, y, k);
 }
 
-void dequantize_row_q4_0(const block_q4_0 * restrict x, float * restrict y, int k) {
+void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k) {
     static const int qk = QK4_0;
     assert(k % qk == 0);
     const int nb = k / qk;
 
     for (int i = 0; i < nb; i++) {
-        const float d = GGML_FP16_TO_FP32(x[i].d);
+        const float d = ggml_fp16_to_fp32(x[i].d);
 
         for (int j = 0; j < qk/2; ++j) {
             const int x0 = (x[i].qs[j] & 0x0F) - 8;
