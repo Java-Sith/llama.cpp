@@ -14,6 +14,10 @@
 #include <vector>
 #include <iostream>
 
-float** naiveMatrixMultiply(float** matrix1, int rows1, int cols1, float** matrix2, int cols2);
+float** allocateMatrix(int rows, int cols);
+void deallocateMatrix(float** matrix, int rows);
+void initializeMatrix(float** matrix, int rows, int cols);
+float** matrixMultiplication(float** mat1, float** mat2, int rows1, int cols1, int cols2);
+void printMatrix(float** matrix, int rows, int cols);
 
 #endif 

@@ -1,63 +1,41 @@
 #include "ggml-xrt.h"
-#define DIM1 1023
-#define DIM2 1024
-#define DIM3 1025
+#define DIM1 1280
+#define DIM2 1536
+#define DIM3 1280
 
 int main() {
     int m = DIM1, n = DIM2, k = DIM3;
-    // Allocate memory for a 2D array of floats
-    float** src0 = new float*[m];
-    for (int i = 0; i < m; ++i) {
-        src0[i] = new float[k];
+    if (k != m) {
+        std::cerr << "Matrix multiplication not possible. Number of columns of first matrix must be equal to number of rows of second matrix." << std::endl;
+        return 1;
     }
+    // Allocate memory for matrices
+    float** matrix1 = allocateMatrix(m, k);
+    float** matrix2 = allocateMatrix(k, n);
 
-    // Fill the matrix with some values (optional)
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < k; ++j) {
-            // Example: filling with row*col as a float
-            src0[i][j] = static_cast<float>(i * k + j);
-        }
-    }
+    // Initialize matrices with random values
+    initializeMatrix(matrix1, m, k);
+    initializeMatrix(matrix2, k, n);
 
-    // Allocate memory for a 2D array of floats
-    float** src1 = new float*[n];
-    for (int i = 0; i < n; ++i) {
-        src1[i] = new float[k];
-    }
+    // Perform matrix multiplication
+    float** resultMatrix = matrixMultiplication(matrix1, matrix2, m, k, n);
 
-    // Fill the matrix with some values (optional)
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < k; ++j) {
-            // Example: filling with row*col as a float
-            src1[i][j] = static_cast<float>(i * k + j);
-        }
-    }
-    for (int i = 0; i < 16; ++i) {
-        printf("%f %f\n", src0[i], src1[i]);
-    }
-    double iM = 1.0/m;
-    double sumf = 0.0f;
-    float** result = naiveMatrixMultiply(src0, m, k, src1, n);
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < n; ++j) {
-            sumf += result[i][j];
-        }
-    }
-    std::cout << "PASSED!: Sum = " << sumf << std::endl;
-    // Deallocate memory
-    for (int i = 0; i < m; ++i) {
-        delete[] src0[i];
-    }
-    delete[] src0;
-    // Deallocate memory
-    for (int i = 0; i < n; ++i) {
-        delete[] src1[i];
-    }
-    delete[] src1;
-    // Deallocate memory
-    for (int i = 0; i < m; ++i) {
-        delete[] result[i];
-    }
-    delete[] result;
+    // Print matrices and result
+    std::cout << "Matrix 1:" << std::endl;
+    printMatrix(matrix1, m, k);
+    std::cout << std::endl;
+
+    std::cout << "Matrix 2:" << std::endl;
+    printMatrix(matrix2, k, n);
+    std::cout << std::endl;
+
+    std::cout << "Resultant Matrix:" << std::endl;
+    printMatrix(resultMatrix, m, n);
+
+    // Deallocate memory for matrices
+    deallocateMatrix(matrix1, m);
+    deallocateMatrix(matrix2, k);
+    deallocateMatrix(resultMatrix, m);
+
     return 0;
 }

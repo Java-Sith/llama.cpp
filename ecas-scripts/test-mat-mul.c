@@ -9,11 +9,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifndef MIN
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 #if defined(GGML_USE_OPENBLAS)
 #include <cblas.h>
 #endif
@@ -164,7 +159,7 @@ int main(int argc, const char ** argv) {
     ggml_time_init();
 
     float * src0 = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor1.txt", M, K);
-    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor2.txt", N, K);
+    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor2.txt", K, N);
     float * dst  = malloc(sizeof(float)*M*N);
 
     const int64_t start = ggml_cycles();
