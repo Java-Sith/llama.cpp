@@ -895,12 +895,16 @@ test-xrt: ecas-scripts/test-xrt.cpp ggml.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-test-mat-mul: ecas-scripts/test-mat-mul.c ggml.h ggml-alloc.h ggml-backend.h
+ecas-scripts/test-mat-mul.o: ecas-scripts/test-mat-mul.c ggml.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+test-mat-mul: ecas-scripts/test-mat-mul.o ggml.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.h ggml-alloc.h ggml-backend.h
+ecas-scripts/test-mat-mul-cu.o: ecas-scripts/test-mat-mul.c ggml.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+test-mat-mul-cu: ecas-scripts/test-mat-mul.o ggml.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
