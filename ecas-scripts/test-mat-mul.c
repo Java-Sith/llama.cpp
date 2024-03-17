@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 
 #if defined(GGML_USE_OPENBLAS)
@@ -158,8 +159,8 @@ int main(int argc, const char ** argv) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
     ggml_time_init();
 
-    float * src0 = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor1.txt", M, K);
-    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor2.txt", K, N);
+    float * src0 = load_tensor("tensor1.txt", M, K);
+    float * src1  = load_tensor("tensor2.txt", K, N);
     float * dst  = malloc(sizeof(float)*M*N);
 
     const int64_t start = ggml_cycles();
@@ -176,7 +177,7 @@ int main(int argc, const char ** argv) {
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat(src0, src1, dst, M, N, K);
             save_tensor("result.txt", (gq_scale_t *) dst, M, N);
@@ -186,10 +187,10 @@ int main(int argc, const char ** argv) {
     if (method == 1) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat_gq_4(src0, src1, dst, M, N, K);
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
         #endif
     }
     for (int i = 0; i < N; i++) {
