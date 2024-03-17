@@ -1,18 +1,13 @@
 #include "ggml.h"
 
+#include <float.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <inttypes.h>
 #include <assert.h>
-#include <errno.h>
-#include <time.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <float.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <signal.h>
+#include <math.h>
 
 #if defined(GGML_GQ_USE_FP16_SCALE)
 #define gq_scale_t ggml_fp16_t
