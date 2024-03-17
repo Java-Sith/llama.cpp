@@ -3,14 +3,14 @@ BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
 	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
-	tests/test-xrt tests/test-mat-mul tests/test-mat-mul-cu 
+	test-xrt test-mat-mul test-mat-mul-cu
 
 # Binaries only useful for tests
 TEST_TARGETS = \
 	tests/test-llama-grammar tests/test-grammar-parser tests/test-double-float tests/test-grad0 tests/test-opt \
 	tests/test-quantize-fns tests/test-quantize-perf tests/test-sampling tests/test-tokenizer-0-llama          \
 	tests/test-tokenizer-0-falcon tests/test-tokenizer-1-llama tests/test-tokenizer-1-bpe tests/test-rope      \
-	tests/test-backend-ops tests/test-model-load-cancel tests/test-autorelease 
+	tests/test-backend-ops tests/test-model-load-cancel tests/test-autorelease
 
 # Code coverage output files
 COV_TARGETS = *.gcno tests/*.gcno *.gcda tests/*.gcda *.gcov tests/*.gcov lcov-report gcovr-report
@@ -888,18 +888,18 @@ tests/test-rope: tests/test-rope.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
-tests/test-xrt: tests/test-xrt.cpp ggml.o $(OBJS)
+test-xrt: ecas-scripts/test-xrt.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-tests/test-mat-mul: tests/test-mat-mul.c ggml.o $(OBJS)
+test-mat-mul: ecas-scripts/test-mat-mul.c ggml.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
-tests/test-mat-mul-cu: tests/test-mat-mul-cu.c ggml.o $(OBJS)
+test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
