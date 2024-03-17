@@ -898,13 +898,13 @@ tests/test-c.o: tests/test-c.c llama.h
 ecas-scripts/test-mat-mul.o: ecas-scripts/test-mat-mul.c ggml.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-test-mat-mul: ecas-scripts/test-mat-mul.o ggml.o
+test-mat-mul: ecas-scripts/test-mat-mul.o 
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 ecas-scripts/test-mat-mul-cu.o: ecas-scripts/test-mat-mul.c ggml.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-test-mat-mul-cu: ecas-scripts/test-mat-mul.o ggml.o
+test-mat-mul-cu: ecas-scripts/test-mat-mul.o 
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
