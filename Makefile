@@ -896,12 +896,12 @@ tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
 test-mat-mul: ecas-scripts/test-mat-mul.c ggml.h
-	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
-	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
-	$(CC) $(CFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
