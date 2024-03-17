@@ -1,14 +1,18 @@
 #include "ggml.h"
 
-#include <float.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <inttypes.h>
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <errno.h>
 #include <time.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <float.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <signal.h>
 
 #if defined(GGML_USE_OPENBLAS)
 #include <cblas.h>
