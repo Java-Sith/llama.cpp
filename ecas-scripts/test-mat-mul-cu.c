@@ -213,9 +213,6 @@ int main(int argc, const char ** argv) {
     float * src1  = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor2.txt", K, N);
     float * dst  = malloc(sizeof(float)*M*N);
 
-    const int64_t start = ggml_cycles();
-    const int64_t start_us = ggml_time_us();
-
     double iM = 1.0/M;
     double sum = 0.0f;
 
@@ -239,6 +236,9 @@ int main(int argc, const char ** argv) {
     if (argc > 1) {
         method = atoi(argv[1]);
     }
+
+    const int64_t start = ggml_cycles();
+    const int64_t start_us = ggml_time_us();
 
     if (method == 0) {
         #if defined(GGML_USE_HIPBLAS)
