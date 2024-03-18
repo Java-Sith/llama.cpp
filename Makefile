@@ -895,17 +895,13 @@ test-xrt: ecas-scripts/test-xrt.cpp ggml.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-#ecas-scripts/test-mat-mul.o: ecas-scripts/test-mat-mul.c ggml.h
-#	$(CC) $(CFLAGS) -c $< -o $@
+test-mat-mul: ecas-scripts/test-mat-mul.c ggml.o $(OBJS)
+	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
-test-mat-mul: ecas-scripts/test-mat-mul.c ggml.c ggml.h
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-
-#ecas-scripts/test-mat-mul-cu.o: ecas-scripts/test-mat-mul-cu.c ggml.h
-#	$(CC) $(CFLAGS) -c $< -o $@
-
-test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.c ggml.h
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.o $(OBJS)
+	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
