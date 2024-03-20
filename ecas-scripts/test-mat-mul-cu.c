@@ -204,8 +204,8 @@ int main(int argc, const char ** argv) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
     ggml_time_init();
 
-    float * src0 = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor1.txt", M, K);
-    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/tensor2.txt", K, N);
+    float * src0 = load_tensor("~/llama.cpp/ecas-scripts/tensor1.txt", M, K);
+    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/tensor2.txt", K, N);
     float * dst  = malloc(sizeof(float)*M*N);
 
     double iM = 1.0/M;
@@ -224,7 +224,7 @@ int main(int argc, const char ** argv) {
         CHECK_HIP_ERROR(hipMemcpy(ddst, dst.data(), sizeof(float) * M * N, hipMemcpyHostToDevice));
 
         hipblasHandle_t handle;
-        CHECK_HIPBLAS_ERROR(hipblasCreate(&handle)); 
+        CHECK_HIPBLAS_ERROR(hipblasCreate(&handle));
     #endif
 
     int method = 0;
@@ -240,10 +240,10 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat(src0, src1, dst, M, N, K);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #endif
     }
 
@@ -252,16 +252,16 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat_gq_4(src0, src1, dst, M, N, K);
-            save_tensor("~/llama.cpp/ecas-scripts/Matmul_CPU/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #endif
     }
     for (int i = 0; i < N; i++) {
         sum += dst[i]*iM;
     }
-    
+
     for (int i = 0; i < 16; ++i) {
         printf("%f\n", dst[i]);
     }

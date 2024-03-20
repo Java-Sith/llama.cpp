@@ -158,8 +158,8 @@ int main(int argc, const char ** argv) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
     ggml_time_init();
 
-    float * src0 = load_tensor("tensor1.txt", M, K);
-    float * src1  = load_tensor("tensor2.txt", K, N);
+    float * src0 = load_tensor("~/llama.cpp/ecas-scripts/tensor1.txt", M, K);
+    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/tensor2.txt", K, N);
     float * dst  = malloc(sizeof(float)*M*N);
 
     double iM = 1.0/M;
@@ -176,26 +176,26 @@ int main(int argc, const char ** argv) {
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat(src0, src1, dst, M, N, K);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #endif
     }
 
     if (method == 1) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #else
             mul_mat_gq_4(src0, src1, dst, M, N, K);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
         #endif
     }
     for (int i = 0; i < N; i++) {
         sum += dst[i]*iM;
     }
-    
+
     for (int i = 0; i < 16; ++i) {
         printf("%f\n", dst[i]);
     }
