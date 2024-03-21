@@ -180,7 +180,7 @@ int main(int argc, const char ** argv) {
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
@@ -190,7 +190,7 @@ int main(int argc, const char ** argv) {
     if (method == 1) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0f, src0, M, src1, N, 0.0f, dst, M);
-            save_tensor("result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");

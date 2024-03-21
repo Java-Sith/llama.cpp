@@ -243,7 +243,7 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor((gq_scale_t *) dst, M, N, "result.txt");
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
@@ -255,7 +255,7 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor((gq_scale_t *) dst, M, N, "result.txt");
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
