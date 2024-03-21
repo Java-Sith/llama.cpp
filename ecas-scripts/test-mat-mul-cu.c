@@ -143,7 +143,6 @@ void vec_dot_gq_4 (const int n, float * restrict s, const float * restrict x, co
 
 void mul_mat_gq_4(const void * src0, const float * src1, float * dst, int m, int n, int k) {
     assert(k % QK == 0);
-    const int nb = quantize_4_blocks_per_row(k);
     for (int ir0 = 0; ir0 < m; ir0++) {
         for (int ir1 = 0; ir1 < n; ir1++) {
             vec_dot_gq_4(k, dst + ir1, src0, src1);
@@ -155,60 +154,64 @@ void mul_mat_gq_4(const void * src0, const float * src1, float * dst, int m, int
     }
 }
 
-gq_scale_t *load_tensor(const char *filename, int rows, int cols) {
-    FILE *file = fopen(filename, "rb");
+// Function to load a tensor from a text file
+void load_tensor(float *matrix, int rows, int cols, const char *filename) {
+    FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    // Allocate memory for the tensor structure
-    float * tensor = malloc(sizeof(float)*rows*cols);
-    if (tensor == NULL) {
-        perror("Memory allocation error");
-        exit(EXIT_FAILURE);
+        printf("Error opening file %s for reading.\n", filename);
+        return;
     }
 
-    // Read tensor data
+    // Read matrix elements
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            if (fscanf(file, "%f", &(tensor[i * cols + j])) != 1) {
-                fprintf(stderr, "Error reading tensor data from file\n");
-                exit(EXIT_FAILURE);
-            }
+            fscanf(file, "%f", &matrix[i * cols + j]);
         }
-    }
-
-    fclose(file);
-
-    return tensor;
-}
-
-void save_tensor(const char *filename, gq_scale_t *tensor, int rows, int cols) {
-    FILE *file = fopen(filename, "wb");
-    if (file == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    // Write tensor data
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            fprintf(file, "%.6f ", tensor[i * cols + j]); // Adjust precision as needed
-        }
-        fprintf(file, "\n");
     }
 
     fclose(file);
 }
 
+// Function to save a tensor to a text file
+void save_tensor(float *tensor, int rows, int cols, const char *filename) {
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("Error opening file for writing.\n");
+        return;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            fprintf(fp, "%.2f ", *(tensor + i * cols + j));
+        }
+        fprintf(fp, "\n"); // Add newline after each row
+    }
+
+    fclose(fp);
+}
+
+void printMatrix(float *matrix, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            printf("%.2f ", matrix[i * cols + j]);
+        }
+        printf("\n");
+    }
+}
 int main(int argc, const char ** argv) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
+    int m = M, n = N, k = K;
+
     ggml_time_init();
+    
+    float * src0  = malloc(sizeof(float)*m*k);
+    float * src1  = malloc(sizeof(float)*k*n);
+    float * dst  = malloc(sizeof(float)*m*n);
 
-    float * src0 = load_tensor("~/llama.cpp/ecas-scripts/tensor1.txt", M, K);
-    float * src1  = load_tensor("~/llama.cpp/ecas-scripts/tensor2.txt", K, N);
-    float * dst  = malloc(sizeof(float)*M*N);
+    load_tensor(src0, m, k, "ecas-scripts/tensor1.txt");
+    load_tensor(src1, k, n, "ecas-scripts/tensor2.txt");
 
-    double iM = 1.0/M;
+    double iM = 1.0/m;
     double sum = 0.0f;
 
     #if defined(GGML_USE_HIPBLAS)
@@ -240,10 +243,10 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor((gq_scale_t *) dst, M, N, "result.txt");
         #else
-            mul_mat(src0, src1, dst, M, N, K);
-            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
+            mul_mat(src0, src1, dst, m, n, k);
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
 
@@ -252,22 +255,23 @@ int main(int argc, const char ** argv) {
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
             CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
-            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
+            save_tensor((gq_scale_t *) dst, M, N, "result.txt");
         #else
-            mul_mat_gq_4(src0, src1, dst, M, N, K);
-            save_tensor("~/llama.cpp/ecas-scripts/result.txt", (gq_scale_t *) dst, M, N);
+            mul_mat_gq_4(src0, src1, dst, m, n, k);
+            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < n; i++) {
         sum += dst[i]*iM;
     }
+
+    const int64_t end = ggml_cycles();
+    const int64_t end_us = ggml_time_us();
 
     for (int i = 0; i < 16; ++i) {
         printf("%f\n", dst[i]);
     }
 
-    const int64_t end = ggml_cycles();
-    const int64_t end_us = ggml_time_us();
     printf("%s: elapsed ticks: %" PRIu64 "\n",  __func__, end - start);
     printf("%s: elapsed us:    %d / %f ms\n",  __func__, (int)(end_us - start_us), (end_us - start_us) / 1000.0);
     printf("%f\n", sum);
