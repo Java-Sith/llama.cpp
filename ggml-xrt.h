@@ -1,5 +1,4 @@
-#ifndef GGML_XRT_IMPLEMENTATION
-#define GGML_XRT_IMPLEMENTATION
+#pragma once
 
 #include "ggml.h"
 
@@ -29,6 +28,8 @@ typedef struct {
 } block_q4_1;
 static_assert(sizeof(block_q4_1) == 2 * sizeof(ggml_fp16_t) + QK4_1 / 2, "wrong q4_1 block size/padding");
 
+typedef (*ggml_xrt_func_t)(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst);
+
 void quantize_row_q4_0(const float * x, float * y, int k);
 void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k);
 void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k);
@@ -37,5 +38,4 @@ void deallocateMatrix(float** matrix, int rows);
 void initializeMatrix(float** matrix, int rows, int cols);
 float** matrixMultiplication(float** mat1, float** mat2, int rows1, int cols1, int cols2);
 void printMatrix(float** matrix, int rows, int cols);
-
-#endif
+GGML_API bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor);

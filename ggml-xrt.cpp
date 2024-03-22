@@ -112,3 +112,31 @@ void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k) {
         }
     }
 }
+
+bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
+    ggml_xrt_func_t func;
+    if (tensor->op == GGML_OP_MUL_MAT) {
+       if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
+#ifndef NDEBUG
+           fprintf(stderr, "%s: cannot compute %s: src0->ne[3] = %" PRId64 ", src1->ne[3] = %" PRId64 " - fallback to CPU\n", __func__, tensor->name, tensor->src[0]->ne[3], tensor->src[1]->ne[3]);
+#endif
+           return false;
+       }
+   }
+   switch (tensor->op) {
+      case GGML_OP_REPEAT:
+          //func = ggml_xrt_repeat;
+          break;
+      case GGML_OP_GET_ROWS:
+          //func = ggml_xrt_get_rows;
+          break;
+      case GGML_OP_DUP:
+          //func = ggml_xrt_dup;
+          break;
+      case GGML_OP_ADD:
+          //func = ggml_xrt_add;
+          break;
+       default:
+          return false;
+   }
+}

@@ -203,7 +203,7 @@ int main(int argc, const char ** argv) {
     int m = M, n = N, k = K;
 
     ggml_time_init();
-    
+
     float * src0  = malloc(sizeof(float)*m*k);
     float * src1  = malloc(sizeof(float)*k*n);
     float * dst  = malloc(sizeof(float)*m*n);
@@ -238,11 +238,14 @@ int main(int argc, const char ** argv) {
     const int64_t start = ggml_cycles();
     const int64_t start_us = ggml_time_us();
 
+    float alpha = 1.0f;
+    float beta = 0.0f;
+
     if (method == 0) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
-        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
-            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
+            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
@@ -253,8 +256,8 @@ int main(int argc, const char ** argv) {
     if (method == 1) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
-        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_T, M, N, K, 1.0f, dsrc_0, M, dsrc_1, N, 0.0f, ddst, M));
-            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * M * N, hipMemcpyDeviceToHost));
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
+            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
