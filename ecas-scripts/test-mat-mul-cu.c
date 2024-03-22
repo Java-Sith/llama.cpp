@@ -173,7 +173,6 @@ void saveMatrixToFile(float *matrix, int M, int N, const char *filename) {
         return;
     }
 
-    fprintf(file, "Matrix Contents:\n");
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
             fprintf(file, "%.2f\t", matrix[i * N + j]);

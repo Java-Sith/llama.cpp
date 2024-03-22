@@ -73,6 +73,9 @@ models-mnt
 /tokenize
 /vdot
 /common/build-info.cpp
+/test-mat-mul
+/test-mat-mul-cu
+/test-xrt
 arm_neon.h
 compile_commands.json
 CMakeSettings.json
