@@ -139,4 +139,5 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        default:
           return false;
    }
+   return true;
 }
