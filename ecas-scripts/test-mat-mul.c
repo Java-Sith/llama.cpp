@@ -108,49 +108,68 @@ void mul_mat_gq_4(const void * src0, const float * src1, float * dst, int m, int
     }
 }
 
-// Function to load a tensor from a text file
-void load_tensor(float *matrix, int rows, int cols, const char *filename) {
-    FILE *file = fopen(filename, "r");
+void printMatrix(float *matrix, int M, int N) {
+    // Print matrix contents
+    printf("Matrix Contents:\n");
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            printf("%.2f\t", matrix[i * N + j]);
+        }
+        printf("\n");
+    }
+}
+
+void saveMatrixToFile(float *matrix, int M, int N, const char *filename) {
+    // Save matrix contents to file
+    FILE *file = fopen(filename, "w");
     if (file == NULL) {
-        printf("Error opening file %s for reading.\n", filename);
+        printf("Error opening file!\n");
         return;
     }
 
-    // Read matrix elements
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            fscanf(file, "%f", &matrix[i * cols + j]);
+    fprintf(file, "Matrix Contents:\n");
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            fprintf(file, "%.2f\t", matrix[i * N + j]);
         }
+        fprintf(file, "\n");
     }
 
     fclose(file);
 }
 
-// Function to save a tensor to a text file
-void save_tensor(float *tensor, int rows, int cols, const char *filename) {
-    FILE *fp = fopen(filename, "w");
-    if (fp == NULL) {
-        printf("Error opening file for writing.\n");
-        return;
+float* loadMatrixFromFile(int M, int N, const char *filename) {
+    // Open file for reading
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        return NULL;
     }
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            fprintf(fp, "%.2f ", *(tensor + i * cols + j));
+    // Allocate memory for the matrix
+    float *matrix = (float *)malloc(M * N * sizeof(float));
+    if (matrix == NULL) {
+        printf("Memory allocation failed!\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Read matrix values from file
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            if (fscanf(file, "%f", &matrix[i * N + j]) != 1) {
+                printf("Error reading file!\n");
+                fclose(file);
+                free(matrix);
+                return NULL;
+            }
         }
-        fprintf(fp, "\n"); // Add newline after each row
     }
 
-    fclose(fp);
-}
+    // Close file
+    fclose(file);
 
-void printMatrix(float *matrix, int rows, int cols) {
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            printf("%.2f ", matrix[i * cols + j]);
-        }
-        printf("\n");
-    }
+    return matrix;
 }
 
 int main(int argc, const char ** argv) {
@@ -159,12 +178,9 @@ int main(int argc, const char ** argv) {
 
     ggml_time_init();
 
-    float * src0  = malloc(sizeof(float)*m*k);
-    float * src1  = malloc(sizeof(float)*k*n);
+    float * src0  = loadMatrixFromFile(m, k, "ecas-scripts/tensor1.txt");
+    float * src1  = loadMatrixFromFile(k, n, "ecas-scripts/tensor2.txt");
     float * dst  = malloc(sizeof(float)*m*n);
-
-    load_tensor(src0, m, k, "ecas-scripts/tensor1.txt");
-    load_tensor(src1, k, n, "ecas-scripts/tensor2.txt");
 
     double iM = 1.0/m;
     double sum = 0.0f;
@@ -180,20 +196,20 @@ int main(int argc, const char ** argv) {
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, src0, k, src1, n, 0.0f, dst, n);
-            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
-            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
 
     if (method == 1) {
         #ifdef GGML_USE_OPENBLAS
             cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, src0, k, src1, n, 0.0f, dst, n);
-            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
-            save_tensor((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
     for (int i = 0; i < n; i++) {
