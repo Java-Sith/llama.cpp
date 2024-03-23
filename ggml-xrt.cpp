@@ -46,6 +46,8 @@ float** matrixMultiplication(float** mat1, float** mat2, int rows1, int cols1, i
     return result;
 }
 
+
+
 // Function to print a matrix
 void printMatrix(float** matrix, int rows, int cols) {
     for (int i = 0; i < rows; ++i) {
@@ -113,6 +115,19 @@ void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k) {
     }
 }
 
+void ggml_xrt_mul_mat(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst) {
+  float** matrix1 = allocateMatrix(m, k);
+  float** matrix2 = allocateMatrix(k, n);
+  initializeMatrix(matrix1, m, k);
+  initializeMatrix(matrix2, k, n);
+  float** resultMatrix = matrixMultiplication(matrix1, matrix2, m, k, n);
+  std::cout << "Resultant Matrix:" << std::endl;
+  printMatrix(resultMatrix, m, n);
+  deallocateMatrix(matrix1, m);
+  deallocateMatrix(matrix2, k);
+  deallocateMatrix(resultMatrix, m);
+}
+
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     ggml_xrt_func_t func;
     if (tensor->op == GGML_OP_MUL_MAT) {
@@ -124,20 +139,119 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        }
    }
    switch (tensor->op) {
-      case GGML_OP_REPEAT:
-          //func = ggml_xrt_repeat;
-          break;
-      case GGML_OP_GET_ROWS:
-          //func = ggml_xrt_get_rows;
-          break;
-      case GGML_OP_DUP:
-          //func = ggml_xrt_dup;
-          break;
-      case GGML_OP_ADD:
-          //func = ggml_xrt_add;
-          break;
-       default:
-          return false;
-   }
+        case GGML_OP_REPEAT:
+            //func = ggml_xrt_repeat;
+            //break;
+        case GGML_OP_GET_ROWS:
+            //func = ggml_xrt_get_rows;
+            //break;
+        case GGML_OP_DUP:
+            //func = ggml_xrt_dup;
+            //break;
+        case GGML_OP_ADD:
+            //func = ggml_xrt_add;
+            //break;
+        case GGML_OP_ACC:
+            //func = ggml_xrt_acc;
+            //break;
+        case GGML_OP_MUL:
+            //func = ggml_xrt_mul;
+            //break;
+        case GGML_OP_DIV:
+            //func = ggml_xrt_div;
+            //break;
+        case GGML_OP_UNARY:
+            switch (ggml_get_unary_op(tensor)) {
+                case GGML_UNARY_OP_GELU:
+                    //func = ggml_xrt_gelu;
+                    //break;
+                case GGML_UNARY_OP_SILU:
+                    //func = ggml_xrt_silu;
+                    //break;
+                case GGML_UNARY_OP_GELU_QUICK:
+                    //func = ggml_xrt_gelu_quick;
+                    //break;
+                case GGML_UNARY_OP_TANH:
+                    //func = ggml_xrt_tanh;
+                    //break;
+                case GGML_UNARY_OP_RELU:
+                    //func = ggml_xrt_relu;
+                    //break;
+                default:
+                    return false;
+            }
+            break;
+        case GGML_OP_NORM:
+            //func = ggml_xrt_norm;
+            //break;
+        case GGML_OP_GROUP_NORM:
+            //func = ggml_xrt_group_norm;
+            //break;
+        case GGML_OP_CONCAT:
+            //func = ggml_xrt_concat;
+            //break;
+        case GGML_OP_UPSCALE:
+            //func = ggml_xrt_upscale;
+            //break;
+        case GGML_OP_PAD:
+            //func = ggml_xrt_pad;
+            //break;
+        case GGML_OP_LEAKY_RELU:
+            //func = ggml_xrt_leaky_relu;
+            //break;
+        case GGML_OP_RMS_NORM:
+            //func = ggml_xrt_rms_norm;
+            //break;
+        case GGML_OP_MUL_MAT:
+            func = ggml_xrt_mul_mat;
+            break;
+        case GGML_OP_MUL_MAT_ID:
+            func = ggml_xrt_mul_mat;
+            break;
+        case GGML_OP_SCALE:
+            //func = ggml_xrt_scale;
+            //break;
+        case GGML_OP_SQR:
+            //func = ggml_xrt_sqr;
+            //break;
+        case GGML_OP_CLAMP:
+            //func = ggml_xrt_clamp;
+            //break;
+        case GGML_OP_CPY:
+            //func = ggml_xrt_cpy;
+            //break;
+        case GGML_OP_CONT:
+            //func = ggml_xrt_dup;
+            //break;
+        case GGML_OP_NONE:
+        case GGML_OP_RESHAPE:
+        case GGML_OP_VIEW:
+        case GGML_OP_PERMUTE:
+        case GGML_OP_TRANSPOSE:
+            //func = ggml_xrt_nop;
+            //break;
+        case GGML_OP_DIAG_MASK_INF:
+            //func = ggml_xrt_diag_mask_inf;
+            //break;
+        case GGML_OP_SOFT_MAX:
+            //func = ggml_xrt_soft_max;
+            //break;
+        case GGML_OP_ROPE:
+            //func = ggml_xrt_rope;
+            //break;
+        case GGML_OP_ALIBI:
+            //func = ggml_xrt_alibi;
+            //break;
+        case GGML_OP_IM2COL:
+            //func = ggml_xrt_im2col;
+            //break;
+        case GGML_OP_SUM_ROWS:
+            //func = ggml_xrt_sum_rows;
+            //break;
+        case GGML_OP_ARGSORT:
+            //func = ggml_xrt_argsort;
+            //break;
+        default:
+            return false;
    return true;
 }

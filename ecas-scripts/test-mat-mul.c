@@ -95,11 +95,24 @@ void vec_dot_gq_4 (const int n, float * restrict s, const float * restrict x, co
     *s = sumf;
 }
 
-void mul_mat_gq_4(const void * src0, const float * src1, float * dst, int m, int n, int k) {
+void mul_mat_gq_4(const float * src0, const float * src1, float * dst, int m, int n, int k) {
     assert(k % QK == 0);
     for (int ir0 = 0; ir0 < m; ir0++) {
         for (int ir1 = 0; ir1 < n; ir1++) {
             vec_dot_gq_4(k, dst + ir1, src0, src1);
+            src1 = (const char *) src1 + quantize_4_row_size(k);
+        }
+        src0 = (const char *) src0 +   quantize_4_row_size(k);
+        src1 = (const char *) src1 - n*quantize_4_row_size(k);
+        dst = (float *) dst + n;
+    }
+}
+
+void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, int n, int k) {
+    assert(k % QK == 0);
+    for (int ir0 = 0; ir0 < m; ir0++) {
+        for (int ir1 = 0; ir1 < n; ir1++) {
+            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, src0, k, src1, n, 0.0f, dst, n);
             src1 = (const char *) src1 + quantize_4_row_size(k);
         }
         src0 = (const char *) src0 +   quantize_4_row_size(k);
@@ -194,7 +207,7 @@ int main(int argc, const char ** argv) {
 
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, src0, k, src1, n, 0.0f, dst, n);
+            mul_mat_blas(src0, src1, dst, m, n, k);
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
@@ -204,7 +217,7 @@ int main(int argc, const char ** argv) {
 
     if (method == 1) {
         #ifdef GGML_USE_OPENBLAS
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, src0, k, src1, n, 0.0f, dst, n);
+            mul_mat_blas(src0, src1, dst, m, n, k);
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
