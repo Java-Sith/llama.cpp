@@ -108,6 +108,7 @@ void mul_mat_gq_4(const float * src0, const float * src1, float * dst, int m, in
     }
 }
 
+#ifdef GGML_USE_OPENBLAS
 void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, int n, int k) {
     assert(k % QK == 0);
     for (int ir0 = 0; ir0 < m; ir0++) {
@@ -120,6 +121,7 @@ void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, in
         dst = (float *) dst + n;
     }
 }
+#endif
 
 void printMatrix(float *matrix, int M, int N) {
     // Print matrix contents
