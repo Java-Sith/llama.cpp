@@ -257,5 +257,10 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             //break;
         default:
             return false;
-   return true;
+    }
+    if (params->ith != 0) {
+        return true;
+    }
+    func(tensor->src[0], tensor->src[1], tensor);
+    return true;
 }
