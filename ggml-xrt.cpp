@@ -3,6 +3,10 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+const int M = 1280;
+const int N = 1536;
+const int K = 1280;
+
 // Function to allocate memory for a matrix of size rows x cols
 float** allocateMatrix(int rows, int cols) {
     float** matrix = new float*[rows];
@@ -116,16 +120,16 @@ void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k) {
 }
 
 void ggml_xrt_mul_mat(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst) {
-  float** matrix1 = allocateMatrix(m, k);
-  float** matrix2 = allocateMatrix(k, n);
-  initializeMatrix(matrix1, m, k);
-  initializeMatrix(matrix2, k, n);
-  float** resultMatrix = matrixMultiplication(matrix1, matrix2, m, k, n);
+  float** matrix1 = allocateMatrix(M, K);
+  float** matrix2 = allocateMatrix(K, N);
+  initializeMatrix(matrix1, M, K);
+  initializeMatrix(matrix2, K, N);
+  float** resultMatrix = matrixMultiplication(matrix1, matrix2, M, K, N);
   std::cout << "Resultant Matrix:" << std::endl;
-  printMatrix(resultMatrix, m, n);
-  deallocateMatrix(matrix1, m);
-  deallocateMatrix(matrix2, k);
-  deallocateMatrix(resultMatrix, m);
+  printMatrix(resultMatrix, M, N);
+  deallocateMatrix(matrix1, M);
+  deallocateMatrix(matrix2, K);
+  deallocateMatrix(resultMatrix, M);
 }
 
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
