@@ -636,7 +636,7 @@ ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h
 ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o ggml-xrt.o
+OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o 
 
 llama.o: llama.cpp ggml.h ggml-alloc.h ggml-backend.h ggml-cuda.h ggml-metal.h llama.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -895,17 +895,17 @@ test-xrt: ecas-scripts/test-xrt.cpp ggml.o ggml-xrt.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-test-mat-mul: ecas-scripts/test-mat-mul.c ggml.o ggml-alloc.o ggml-backend.o ggml-quants.o
+test-mat-mul: ecas-scripts/test-mat-mul.c ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) -lm
 
-test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.o ggml-alloc.o ggml-backend.o ggml-quants.o
+test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.c ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) -lm
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) -lm
 
 tests/test-model-load-cancel: tests/test-model-load-cancel.cpp ggml.o llama.o tests/get-model.cpp $(COMMON_DEPS) $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
