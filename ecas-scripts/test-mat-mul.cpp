@@ -1,4 +1,5 @@
-#include "ggml.h"
+#include <iostream>
+#include <string>
 #include "mat-mul.h"
 
 #if defined(GGML_USE_OPENBLAS)
@@ -16,7 +17,7 @@ void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, in
 }
 #endif
 
-int main(int argc, const char ** argv) {
+int main(int argc, char* argv[]) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
     int m = M, n = N, k = K;
 
@@ -31,7 +32,7 @@ int main(int argc, const char ** argv) {
 
     int method = 0;
     if (argc > 1) {
-        method = atoi(argv[1]);
+        method = std::stoi(argv[1]);
     }
 
     const int64_t start = ggml_cycles();
