@@ -898,7 +898,7 @@ test-xrt: ecas-scripts/test-xrt.cpp ggml.o ggml-xrt.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-test-mat-mul: ecas-scripts/test-mat-mul.c ggml.o $(OBJS)
+test-mat-mul: ecas-scripts/test-mat-mul.c ggml.o ggml-alloc.o ggml-backend.o ggml-quants.o mat-mul.o
 	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) -lm
 
