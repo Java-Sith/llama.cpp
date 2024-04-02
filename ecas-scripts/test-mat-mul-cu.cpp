@@ -3,9 +3,7 @@
 #include "mat-mul.h"
 
 #if defined(GGML_USE_HIPBLAS)
-#include <hip/hip_runtime.h>
-#include <hipblas/hipblas.h>
-#include <hip/hip_fp16.h>
+#include "ggml-cuda.h"
 #endif
 
 const int M = 1280;
@@ -65,7 +63,7 @@ int main(int argc, char* argv[]) {
     float * src0  = loadMatrixFromFile(m, k, "ecas-scripts/tensor1.txt");
     float * src1  = loadMatrixFromFile(k, n, "ecas-scripts/tensor2.txt");
     float* dst = loadMatrix(m, n);
-    
+
     double iM = 1.0/m;
     double sum = 0.0f;
 
