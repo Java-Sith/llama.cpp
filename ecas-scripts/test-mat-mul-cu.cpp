@@ -3,7 +3,13 @@
 #include "mat-mul.h"
 
 #if defined(GGML_USE_HIPBLAS)
-#include "ggml-cuda.h"
+#include <hip/hip_runtime.h>
+#include <hipblas/hipblas.h>
+#include <hip/hip_fp16.h>
+#ifdef __HIP_PLATFORM_AMD__
+// for rocblas_initialize()
+#include "rocblas/rocblas.h"
+#endif // __HIP_PLATFORM_AMD__
 #endif
 
 const int M = 1280;
