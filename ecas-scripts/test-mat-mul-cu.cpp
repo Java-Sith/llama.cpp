@@ -75,14 +75,14 @@ int main(int argc, char* argv[]) {
 
     #if defined(GGML_USE_HIPBLAS)
         // allocate memory on device
-        float *dsrc_0, *dsrc_1, *ddst;
-        CHECK_HIP_ERROR(hipMalloc(&dsrc_0, M * K * sizeof(float)));
-        CHECK_HIP_ERROR(hipMalloc(&dsrc_1, N * K * sizeof(float)));
+        float *dsrc0, *dsrc1, *ddst;
+        CHECK_HIP_ERROR(hipMalloc(&dsrc0, M * K * sizeof(float)));
+        CHECK_HIP_ERROR(hipMalloc(&dsrc1, N * K * sizeof(float)));
         CHECK_HIP_ERROR(hipMalloc(&ddst, M * N * sizeof(float)));
 
         // copy matrices from host to device
-        CHECK_HIP_ERROR(hipMemcpy(dsrc_0, src_0, sizeof(float) * M * K, hipMemcpyHostToDevice));
-        CHECK_HIP_ERROR(hipMemcpy(dsrc_1, src_1, sizeof(float) * N * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(dsrc0, src0, sizeof(float) * M * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(dsrc1, src1, sizeof(float) * N * K, hipMemcpyHostToDevice));
         CHECK_HIP_ERROR(hipMemcpy(ddst, dst, sizeof(float) * M * N, hipMemcpyHostToDevice));
 
         hipblasHandle_t handle;
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
     if (method == 0) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
-        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc0, m, dsrc1, k, &beta, ddst, m));
             CHECK_HIP_ERROR(hipMemcpy(dst, ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     if (method == 1) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
-        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
+        hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc0, m, dsrc1, k, &beta, ddst, m));
             CHECK_HIP_ERROR(hipMemcpy(dst, ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
