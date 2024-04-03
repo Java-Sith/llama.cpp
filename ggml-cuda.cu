@@ -30,8 +30,6 @@
 #define cublasComputeType_t cudaDataType_t
 #endif // CUDART_VERSION < 11020
 
-#endif // defined(GGML_USE_HIPBLAS)
-
 #define CUDART_HMAX     11070 // CUDA 11.7, min. ver. for which __hmax and __hmax2 are known to work (may be higher than needed)
 
 #define CC_PASCAL     600

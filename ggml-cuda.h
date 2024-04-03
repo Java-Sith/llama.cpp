@@ -104,6 +104,7 @@
 #include <cuda.h>
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
+#endif // defined(GGML_USE_HIPBLAS)
 
 #ifdef  __cplusplus
 extern "C" {
