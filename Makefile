@@ -904,6 +904,7 @@ test-mat-mul: ecas-scripts/test-mat-mul.cpp ggml.o $(OBJS)
 
 ifdef LLAMA_HIPBLAS
 GPUFLAGS := -I$(ROCM_PATH)/include -I$(ROCM_PATH)/hipblas/include
+GPUFLAGS += -D__HIP_PLATFORM_AMD__
 test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
