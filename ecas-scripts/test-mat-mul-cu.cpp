@@ -81,9 +81,9 @@ int main(int argc, char* argv[]) {
         CHECK_HIP_ERROR(hipMalloc(&ddst, M * N * sizeof(float)));
 
         // copy matrices from host to device
-        CHECK_HIP_ERROR(hipMemcpy(dsrc_0, src_0.data(), sizeof(float) * M * K, hipMemcpyHostToDevice));
-        CHECK_HIP_ERROR(hipMemcpy(dsrc_1, src_1.data(), sizeof(float) * N * K, hipMemcpyHostToDevice));
-        CHECK_HIP_ERROR(hipMemcpy(ddst, dst.data(), sizeof(float) * M * N, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(dsrc_0, src_0, sizeof(float) * M * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(dsrc_1, src_1, sizeof(float) * N * K, hipMemcpyHostToDevice));
+        CHECK_HIP_ERROR(hipMemcpy(ddst, dst, sizeof(float) * M * N, hipMemcpyHostToDevice));
 
         hipblasHandle_t handle;
         CHECK_HIPBLAS_ERROR(hipblasCreate(&handle));
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
-            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
+            CHECK_HIP_ERROR(hipMemcpy(dst, ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
         #if defined(GGML_USE_HIPBLAS)
             CHECK_HIPBLAS_ERROR(
         hipblasSgemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, m, n, k, &alpha, dsrc_0, m, dsrc_1, k, &beta, ddst, m));
-            CHECK_HIP_ERROR(hipMemcpy(dst.data(), ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
+            CHECK_HIP_ERROR(hipMemcpy(dst, ddst, sizeof(float) * m * n, hipMemcpyDeviceToHost));
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
