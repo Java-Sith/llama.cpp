@@ -139,8 +139,8 @@ int main(int argc, char* argv[]) {
     printf("%f\n", sum);
 
     #if defined(GGML_USE_HIPBLAS)
-        CHECK_HIP_ERROR(hipFree(dsrc_0));
-        CHECK_HIP_ERROR(hipFree(dsrc_1));
+        CHECK_HIP_ERROR(hipFree(dsrc0));
+        CHECK_HIP_ERROR(hipFree(dsrc1));
         CHECK_HIP_ERROR(hipFree(ddst));
         CHECK_HIPBLAS_ERROR(hipblasDestroy(handle));
     #endif
