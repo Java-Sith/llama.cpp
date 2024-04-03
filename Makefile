@@ -902,9 +902,15 @@ test-mat-mul: ecas-scripts/test-mat-mul.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
+ifdef LLAMA_HIPBLAS
+test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $(HIPFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+	$(CXX) $(CXXFLAGS) $(HIPFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+else
 test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+endif #LLAMA_HIPBLAS
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
