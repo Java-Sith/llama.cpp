@@ -26,7 +26,7 @@ typedef struct {
 } block_q4_1;
 static_assert(sizeof(block_q4_1) == 2 * sizeof(ggml_fp16_t) + QK4_1 / 2, "wrong q4_1 block size/padding");*/
 
-typedef void (*ggml_xrt_func_t)(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst);
+typedef void (*ggml_xrt_func_t)(const struct ggml_tensor * src0, const struct ggml_tensor * src1, struct ggml_tensor * dst);
 
 //void quantize_row_q4_0(const float * x, block_q4_0 * y, int k);
 //void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k);
