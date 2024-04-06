@@ -2,6 +2,8 @@
 #define DIM1 1280
 #define DIM2 1536
 #define DIM3 1280
+#include <vector>
+#include <iostream>
 
 int main() {
     int m = DIM1, n = DIM2, k = DIM3;
