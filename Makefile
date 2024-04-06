@@ -574,7 +574,7 @@ endif # LLAMA_MPI
 
 ifdef LLAMA_XRT
 	MK_CPPFLAGS += -DGGML_USE_XRT
-	OBJS        += ggml-cuda.o
+	OBJS        += ggml-xrt.o
 ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 endif #LLAMA_XRT
