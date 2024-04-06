@@ -64,7 +64,7 @@ void printMatrix(float** matrix, int rows, int cols) {
     }
 }
 
-void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k) {
+/*void quantize_row_q4_0_reference(const float * x, block_q4_0 * y, int k) {
   static const int qk = QK4_0;
   assert(k % qk == 0);
   const int nb = k / qk;
@@ -119,7 +119,7 @@ void dequantize_row_q4_0(const block_q4_0 * x, float * y, int k) {
             y[i*qk + j + qk/2] = x1*d;
         }
     }
-}
+}*/
 
 void ggml_xrt_mul_mat(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst) {
   float** matrix1 = allocateMatrix(M, K);
