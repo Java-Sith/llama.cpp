@@ -132,6 +132,16 @@ void ggml_xrt_mul_mat(const ggml_tensor * src0, const ggml_tensor * src1, ggml_t
   deallocateMatrix(resultMatrix, M);
 }
 
+void ggml_init_xrt() {
+    static bool initialized = false;
+    if (!initialized)
+    {
+        initialized = true;
+    }
+    printf("%d", initialized); // prints 1
+    printf("\n");
+}
+
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     ggml_xrt_func_t func;
     if (tensor->op == GGML_OP_MUL_MAT) {

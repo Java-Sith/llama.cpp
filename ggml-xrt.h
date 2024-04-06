@@ -39,3 +39,4 @@ void initializeMatrix(float** matrix, int rows, int cols);
 float** matrixMultiplication(float** mat1, float** mat2, int rows1, int cols1, int cols2);
 void printMatrix(float** matrix, int rows, int cols);
 GGML_API bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor);
+GGML_API void ggml_init_xrt(void);

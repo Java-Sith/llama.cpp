@@ -572,6 +572,13 @@ ggml-mpi.o: ggml-mpi.c ggml-mpi.h
 	$(CC) $(CFLAGS) -c $< -o $@
 endif # LLAMA_MPI
 
+ifdef LLAMA_XRT
+	MK_CPPFLAGS += -DGGML_USE_XRT
+	OBJS        += ggml-cuda.o
+ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+endif #LLAMA_XRT
+
 GF_CC := $(CC)
 include scripts/get-flags.mk
 
@@ -633,13 +640,10 @@ ggml-backend.o: ggml-backend.c ggml.h ggml-backend.h
 ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h
 	$(CC) $(CFLAGS)    -c $< -o $@
 
-ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
 mat-mul.o: ecas-scripts/mat-mul.c ggml.h ecas-scripts/mat-mul.h
 	$(CC) $(CFLAGS)    -c $< -o $@
 
-OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o ggml-xrt.o mat-mul.o
+OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o mat-mul.o
 
 llama.o: llama.cpp ggml.h ggml-alloc.h ggml-backend.h ggml-cuda.h ggml-metal.h llama.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
