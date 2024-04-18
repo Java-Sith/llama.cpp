@@ -3,7 +3,7 @@ BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
 	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
-	test-xrt test-mat-mul test-mat-mul-cu
+	test-mat-mul test-mat-mul-cu
 
 # Binaries only useful for tests
 TEST_TARGETS = \
@@ -575,6 +575,9 @@ endif # LLAMA_MPI
 ifdef LLAMA_XRT
 	MK_CPPFLAGS += -DGGML_USE_XRT
 	OBJS        += ggml-xrt.o
+endif
+
+ifdef LLAMA_XRT
 ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 endif #LLAMA_XRT
@@ -892,10 +895,6 @@ tests/test-tokenizer-1-llama: tests/test-tokenizer-1-llama.cpp ggml.o llama.o $(
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-rope: tests/test-rope.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-
-test-xrt: ecas-scripts/test-xrt.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 

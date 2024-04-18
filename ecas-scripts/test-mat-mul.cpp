@@ -57,12 +57,14 @@ int main(int argc, char* argv[]) {
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
+    
+    const int64_t end_us = ggml_time_us();
+    
     for (int i = 0; i < n; i++) {
         sum += dst[i]*iM;
     }
 
     const int64_t end = ggml_cycles();
-    const int64_t end_us = ggml_time_us();
 
     for (int i = 0; i < 16; ++i) {
         printf("%f\n", dst[i]);
