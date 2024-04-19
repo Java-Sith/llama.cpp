@@ -15388,6 +15388,13 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         return;
     }
 #endif // GGML_USE_SYCL
+
+#ifdef GGML_USE_XRT
+    bool skip_cpu = ggml_xrt_compute_forward(params, tensor);
+    if (skip_cpu) {
+        return;
+    }
+#endif // GGML_USE_XRT
 #ifdef CLOCK
     start = clock();
 #endif

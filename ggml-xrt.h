@@ -47,7 +47,6 @@ GGML_API ggml_backend_t ggml_backend_xrt_init(int device);
 GGML_API ggml_backend_buffer_type_t ggml_backend_xrt_buffer_type(int device);
 GGML_API ggml_backend_buffer_type_t ggml_backend_xrt_host_buffer_type(void);
 GGML_API void   ggml_backend_xrt_print_xrt_devices(void);
-GGML_API GGML_CALL void   ggml_xrt_get_gpu_list(int *id_list, int max_len);
 GGML_API GGML_CALL void   ggml_xrt_get_device_description(int device, char *description, size_t description_size);
 #ifdef  __cplusplus
 }
