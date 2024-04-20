@@ -6655,6 +6655,40 @@ struct ggml_tensor * ggml_cross_entropy_loss_back(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int get_tensor_dimensions(const ggml_tensor* tensor) {
+    int dimensions = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (tensor->ne[i] != 0) {
+            dimensions++;
+        }
+    }
+    return dimensions;
+}
+
+void save_tensor_info(const char* filename, const ggml_tensor* tensor) {
+    std::ofstream file(filename);
+
+    // Guardar el tipo de datos
+    file << "Tipo de datos: " << tensor->type << "\n";
+
+    // Guardar las dimensiones
+    file << "Dimensiones: ";
+    for (int i = 0; i < 4; ++i) {
+        file << tensor->ne[i] << " ";
+    }
+    file << "\n";
+
+    // Guardar los datos
+    file << "Datos: ";
+    for (int i = 0; i < tensor->ne[0]; ++i) {
+        file << ggml_get_f32_1d(tensor, i) << " ";
+    }
+    file << "\n";
+
+    file.close();
+}
+
+
 void ggml_set_param(
         struct ggml_context * ctx,
         struct ggml_tensor * tensor) {
@@ -8343,43 +8377,6 @@ static void ggml_compute_forward_mul(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
-
-    // Guarda el tipo de dato y las dimensiones del tensor dst
-  	FILE *dst_file = fopen("dst.txt", "w");
-  	fprintf(dst_file, "Tipo de dato: %d\n", dst->type);
-  	fprintf(dst_file, "Dimensiones: ");
-  	for (int i = 0; i < GGML_MAX_DIMS; i++) {
-      	fprintf(dst_file, "%lld ", dst->ne[i]);
-  	}
-  	fprintf(dst_file, "\n");
-  	fclose(dst_file);
-
-    // Guarda el tipo de dato y las dimensiones de los tensores src0 y src1
-  	FILE *src0_file = fopen("src0.txt", "w");
-  	fprintf(src0_file, "Tipo de dato: %d\n", src0->type);
-  	fprintf(src0_file, "Dimensiones: ");
-  	for (int i = 0; i < GGML_MAX_DIMS; i++) {
-      	fprintf(src0_file, "%lld ", src0->ne[i]);
-  	}
-  	fprintf(src0_file, "\n");
-  	fclose(src0_file);
-
-  	FILE *src1_file = fopen("src1.txt", "w");
-  	fprintf(src1_file, "Tipo de dato: %d\n", src1->type);
-  	fprintf(src1_file, "Dimensiones: ");
-  	for (int i = 0; i < GGML_MAX_DIMS; i++) {
-      	fprintf(src1_file, "%lld ", src1->ne[i]);
-  	}
-  	fprintf(src1_file, "\n");
-  	fclose(src1_file);
-
-  	// Guarda los parámetros de entrada
-  	FILE *params_file = fopen("params.txt", "w");
-  	fprintf(params_file, "Tipo de tarea: %d\n", params->type);
-  	fprintf(params_file, "Índice de la tarea: %d\n", params->ith);
-  	fprintf(params_file, "Número total de tareas: %d\n", params->nth);
-  	fclose(params_file);
-
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32 && "only f32 src1 supported for now");
 

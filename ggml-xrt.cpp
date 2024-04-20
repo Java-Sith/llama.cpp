@@ -3388,7 +3388,7 @@ int ggml_xrt_get_device_count() {
 
 GGML_API GGML_CALL void ggml_xrt_get_device_description(int device, char *description,
                                       size_t description_size) {
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3410,7 +3410,7 @@ struct ggml_backend_xrt_buffer_context {
     ggml_backend_xrt_buffer_context(int device, void * dev_ptr) : device(device), dev_ptr(dev_ptr) {}
 
     ~ ggml_backend_xrt_buffer_context() {
-        
+
     }
 
 };
@@ -3473,7 +3473,7 @@ static void ggml_backend_xrt_buffer_set_tensor(ggml_backend_buffer_t buffer,
                                                 ggml_tensor *tensor,
                                                 const void *data, size_t offset,
                                                 size_t size) {
-    
+
     GGML_ASSERT(tensor->backend == GGML_BACKEND_XRT);
 
     ggml_backend_xrt_buffer_context * ctx = ( ggml_backend_xrt_buffer_context *)buffer->context;
@@ -3501,7 +3501,7 @@ static void ggml_backend_xrt_buffer_get_tensor(ggml_backend_buffer_t buffer,
 
 static void ggml_backend_xrt_buffer_clear(ggml_backend_buffer_t buffer,
                                         uint8_t value) {
-     
+
     ggml_backend_xrt_buffer_context * ctx = ( ggml_backend_xrt_buffer_context *)buffer->context;
     ggml_xrt_set_device(ctx->device);
     int device_index = get_device_index_by_id(ctx->device);
@@ -3535,7 +3535,7 @@ GGML_CALL static const char * ggml_backend_xrt_buffer_type_name(ggml_backend_buf
 static ggml_backend_buffer_t
 ggml_backend_xrt_buffer_type_alloc_buffer(ggml_backend_buffer_type_t buft,
                                            size_t size) {
-    
+
     ggml_backend_xrt_buffer_context * buft_ctx = (ggml_backend_xrt_buffer_context *)buft->context;
     int device = (int) buft_ctx->device;
 
