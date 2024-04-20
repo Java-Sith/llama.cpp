@@ -1443,7 +1443,7 @@ static ggml_backend_buffer_type_t llama_default_buffer_type_offload(int gpu) {
 #elif defined(GGML_USE_CLBLAST)
     buft = ggml_backend_opencl_buffer_type();
 #elif defined(GGML_USE_XRT)
-    buft = ggml_backend_xrt_buffer_type();
+    buft = ggml_backend_xrt_buffer_type(0);
 #elif defined(GGML_USE_KOMPUTE)
     buft = ggml_backend_kompute_buffer_type(gpu);
     if (buft == nullptr) {

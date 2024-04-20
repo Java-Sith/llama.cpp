@@ -6655,7 +6655,7 @@ struct ggml_tensor * ggml_cross_entropy_loss_back(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int get_tensor_dimensions(const ggml_tensor* tensor) {
+int get_tensor_dimensions(const struct ggml_tensor* tensor) {
     int dimensions = 0;
     for (int i = 0; i < 4; ++i) {
         if (tensor->ne[i] != 0) {
@@ -6665,7 +6665,7 @@ int get_tensor_dimensions(const ggml_tensor* tensor) {
     return dimensions;
 }
 
-void save_tensor_info(const char* filename, const ggml_tensor* tensor) {
+/*void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
     std::ofstream file(filename);
 
     // Guardar el tipo de datos
@@ -6686,7 +6686,7 @@ void save_tensor_info(const char* filename, const ggml_tensor* tensor) {
     file << "\n";
 
     file.close();
-}
+}*/
 
 
 void ggml_set_param(
@@ -7411,7 +7411,7 @@ static void ggml_compute_forward_dup_bytes(
     }
 }
 
-static void ggml_compute_forward_dup(
+void ggml_compute_forward_dup(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -7745,7 +7745,7 @@ static void ggml_compute_forward_add_q_f32(
     }
 }
 
-static void ggml_compute_forward_add(
+void ggml_compute_forward_add(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -8371,7 +8371,7 @@ static void ggml_compute_forward_mul_f32(
     }
 }
 
-static void ggml_compute_forward_mul(
+void ggml_compute_forward_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -9994,7 +9994,7 @@ static void ggml_compute_forward_rms_norm_f32(
     }
 }
 
-static void ggml_compute_forward_rms_norm(
+void ggml_compute_forward_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -10318,7 +10318,7 @@ static bool ggml_compute_forward_mul_mat_use_blas(struct ggml_tensor * dst) {
 }
 #endif
 
-static void ggml_compute_forward_mul_mat(
+void ggml_compute_forward_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
@@ -11462,7 +11462,7 @@ static void ggml_compute_forward_get_rows_f32(
     }
 }
 
-static void ggml_compute_forward_get_rows(
+void ggml_compute_forward_get_rows(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -11915,7 +11915,7 @@ static void ggml_compute_forward_soft_max_f32(
     }
 }
 
-static void ggml_compute_forward_soft_max(
+void ggml_compute_forward_soft_max(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
@@ -12685,7 +12685,7 @@ static void ggml_compute_forward_rope_f16(
     }
 }
 
-static void ggml_compute_forward_rope(
+void ggml_compute_forward_rope(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -14698,7 +14698,7 @@ static void ggml_compute_forward_win_unpart(
 
 //gmml_compute_forward_unary
 
-static void ggml_compute_forward_unary(
+void ggml_compute_forward_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 

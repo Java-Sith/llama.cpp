@@ -1884,6 +1884,42 @@ extern "C" {
             struct ggml_tensor          * b,
             struct ggml_tensor          * c);
 
+        void ggml_compute_forward_add(
+        const struct ggml_compute_params * params,
+        struct ggml_tensor * dst);
+
+        void ggml_compute_forward_mul_mat(
+        const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
+        void ggml_compute_forward_soft_max(
+        const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
+        void ggml_compute_forward_get_rows(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst); 
+        
+        void ggml_compute_forward_dup(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst);
+
+        void ggml_compute_forward_rms_norm(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst);
+
+        void ggml_compute_forward_rope(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst);
+        
+        void ggml_compute_forward_mul(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst);
+        
+        void ggml_compute_forward_unary(
+        const struct ggml_compute_params * params,
+                struct ggml_tensor * dst);
+
     //
     // automatic differentiation
     //
