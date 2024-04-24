@@ -6655,39 +6655,6 @@ struct ggml_tensor * ggml_cross_entropy_loss_back(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int get_tensor_dimensions(const struct ggml_tensor* tensor) {
-    int dimensions = 0;
-    for (int i = 0; i < 4; ++i) {
-        if (tensor->ne[i] != 0) {
-            dimensions++;
-        }
-    }
-    return dimensions;
-}
-
-/*void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
-    std::ofstream file(filename);
-
-    // Guardar el tipo de datos
-    file << "Tipo de datos: " << tensor->type << "\n";
-
-    // Guardar las dimensiones
-    file << "Dimensiones: ";
-    for (int i = 0; i < 4; ++i) {
-        file << tensor->ne[i] << " ";
-    }
-    file << "\n";
-
-    // Guardar los datos
-    file << "Datos: ";
-    for (int i = 0; i < tensor->ne[0]; ++i) {
-        file << ggml_get_f32_1d(tensor, i) << " ";
-    }
-    file << "\n";
-
-    file.close();
-}*/
-
 
 void ggml_set_param(
         struct ggml_context * ctx,
