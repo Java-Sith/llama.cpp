@@ -227,7 +227,10 @@ static void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    save_tensor_info("Matmul.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+    save_tensor_info("Matmul1.txt", src0);
+    save_tensor_info("Matmul2.txt", src1);
     ggml_compute_forward_mul_mat(params, dst);
 }
 

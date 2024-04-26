@@ -3,15 +3,15 @@ For accesing server:
  lprieto@inf-systems.ethz.ch
  password
  ssh lprieto@hacc-box-02
- ssh lprieto@alveo-u250-01
+ ssh lprieto@alveo-u250-03
  ls
  cd /pub/scratch/lprieto
  ls
  
 For LLAMA repo:
  git clone https://github.com/ECASLab/llama.cpp
- git checkout feature/add-instrumentation
  cd llama.cpp
+ git checkout feature/add-instrumentation
  export HIP_VISIBLE_DEVICES=1 
  make LLAMA_CLOCK=1 OR make LLAMA_HIPBLAS=1 LLAMA_CLOCK=1 -j
  cd models
@@ -23,14 +23,18 @@ For LLAMA repo:
  rm -rf llama.cpp
 
 For XRT repo:
+ source /tools/Xilinx/Vitis/2022.1/settings64.sh
+ source /opt/xilinx/xrt/setup.sh
  git clone https://github.com/Java-Sith/Vitis_Accel_Examples/
  cd Vitis_Accel_Examples
  git checkout 2022.1
  # branch: 2022.1
- cd host_xrt/hello_world_xrt
+ cd cpp_kernels/XRT-MatMul OR cd cpp_kernels/hw-matmul-elementwise
  make all TARGET=hw PLATFORM=xilinx_u250_gen3x16_xdma_4_1_202210_1 EDGE_COMMON_SW=src
  make host TARGET=hw PLATFORM=xilinx_u250_gen3x16_xdma_4_1_202210_1 EDGE_COMMON_SW=src
- ./hello_world_xrt -x build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/vadd.xclbin
+ ./ad08 ../HW/package.hw/kernels.xclbin 1280 1536 1280
+ cd ..
+ rm -rf Vitis_Accel_Examples
 
 For Vitis repo:
  git clone https://github.com/Java-Sith/Vitis_Libraries.git
@@ -43,6 +47,8 @@ For GGML repo:
  cd ggml/tests
  mkdir build
  cd build
- cmake ..
- cmake --build . --config Release (?)
- ./tests/test-mul-mat2 1 (?)
+ cmake -DCMAKE_INSTALL_PREFIX=~/Documentos/ggml -DCMAKE_BINARY_DIR=~/Documentos/ggml ..
+ make install
+ make
+ cd bin
+ ./test-mul-mat2 4 (?)
