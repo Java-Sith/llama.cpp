@@ -181,7 +181,7 @@ static void ggml_xrt_get_rows(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Get Rows.txt", dst);
+    //save_tensor_info("Get Rows.txt", dst);
     ggml_compute_forward_get_rows(params, dst);
 
     //static bool first = true;
