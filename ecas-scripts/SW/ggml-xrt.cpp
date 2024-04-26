@@ -23,6 +23,9 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <cstdint>
+#include <cstring>
+
 #include <fstream>
 
 #include <stdio.h>
@@ -31,6 +34,11 @@
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
 #include "ggml-quants.h"
+
+// XRT includes
+#include "experimental/xrt_bo.h"
+#include "experimental/xrt_device.h"
+#include "experimental/xrt_kernel.h"
 
 #define MATRIX_ROW_PADDING 512
 #define UNUSED GGML_UNUSED
@@ -126,12 +134,7 @@ void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
     // Guardar los datos
     file << "Datos: ";
     for (int i = 0; i < tensor->ne[0]; ++i) {
-        if (get_tensor_dimensions(tensor) == 1) {
-            file << ggml_get_f32_1d(tensor, i) << " ";
-        }
-        else {
-            GGML_ASSERT(false);
-        }
+        file << ggml_get_f32_1d(tensor, i) << " ";
     }
     file << "\n";
 
@@ -234,10 +237,79 @@ static void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
-    save_tensor_info("Matmul.txt", dst);
-    //save_tensor_info("Matmul1.txt", src0);
-    //save_tensor_info("Matmul2.txt", src1);
-    ggml_compute_forward_mul_mat(params, dst);
+
+    save_tensor_info("Matmul1.txt", src0);
+    save_tensor_info("Matmul2.txt", src1);
+
+    GGML_TENSOR_BINARY_OP_LOCALS
+
+    const int ith = params->ith;
+    const int nth = params->nth;
+
+    const enum ggml_type type = src0->type;
+
+    const bool src1_cont = ggml_is_contiguous(src1);
+
+    GGML_ASSERT(ne0 == ne01);
+    GGML_ASSERT(ne1 == ne11);
+    GGML_ASSERT(ne2 == ne12);
+    GGML_ASSERT(ne3 == ne13);
+
+    // we don't support permuted src0 or src1
+    GGML_ASSERT(nb00 == ggml_type_size(type));
+    GGML_ASSERT(nb10 == ggml_type_size(src1->type));
+
+    // dst cannot be transposed or permuted
+    GGML_ASSERT(nb0 == sizeof(float));
+    GGML_ASSERT(nb0 <= nb1);
+    GGML_ASSERT(nb1 <= nb2);
+    GGML_ASSERT(nb2 <= nb3);
+
+    if (params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    const void * wdata    = params->wdata;
+    const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
+
+    const int64_t nr0 = ne01;          // src0 rows
+    const int64_t nr1 = ne1*ne12*ne13; // src1 rows
+
+    const int64_t nth0 = nr0 > nr1 ? nth : 1; // parallelize by src0 rows
+    const int64_t nth1 = nr0 > nr1 ? 1 : nth; // parallelize by src1 rows
+
+    const int64_t ith0 = ith % nth0;
+    const int64_t ith1 = ith / nth0;
+
+    const int64_t dr0 = (nr0 + nth0 - 1)/nth0;
+    const int64_t dr1 = (nr1 + nth1 - 1)/nth1;
+
+    const int64_t ir010 = dr0*ith0;
+    const int64_t ir011 = MIN(ir010 + dr0, nr0);
+
+    const int64_t ir110 = dr1*ith1;
+    const int64_t ir111 = MIN(ir110 + dr1, nr1);
+
+    if (ir010 >= ir011 || ir110 >= ir111) {
+        sched_yield();
+        return;
+    }
+
+    assert(ne12 % ne02 == 0);
+    assert(ne13 % ne03 == 0);
+
+    // block-tiling attempt
+    const int64_t blck_0 = 16;
+    const int64_t blck_1 = 16;
+
+    int64_t nrc = 1;
+    if ((nr0 % 2 != 0) || (ne11 % 2 != 0)) {
+        nrc = 1;
+    }
+
+    const size_t src1_col_stride = row_size;
+
+    
 }
 
 static void ggml_xrt_unary(
