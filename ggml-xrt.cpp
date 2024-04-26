@@ -112,6 +112,7 @@ int get_tensor_dimensions(const struct ggml_tensor* tensor) {
 
 void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
     std::ofstream file(filename);
+    std::cout << "Tipo de datos: " << tensor->type << "\n";
 
     // Guardar el tipo de datos
     file << "Tipo de datos: " << tensor->type << "\n";

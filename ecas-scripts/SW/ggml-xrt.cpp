@@ -310,12 +310,20 @@ static void ggml_xrt_mul_mat(
 
     const size_t src1_col_stride = row_size;
 
+    // Compute sizes
+    int size_a = a_rows * b_cols;
+    int size_b = c_cols * b_cols;
+    int size_c = a_rows * c_cols;
+
     auto device = xrt::device(device_index);
     auto uuid = device.load_xclbin(binaryFile);
     auto matmul = xrt::kernel(device, uuid, "matmul");
-    auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint16_t), matmul.group_id(0));
-    auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint16_t), matmul.group_id(1));
-    auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint16_t), matmul.group_id(2));
+    auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint32_t), matmul.group_id(0));
+    auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint32_t), matmul.group_id(1));
+    auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint32_t), matmul.group_id(2));
+    auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
+    auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
+    auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
 }
 
 static void ggml_xrt_unary(
