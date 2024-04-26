@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     std::cout << "Open the device" << device_index << std::endl;
     auto device = xrt::device(device_index);
     std::cout << "Load the xclbin " << binaryFile << std::endl;
-    auto uuid = device.load_xclbin(binaryFile);;
+    auto uuid = device.load_xclbin(binaryFile);
 
     auto matmul = xrt::kernel(device, uuid, "matmul");
     auto elementwise = xrt::kernel(device, uuid, "elementwise");

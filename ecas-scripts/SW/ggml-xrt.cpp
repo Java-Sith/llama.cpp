@@ -49,6 +49,7 @@ static int g_main_device = -1;
 static int g_main_device_index = -1;
 
 static bool g_xrt_loaded = false;
+using DataT = ap_fixed<32, 8>;
 
 bool ggml_xrt_loaded(void) {
     return g_xrt_loaded;
@@ -309,7 +310,12 @@ static void ggml_xrt_mul_mat(
 
     const size_t src1_col_stride = row_size;
 
-    
+    auto device = xrt::device(device_index);
+    auto uuid = device.load_xclbin(binaryFile);
+    auto matmul = xrt::kernel(device, uuid, "matmul");
+    auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint16_t), matmul.group_id(0));
+    auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint16_t), matmul.group_id(1));
+    auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint16_t), matmul.group_id(2));
 }
 
 static void ggml_xrt_unary(

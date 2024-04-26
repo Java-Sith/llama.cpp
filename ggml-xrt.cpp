@@ -142,7 +142,7 @@ static void ggml_xrt_dup(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Dup.txt", dst);
+    //save_tensor_info("Dup.txt", dst);
     ggml_compute_forward_dup(params, dst);
 }
 
@@ -153,7 +153,7 @@ static void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    save_tensor_info("Add.txt", dst);
+    //save_tensor_info("Add.txt", dst);
     ggml_compute_forward_add(params, dst);
 }
 
@@ -161,7 +161,7 @@ static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Mul.txt", dst);
+    //save_tensor_info("Mul.txt", dst);
     ggml_compute_forward_mul(params, dst);
 }
 
@@ -207,7 +207,7 @@ static void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("RMS Norm.txt", dst);
+    //save_tensor_info("RMS Norm.txt", dst);
 
     ggml_compute_forward_rms_norm(params, dst);
 }
@@ -216,7 +216,7 @@ static void ggml_xrt_rope(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Rope.txt", dst);
+    //save_tensor_info("Rope.txt", dst);
     ggml_compute_forward_rope(params, dst);
 }
 
@@ -224,7 +224,7 @@ static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    save_tensor_info("Softmax.txt", dst);
+    //save_tensor_info("Softmax.txt", dst);
     ggml_compute_forward_soft_max(params, dst);
 }
 
@@ -234,7 +234,7 @@ static void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
-    save_tensor_info("Matmul.txt", dst);
+    //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
     //save_tensor_info("Matmul2.txt", src1);
     ggml_compute_forward_mul_mat(params, dst);
@@ -244,7 +244,7 @@ static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    save_tensor_info("Unary.txt", dst);
+    //save_tensor_info("Unary.txt", dst);
     ggml_compute_forward_unary(params, dst);
 }
 
