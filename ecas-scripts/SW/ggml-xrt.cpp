@@ -332,7 +332,10 @@ static void ggml_xrt_mul_mat(
     if (ith != 0) {
         return;
     }
-
+    
+    int size_a = ne1*ne10;
+    int size_b = ne01*ne10;
+    int size_c = ne01*ne1;
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -353,14 +356,44 @@ static void ggml_xrt_mul_mat(
             auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
+            std::cout << "Filling Buffers\n";
+
+            for (int elem = 0; elem < size_a; ++elem) {
+                //std::cout << as.V << " ";
+                bo_a_mm_map[elem] = DataT{x[i]};
+            }
+            for (int elem = 0; elem < size_b; ++elem) {
+                //std::cout << as.V << " ";
+                bo_b_mm_map[elem] = DataT{y[i]};
+            }
+            for (int elem = 0; elem < size_c; ++elem) {
+                //std::cout << as.V << " ";
+                bo_c_mm_map[elem] = DataT{d[i]};
+            }
+            bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+            std::cout << "Execution of the kernel: matmul\n";
+            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne1, ne01, ne10);
+            std::cout << "Waiting to the end\n";
+            run_mm.wait();
+
+            bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
                         1.0f,    y, ne10,
                                 x, ne00,
                         0.0f,    d, ne01);*/
+            for (int elem = 0; elem < size_c; ++elem) {
+                d[elem] = bo_c_mm_map[elem];
+                //std::cout << cs << " ";
+                //std::cout << std::hex << cs.V << " ";
+                //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
+            }
         }
     }
+    std::cout << "TEST PASSED\n";
 }
 
 static void ggml_xrt_unary(
