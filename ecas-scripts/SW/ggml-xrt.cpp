@@ -251,6 +251,8 @@ static void ggml_xrt_mul_mat(
 
     const bool src1_cont = ggml_is_contiguous(src1);
 
+    const int64_t ne_plane = ne01*ne00;
+
     GGML_ASSERT(ne0 == ne01);
     GGML_ASSERT(ne1 == ne11);
     GGML_ASSERT(ne2 == ne12);
@@ -274,7 +276,7 @@ static void ggml_xrt_mul_mat(
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
 
-    const void * wdata    = params->wdata;
+    /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
 
     const int64_t nr0 = ne01;          // src0 rows
@@ -312,22 +314,53 @@ static void ggml_xrt_mul_mat(
         nrc = 1;
     }
 
-    const size_t src1_col_stride = row_size;
+    const size_t src1_col_stride = row_size;*/
 
     // Compute sizes
-    int size_a = a_rows * b_cols;
-    int size_b = c_cols * b_cols;
-    int size_c = a_rows * c_cols;
-
+    std::cout << "Open the device" << device_index << std::endl;
     auto device = xrt::device(device_index);
+    std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);
+
     auto matmul = xrt::kernel(device, uuid, "matmul");
-    auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint32_t), matmul.group_id(0));
-    auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint32_t), matmul.group_id(1));
-    auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint32_t), matmul.group_id(2));
-    auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
-    auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
-    auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
+
+    if (params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    // perform sgemm, parallelization controlled by blas lib
+    if (ith != 0) {
+        return;
+    }
+
+    //const int64_t tgemm0 = ggml_perf_time_us();
+    for (int64_t i13 = 0; i13 < ne13; i13++) {
+        for (int64_t i12 = 0; i12 < ne12; i12++) {
+            const int64_t i03 = i13/r3;
+            const int64_t i02 = i12/r2;
+
+            const void  * x = (char *) src0->data + i02*nb02 + i03*nb03;
+            const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
+            float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+
+            if (type != GGML_TYPE_F32) {
+                x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+            }
+
+            auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint32_t), matmul.group_id(0));
+            auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint32_t), matmul.group_id(1));
+            auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint32_t), matmul.group_id(2));
+            auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
+            auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
+            auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
+
+            /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                        ne1, ne01, ne10,
+                        1.0f,    y, ne10,
+                                x, ne00,
+                        0.0f,    d, ne01);*/
+        }
+    }
 }
 
 static void ggml_xrt_unary(
