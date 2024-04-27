@@ -275,6 +275,10 @@ static void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
+    int device_index = 0;
+
+    // Get input size
+    std::string binaryFile{"./HW/package.hw/kernels.xclbin"};
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);

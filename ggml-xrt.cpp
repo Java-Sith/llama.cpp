@@ -240,10 +240,10 @@ static void ggml_xrt_mul_mat(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-    printf("NE00: %d", ne00);
-    printf("NE01: %d", ne01);
-    printf("NE10: %d", ne10);
-    printf("NE1: %d", ne1);
+    printf("NE00: %d\n", ne00);
+    printf("NE01: %d\n", ne01);
+    printf("NE10: %d\n", ne10);
+    printf("NE1: %d\n", ne1);
 
     //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
