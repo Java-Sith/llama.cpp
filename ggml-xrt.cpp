@@ -100,42 +100,59 @@ GGML_CALL static void ggml_xrt_set_main_device(const int main_device) {
     }
 }
 
-int get_tensor_dimensions(const struct ggml_tensor* tensor) {
-    int dimensions = 0;
-    for (int i = 0; i < 4; ++i) {
-        if (tensor->ne[i] != 0) {
-            dimensions++;
-        }
-    }
-    return dimensions;
-}
-
-void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
+void saveTensorInfo(const struct ggml_tensor* tensor, const std::string& filename) {
     std::ofstream file(filename);
-    std::cout << "Tipo de datos: " << tensor->type << "\n";
+    if (!file.is_open()) {
+        std::cout << "No se pudo abrir el archivo " << filename << std::endl;
+        return;
+    }
 
-    // Guardar el tipo de datos
-    file << "Tipo de datos: " << tensor->type << "\n";
+    // Guarda el tipo de datos del tensor
+    file << "Tipo de datos: " << tensor->type << std::endl;
 
-    // Guardar las dimensiones
+    // Guarda las dimensiones del tensor
     file << "Dimensiones: ";
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
         file << tensor->ne[i] << " ";
     }
-    file << "\n";
+    file << std::endl;
 
-    // Guardar los datos
-    file << "Datos: ";
-    for (int i = 0; i < tensor->ne[0]; ++i) {
-        if (get_tensor_dimensions(tensor) == 1) {
-            file << ggml_get_f32_1d(tensor, i) << " ";
-        }
-        else {
-            GGML_ASSERT(false);
-        }
+    // Guarda el número de elementos del tensor
+    file << "Número de elementos: ";
+    int num_elements = 1;
+    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
+        num_elements *= tensor->ne[i];
     }
-    file << "\n";
+    file << num_elements << std::endl;
 
+    // Guarda el tamaño en bytes del tensor
+    file << "Tamaño en bytes: " << num_elements * sizeof(float) << std::endl; // Asume que el tipo de datos es float
+
+    // Guarda la operación del tensor
+    file << "Operación: " << tensor->op << std::endl;
+
+    // Guarda los datos reales del tensor
+    file << "Datos: ";
+    float* data = (float*) tensor->data; // Asume que el tipo de datos es float
+    for (int i = 0; i < num_elements; i++) {
+        file << data[i] << " ";
+    }
+    file << std::endl;
+
+    file.close();
+}
+
+void saveData(float* f, int num_elements, const std::string& filename) {
+    // Guarda los datos de la matriz x
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "No se pudo abrir el archivo " << filename_x << std::endl;
+        return;
+    }
+    for (int i = 0; i < num_elements; i++) {
+        file << f[i] << " ";
+    }
+    file << std::endl;
     file.close();
 }
 
@@ -235,6 +252,25 @@ static void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
+    GGML_TENSOR_BINARY_OP_LOCALS
+    for (int64_t i13 = 0; i13 < ne13; i13++) {
+        for (int64_t i12 = 0; i12 < ne12; i12++) {
+            const int64_t i03 = i13/r3;
+            const int64_t i02 = i12/r2;
+
+            const void  * x = (char *)            src0->data + i02*nb02 + i03*nb03;
+            const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
+                  float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+
+            if (type != GGML_TYPE_F32) {
+                x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+            }
+
+            saveData(x, ne1*ne10, "MatX.txt");
+            saveData(y, ne01*ne10, "MatY.txt");
+            saveData(d, ne1*ne01, "MatD.txt");
+        }
+    }
     //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
     //save_tensor_info("Matmul2.txt", src1);
