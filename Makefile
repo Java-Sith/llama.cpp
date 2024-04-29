@@ -590,7 +590,7 @@ ifdef LLAMA_XRT
 endif
 
 ifdef LLAMA_XRT
-ggml-xrt.o: ecas-scripts/SW/ggml-xrt.cpp ecas-scripts/SW/ggml-xrt.h
+ggml-xrt.o: ecas-scripts/SW/ggml-xrt.cpp ecas-scripts/SW/ggml-xrt.h ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: build
@@ -618,6 +618,20 @@ $(XCL_BIN): $(LINK_OUTPUT)
 	mkdir -p $(PACKAGE_OUT)
 	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --package.out_dir $(PACKAGE_OUT) -o $(XCL_BIN)
 endif #LLAMA_XRT
+
+ifdef LLAMA_VULKAN_RUN_TESTS
+	MK_CPPFLAGS  += -DGGML_USE_TEST
+endif
+
+ifdef LLAMA_VULKAN_RUN_TESTS
+	MK_CPPFLAGS  += -DGGML_VULKAN_RUN_TESTS
+	OBJS += ggml-test.o
+endif
+
+ifdef LLAMA_VULKAN_RUN_TESTS
+ggml-test.o: ggml-test.cpp ggml-test.h ggml.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+endif
 
 GF_CC := $(CC)
 include scripts/get-flags.mk

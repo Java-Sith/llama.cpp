@@ -290,8 +290,10 @@ inline static void * ggml_calloc(size_t num, size_t size) {
 #include "ggml-vulkan.h"
 #elif defined(GGML_USE_SYCL)
 #include "ggml-sycl.h"
+#elif defined(GGML_USE_TEST)
+#include "ggml-test.h"
 #elif defined(GGML_USE_XRT)
-#include "ggml-xrt.h"
+#include "ecas-scripts/SW/ggml-xrt.h"
 #endif
 
 // floating point type used to accumulate sums
@@ -15349,6 +15351,13 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
 #ifdef GGML_USE_SYCL
     bool skip_cpu = ggml_sycl_compute_forward(params, tensor);
     if (skip_cpu) {
+        return;
+    }
+#endif // GGML_USE_SYCL
+
+#ifdef GGML_USE_TEST
+    bool do_test = ggml_test_compute_forward(params, tensor);
+    if (do_test) {
         return;
     }
 #endif // GGML_USE_SYCL
