@@ -45,8 +45,12 @@
 
 static int g_device_count = -1;
 static int g_all_xrt_device_count = -1;
-static int g_main_device = -1;
-static int g_main_device_index = -1;
+static int g_main_device = 0;
+static int g_main_device_index = 0;
+
+static auto myDevice;
+static std::string binaryFile = "./HW/package.hw/kernels.xclbin";
+static auto myUnit;
 
 static bool g_xrt_loaded = false;
 using DataT = ap_fixed<32, 8>;
@@ -71,30 +75,19 @@ struct xrt_device_id2index {
 
 static xrt_device_id2index g_xrt_device_id2index[GGML_XRT_MAX_DEVICES] = { {-1} };
 
-inline int ggml_xrt_set_device(const int device) {
-    int current_device;
-
-    current_device = device;
-
-    // GGML_SYCL_DEBUG("ggml_sycl_set_device device=%d, current_device=%d\n", device, current_device);
-    if (device == current_device) {
-        return 0;
-    }
-}
-
 int get_device_id_by_index(int index){
-    int res = 0;
+    int res = index;
     GGML_ASSERT(res>=0);
     return res;
 }
 
 int get_device_index_by_id(int id){
-    int res = 0;
+    int res = id;
     GGML_ASSERT(res>=0);
     return res;
 }
 
-GGML_CALL static void ggml_xrt_set_main_device(const int main_device) {
+GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     if (main_device >= g_device_count) {
         fprintf(stderr, "warning: cannot set main_device=%d because there are only %d devices. Using device %d instead.\n",
                 main_device, g_device_count, g_main_device);
@@ -103,10 +96,14 @@ GGML_CALL static void ggml_xrt_set_main_device(const int main_device) {
 
     if (g_main_device != main_device && g_device_count > 1) {
         g_main_device = main_device;
+        g_main_device_index = get_device_index_by_id(g_main_device);
         //cudaDeviceProp prop;
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
     }
+    fprintf(stderr, "Using device %d as main device\n", g_main_device);
+    myDevice = xrt::device(g_main_device);
+    myUnit = myDevice.load_xclbin(binaryFile);
 }
 
 int get_tensor_dimensions(const struct ggml_tensor* tensor) {
@@ -275,10 +272,6 @@ static void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
-    int device_index = 0;
-
-    // Get input size
-    std::string binaryFile{"./HW/package.hw/kernels.xclbin"};
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
@@ -320,13 +313,7 @@ static void ggml_xrt_mul_mat(
 
     const size_t src1_col_stride = row_size;*/
 
-    // Compute sizes
-    std::cout << "Open the device" << device_index << std::endl;
-    auto device = xrt::device(device_index);
-    std::cout << "Load the xclbin " << binaryFile << std::endl;
-    auto uuid = device.load_xclbin(binaryFile);
-
-    auto matmul = xrt::kernel(device, uuid, "matmul");
+    auto matmul = xrt::kernel(myDevice, myUnit, "matmul");
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
@@ -336,7 +323,7 @@ static void ggml_xrt_mul_mat(
     if (ith != 0) {
         return;
     }
-    
+
     int size_a = ne1*ne10;
     int size_b = ne01*ne10;
     int size_c = ne01*ne1;
@@ -551,7 +538,6 @@ GGML_CALL void ggml_init_xrt() {
 
         //hardcode, force set to 1 device
         g_device_count = 1;
-        ggml_xrt_set_main_device(user_device_id);
         ggml_xrt_set_device(user_device_id);
         // fprintf(stderr, "Using Device %d\n", user_device_id);
 
@@ -935,7 +921,7 @@ static void ggml_backend_xrt_graph_plan_compute(ggml_backend_t backend, ggml_bac
 static bool ggml_backend_xrt_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph) {
     ggml_backend_xrt_context * xrt_ctx = (ggml_backend_xrt_context *)backend->context;
 
-    ggml_xrt_set_main_device(xrt_ctx->device);
+    ggml_xrt_set_device(xrt_ctx->device);
 
     ggml_compute_params params = {};
     params.type = GGML_TASK_COMPUTE;
