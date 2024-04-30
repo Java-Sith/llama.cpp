@@ -141,7 +141,7 @@ void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
     file.close();
 }
 
-static void ggml_xrt_dup(
+void ggml_xrt_dup(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -151,7 +151,7 @@ static void ggml_xrt_dup(
 
 // ggml_compute_forward_add
 
-static void ggml_xrt_add(
+void ggml_xrt_add(
     const struct ggml_compute_params *params,
     struct ggml_tensor *dst)
 {
@@ -160,7 +160,7 @@ static void ggml_xrt_add(
     ggml_compute_forward_add(params, dst);
 }
 
-static void ggml_xrt_mul(
+void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -170,7 +170,7 @@ static void ggml_xrt_mul(
 
 // ggml_compute_forward_transpose
 
-static void ggml_xrt_nop(
+void ggml_xrt_nop(
         const struct ggml_compute_params * params,
         const struct ggml_tensor * dst) {
     // NOP
@@ -180,7 +180,7 @@ static void ggml_xrt_nop(
 
 // ggml_compute_forward_get_rows
 
-static void ggml_xrt_get_rows(
+void ggml_xrt_get_rows(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -206,7 +206,7 @@ static void ggml_xrt_get_rows(
     //}
 }
 
-static void ggml_xrt_rms_norm(
+void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -215,7 +215,7 @@ static void ggml_xrt_rms_norm(
     ggml_compute_forward_rms_norm(params, dst);
 }
 
-static void ggml_xrt_rope(
+void ggml_xrt_rope(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -223,7 +223,7 @@ static void ggml_xrt_rope(
     ggml_compute_forward_rope(params, dst);
 }
 
-static void ggml_xrt_soft_max(
+void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
@@ -231,11 +231,10 @@ static void ggml_xrt_soft_max(
     ggml_compute_forward_soft_max(params, dst);
 }
 
-extern "C" static void ggml_xrt_mul_mat(
-        const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_mul_mat(
+void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
