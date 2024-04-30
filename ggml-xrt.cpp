@@ -49,9 +49,9 @@ static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
 
-static auto myDevice;
+static xrt::device myDevice;
 static std::string binaryFile = "./package.hw/kernels.xclbin";
-static auto myUnit;
+static xrt::kernel matmul;
 
 static bool g_xrt_loaded = false;
 using DataT = ap_fixed<32, 8>;
@@ -104,7 +104,8 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     }
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
     myDevice = xrt::device(g_main_device);
-    myUnit = myDevice.load_xclbin(binaryFile);
+    auto uuid = device.load_xclbin(binaryFile);
+    matmul = xrt::kernel(myDevice, uuid, "matmul");
 }
 
 int get_tensor_dimensions(const struct ggml_tensor* tensor) {
@@ -314,8 +315,6 @@ static void ggml_xrt_mul_mat(
 
     const size_t src1_col_stride = row_size;*/
 
-    auto matmul = xrt::kernel(myDevice, myUnit, "matmul");
-
     if (params->type == GGML_TASK_FINALIZE) {
         return;
     }
@@ -342,9 +341,9 @@ static void ggml_xrt_mul_mat(
                 x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
             }
 
-            auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint32_t), matmul.group_id(0));
-            auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint32_t), matmul.group_id(1));
-            auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint32_t), matmul.group_id(2));
+            auto bo_a_mm = xrt::bo(myDevice, size_a * sizeof(uint32_t), matmul.group_id(0));
+            auto bo_b_mm = xrt::bo(myDevice, size_b * sizeof(uint32_t), matmul.group_id(1));
+            auto bo_c_mm = xrt::bo(myDevice, size_c * sizeof(uint32_t), matmul.group_id(2));
             auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
