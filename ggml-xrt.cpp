@@ -104,7 +104,7 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     }
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
     myDevice = xrt::device(g_main_device);
-    auto uuid = device.load_xclbin(binaryFile);
+    auto uuid = myDevice.load_xclbin(binaryFile);
     matmul = xrt::kernel(myDevice, uuid, "matmul");
 }
 
@@ -351,15 +351,15 @@ static void ggml_xrt_mul_mat(
 
             for (int elem = 0; elem < size_a; ++elem) {
                 //std::cout << as.V << " ";
-                bo_a_mm_map[elem] = DataT{x[i]};
+                bo_a_mm_map[elem] = DataT{x[elem]};
             }
             for (int elem = 0; elem < size_b; ++elem) {
                 //std::cout << as.V << " ";
-                bo_b_mm_map[elem] = DataT{y[i]};
+                bo_b_mm_map[elem] = DataT{y[elem]};
             }
             for (int elem = 0; elem < size_c; ++elem) {
                 //std::cout << as.V << " ";
-                bo_c_mm_map[elem] = DataT{d[i]};
+                bo_c_mm_map[elem] = DataT{d[elem]};
             }
             bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
