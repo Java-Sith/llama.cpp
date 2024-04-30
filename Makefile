@@ -579,7 +579,7 @@ ifdef LLAMA_XRT
 endif
 
 ifdef LLAMA_XRT
-ggml-xrt.o: ecas-scripts/SW/ggml-xrt.cpp ecas-scripts/SW/ggml-xrt.h ggml.h
+ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 endif #LLAMA_XRT

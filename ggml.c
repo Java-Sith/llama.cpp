@@ -293,7 +293,7 @@ inline static void * ggml_calloc(size_t num, size_t size) {
 #elif defined(GGML_USE_TEST)
 #include "ggml-test.h"
 #elif defined(GGML_USE_XRT)
-#include "ecas-scripts/SW/ggml-xrt.h"
+#include "ggml-xrt.h"
 #endif
 
 // floating point type used to accumulate sums
