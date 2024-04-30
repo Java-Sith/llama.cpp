@@ -26,7 +26,7 @@
 #  include "ggml-mpi.h"
 #endif
 #ifdef GGML_USE_XRT
-#  include "ggml-xrt.h"
+#  include "ecas-scripts/SW/ggml-xrt.h"
 #endif
 #ifndef QK_K
 #  ifdef GGML_QKK_64
