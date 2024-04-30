@@ -573,50 +573,15 @@ ggml-mpi.o: ggml-mpi.c ggml-mpi.h
 endif # LLAMA_MPI
 
 ifdef LLAMA_XRT
-	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./hls-types/include
+	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./SW/hls-types/include
 	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -lxrt_coreutil
 	OBJS        += ggml-xrt.o
-	ROOT_DIR=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-	TARGET := hw
-	PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
-	HLS_FILES := $(wildcard *.cpp)
-	HLS_FILES_NAMES := $(HLS_FILES:.cpp=)
-	TEMP_DIR := ./tmp.$(TARGET)
-	BUILD_DIR := ./build.$(TARGET)
-	PACKAGE_OUT = ./package.$(TARGET)
-	LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILE_NAME).link.xclbin
-	EMCONFIG_DIR = $(TEMP_DIR)
-	XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
 endif
 
 ifdef LLAMA_XRT
 ggml-xrt.o: ecas-scripts/SW/ggml-xrt.cpp ecas-scripts/SW/ggml-xrt.h ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: build
-build: check_platform emconfig $(LINK_OUTPUT) $(XCL_BIN) #$(FPGA_BIN) 
-
-# Rules for creating the HW
-check_platform:
-ifndef PLATFORM
-	$(error PLATFORM not set. Please set the PLATFORM properly and rerun. Run "make help" for more details.)
-endif
-
-$(TEMP_DIR)/%.xo: %.cpp
-	mkdir -p $(TEMP_DIR)
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(<:.cpp=) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o '$@' '$<'
-
-$(LINK_OUTPUT): $(HLS_KERNEL_FILES)
-	mkdir -p $(BUILD_DIR)
-	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --temp_dir $(TEMP_DIR) -o'$(LINK_OUTPUT)' $^
-
-emconfig:$(EMCONFIG_DIR)/emconfig.json
-$(EMCONFIG_DIR)/emconfig.json:
-	emconfigutil --platform $(PLATFORM) --od $(EMCONFIG_DIR)
-
-$(XCL_BIN): $(LINK_OUTPUT)
-	mkdir -p $(PACKAGE_OUT)
-	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --package.out_dir $(PACKAGE_OUT) -o $(XCL_BIN)
 endif #LLAMA_XRT
 
 ifdef LLAMA_VULKAN_RUN_TESTS

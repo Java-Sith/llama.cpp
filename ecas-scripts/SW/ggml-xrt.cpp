@@ -49,7 +49,7 @@ static int g_main_device = 0;
 static int g_main_device_index = 0;
 
 static auto myDevice;
-static std::string binaryFile = "./HW/package.hw/kernels.xclbin";
+static std::string binaryFile = "./package.hw/kernels.xclbin";
 static auto myUnit;
 
 static bool g_xrt_loaded = false;
