@@ -573,7 +573,7 @@ ggml-mpi.o: ggml-mpi.c ggml-mpi.h
 endif # LLAMA_MPI
 
 ifdef LLAMA_XRT
-	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./SW/hls-types/include
+	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./ecas-scripts/SW/hls-types/include
 	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -lxrt_coreutil
 	OBJS        += ggml-xrt.o
 endif
