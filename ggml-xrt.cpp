@@ -231,6 +231,10 @@ static void ggml_xrt_soft_max(
     ggml_compute_forward_soft_max(params, dst);
 }
 
+extern "C" static void ggml_xrt_mul_mat(
+        const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
 static void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
@@ -358,7 +362,7 @@ static void ggml_xrt_mul_mat(
             for (int elem = 0; elem < size_b; ++elem) {
                 //std::cout << as.V << " ";
                 bs[elem] = y[elem];
-                bo_b_mm_map[elem] = b_and[elem].V;
+                bo_b_mm_map[elem] = bs[elem].V;
             }
             for (int elem = 0; elem < size_c; ++elem) {
                 //std::cout << as.V << " ";
