@@ -102,10 +102,10 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
     }
-    fprintf(stderr, "Using device %d as main device\n", g_main_device);
     myDevice = xrt::device(g_main_device);
     auto uuid = myDevice.load_xclbin(binaryFile);
     matmul = xrt::kernel(myDevice, uuid, "matmul");
+    fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 
 int get_tensor_dimensions(const struct ggml_tensor* tensor) {
