@@ -351,9 +351,9 @@ void ggml_xrt_mul_mat(
                 x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
             }
 
-            auto bo_a_mm = xrt::bo(myDevice, size_a * sizeof(uint32_t), matmul.group_id(0));
-            auto bo_b_mm = xrt::bo(myDevice, size_b * sizeof(uint32_t), matmul.group_id(1));
-            auto bo_c_mm = xrt::bo(myDevice, size_c * sizeof(uint32_t), matmul.group_id(2));
+            auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint32_t), matmul.group_id(0));
+            auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint32_t), matmul.group_id(1));
+            auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint32_t), matmul.group_id(2));
             auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
