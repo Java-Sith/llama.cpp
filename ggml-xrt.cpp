@@ -129,7 +129,6 @@ void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Mul.txt", dst);
     ggml_compute_forward_mul(params, dst);
 }
 
