@@ -49,9 +49,9 @@ static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
 
-static xrt::device myDevice;
-static std::string binaryFile = "./package.hw/kernels.xclbin";
-static xrt::kernel matmul;
+// static xrt::device myDevice;
+// static std::string binaryFile = "./package.hw/kernels.xclbin";
+// static xrt::kernel matmul;
 
 static bool g_xrt_loaded = false;
 using DataT = ap_fixed<32, 8>;
@@ -277,6 +277,12 @@ void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
+    std::cout << "Open the device" << 0 << std::endl;
+    auto device = xrt::device(0);
+    std::cout << "Load the xclbin " << "./package.hw/kernels.xclbin" << std::endl;
+    auto uuid = device.load_xclbin("./package.hw/kernels.xclbin");
+
+    auto matmul = xrt::kernel(device, uuid, "matmul");
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
@@ -546,7 +552,7 @@ GGML_CALL void ggml_init_xrt() {
 
         //hardcode, force set to 1 device
         g_device_count = 1;
-        ggml_xrt_set_device(user_device_id);
+        // ggml_xrt_set_device(user_device_id);
         // fprintf(stderr, "Using Device %d\n", user_device_id);
 
         // for (int id = 0; id < g_all_sycl_device_count; ++id) {
