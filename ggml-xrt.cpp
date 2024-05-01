@@ -108,44 +108,10 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     fprintf(stderr, "Using device %d as main device\n", g_main_device);*/
 }
 
-int get_tensor_dimensions(const struct ggml_tensor* tensor) {
-    int dimensions = 0;
-    for (int i = 0; i < 4; ++i) {
-        if (tensor->ne[i] != 0) {
-            dimensions++;
-        }
-    }
-    return dimensions;
-}
-
-void save_tensor_info(const char* filename, const struct ggml_tensor* tensor) {
-    std::ofstream file(filename);
-
-    // Guardar el tipo de datos
-    file << "Tipo de datos: " << tensor->type << "\n";
-
-    // Guardar las dimensiones
-    file << "Dimensiones: ";
-    for (int i = 0; i < 4; ++i) {
-        file << tensor->ne[i] << " ";
-    }
-    file << "\n";
-
-    // Guardar los datos
-    file << "Datos: ";
-    for (int i = 0; i < tensor->ne[0]; ++i) {
-        file << ggml_get_f32_1d(tensor, i) << " ";
-    }
-    file << "\n";
-
-    file.close();
-}
-
 void ggml_xrt_dup(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Dup.txt", dst);
     ggml_compute_forward_dup(params, dst);
 }
 
@@ -156,7 +122,6 @@ void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    save_tensor_info("Add.txt", dst);
     ggml_compute_forward_add(params, dst);
 }
 
@@ -210,7 +175,6 @@ void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("RMS Norm.txt", dst);
 
     ggml_compute_forward_rms_norm(params, dst);
 }
@@ -219,7 +183,6 @@ void ggml_xrt_rope(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    save_tensor_info("Rope.txt", dst);
     ggml_compute_forward_rope(params, dst);
 }
 
@@ -227,7 +190,6 @@ void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    save_tensor_info("Softmax.txt", dst);
     ggml_compute_forward_soft_max(params, dst);
 }
 
@@ -240,9 +202,6 @@ void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
-
-    save_tensor_info("Matmul1.txt", src0);
-    save_tensor_info("Matmul2.txt", src1);
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
@@ -405,7 +364,6 @@ static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    save_tensor_info("Unary.txt", dst);
     ggml_compute_forward_unary(params, dst);
 }
 
