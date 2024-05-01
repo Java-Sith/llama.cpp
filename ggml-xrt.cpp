@@ -234,10 +234,10 @@ void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
-    std::cout << "Open the device" << 0 << std::endl;
+    std::cout << "Open the device " << 0 << std::endl;
     auto device = xrt::device(0);
-    std::cout << "Load the xclbin " << "./package.hw/kernels.xclbin" << std::endl;
-    auto uuid = device.load_xclbin("./package.hw/kernels.xclbin");
+    std::cout << "Load the xclbin " << "kernels.xclbin" << std::endl;
+    auto uuid = device.load_xclbin("./HW/package.hw/kernels.xclbin");
 
     auto matmul = xrt::kernel(device, uuid, "matmul");
 
