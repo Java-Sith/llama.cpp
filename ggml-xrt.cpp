@@ -49,9 +49,9 @@ static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
 
-// static xrt::device myDevice;
-// static std::string binaryFile = "./package.hw/kernels.xclbin";
-// static xrt::kernel matmul;
+static xrt::device myDevice;
+static std::string binaryFile = "./ecas-script/HW/package.hw/kernels.xclbin";
+static xrt::kernel matmul;
 
 static bool g_xrt_loaded = false;
 using DataT = ap_fixed<32, 8>;
@@ -102,10 +102,12 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
     }
-    /*myDevice = xrt::device(g_main_device);
+    std::cout << "Open the device " << g_main_device << std::endl;
+    myDevice = xrt::device(g_main_device);
+    std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = myDevice.load_xclbin(binaryFile);
     matmul = xrt::kernel(myDevice, uuid, "matmul");
-    fprintf(stderr, "Using device %d as main device\n", g_main_device);*/
+    fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 
 void ggml_xrt_dup(
@@ -234,12 +236,6 @@ void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
-    std::cout << "Open the device " << 0 << std::endl;
-    auto device = xrt::device(0);
-    std::cout << "Load the xclbin " << "kernels.xclbin" << std::endl;
-    auto uuid = device.load_xclbin("./HW/package.hw/kernels.xclbin");
-
-    auto matmul = xrt::kernel(device, uuid, "matmul");
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
