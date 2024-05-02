@@ -50,7 +50,7 @@ static int g_main_device = 0;
 static int g_main_device_index = 0;
 
 static xrt::device myDevice;
-static std::string binaryFile = "./ecas-script/HW/package.hw/kernels.xclbin";
+static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
 static xrt::kernel matmul;
 
 static bool g_xrt_loaded = false;
