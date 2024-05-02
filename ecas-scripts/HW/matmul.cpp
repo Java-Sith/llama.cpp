@@ -11,53 +11,51 @@
  * a_cols = b_cols -> inputs
  * b_rows = c_cols -> outputs
  */
- static void matmul_accel (StreamT &a, StreamT &b, StreamT &c, int a_rows, int b_cols, int c_cols) {
-   DataT a_tile[TILE_SIZE][TILE_SIZE];
-   DataT b_tile[TILE_SIZE][TILE_SIZE];
+static void matmul_accel (StreamT &a, StreamT &b, StreamT &c, int a_rows, int b_cols, int c_cols) {
 
- matmul_samples:
-   for (int ay = 0; ay < a_rows; ay += TILE_SIZE) {
-     for (int bx = 0; bx < b_cols; bx += TILE_SIZE) {
-       for (int cx = 0; cx < c_cols; cx += TILE_SIZE) {
- #pragma HLS pipeline
-         // Load tiles from matrices a and b
-         for (int i = 0; i < TILE_SIZE; ++i) {
-           for (int j = 0; j < TILE_SIZE; ++j) {
-             a_tile[i][j] = a.read();
-             b_tile[i][j] = b.read();
-           }
-         }
+matmul_samples:
+  for (int ay = 0; ay < a_rows; ++ay) {
+matmul_layers:
+    RawDataT valpacket = 0;
+    for (int cx = 0; cx < c_cols; ++cx) {
+#pragma HLS pipeline
+      DataT val = 0.f;
+matmul_perceptron:
+      for (int bx = 0; bx < b_cols; bx += kPackets) {
+        RawDataT a_raw = a.read();
+        RawDataT b_raw = b.read();
+        for (int p = 0; p < kPackets; ++p) {
+#pragma HLS unroll
+          int poff_low = p * kDataWidth;
+          int poff_high = poff_low + kDataWidth - 1;
+          
+          DataT a, b;
 
-         // Perform multiplication on the tiles
-         for (int i = 0; i < TILE_SIZE; ++i) {
-           for (int j = 0; j < TILE_SIZE; ++j) {
-             DataT val = 0.f;
-             for (int k = 0; k < TILE_SIZE; ++k) {
-               val += a_tile[i][k] * b_tile[k][j];
-             }
+          a.V = a_raw(poff_high, poff_low);
+          b.V = b_raw(poff_high, poff_low);
 
-             // Get the indices
-             int cx_p_1 = cx + j + 1;
-             int val_mod = cx_p_1 & (kPackets - 1);
-             int cx_mod = (cx + j) & (kPackets - 1);
+          val += a * b;
+        }
+      }
+      // Get the indices
+      int cx_p_1 = cx + 1;
+      int val_mod = cx_p_1 & (kPackets - 1);
+      int cx_mod = cx & (kPackets - 1);
 
-             // Write accordingly
-             int poff_low = cx_mod * kDataWidth;
-             int poff_high = poff_low + kDataWidth - 1;
+      // Write accordingly 
+      int poff_low = cx_mod * kDataWidth;
+      int poff_high = poff_low + kDataWidth - 1;
 
-             RawDataT valpacket;
-             valpacket(poff_high, poff_low) = val.V;
-
-             // Stream out if done
-             if (val_mod == 0) {
-               c.write(valpacket);
-             }
-           }
-         }
-       }
-     }
-   }
- }
+      valpacket(poff_high, poff_low) = val.V;
+      
+      // Stream out if done
+      if (val_mod == 0) {
+        c.write(valpacket);
+        valpacket = 0;
+      }
+    }
+  }
+}
 
 static void load_data(RawDataT *a, RawDataT *b, StreamT &a_s, StreamT &b_s,
                int a_rows, int b_cols, int c_cols) {
@@ -101,32 +99,46 @@ static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
 
-  DataT a_tile[TILE_SIZE][TILE_SIZE];
-  DataT b_tile[TILE_SIZE][TILE_SIZE];
-
 matmul_samples:
-  for (int ay = 0; ay < a_rows; ay += TILE_SIZE) {
-    for (int bx = 0; bx < b_cols_shift; bx += TILE_SIZE) {
-      for (int cx = 0; cx < c_cols; cx += TILE_SIZE) {
+  for (int ay = 0; ay < a_rows; ++ay) {
+matmul_layers:
+    RawDataT valpacket = 0;
+    for (int cx = 0; cx < c_cols; ++cx) {
 #pragma HLS pipeline
-        // Load tiles from matrices a and b
-        for (int i = 0; i < TILE_SIZE; ++i) {
-          for (int j = 0; j < TILE_SIZE; ++j) {
-            a_tile[i][j] = a[(ay + i) * b_cols_shift + bx + j];
-            b_tile[i][j] = b[(bx + i) * c_cols_shift + cx + j];
-          }
-        }
+      DataT val = 0.f;
+matmul_perceptron:
+      for (int bx = 0; bx < b_cols_shift; ++bx) {
+        RawDataT a_raw = a[ay * b_cols_shift + bx];
+        RawDataT b_raw = b[cx * b_cols_shift + bx];
+        for (int p = 0; p < kPackets; ++p) {
+#pragma HLS unroll
+          int poff_low = p * kDataWidth;
+          int poff_high = poff_low + kDataWidth - 1;
+          
+          DataT a, b;
 
-        // Perform multiplication on the tiles
-        for (int i = 0; i < TILE_SIZE; ++i) {
-          for (int j = 0; j < TILE_SIZE; ++j) {
-            DataT val = 0.f;
-            for (int k = 0; k < TILE_SIZE; ++k) {
-              val += a_tile[i][k] * b_tile[k][j];
-            }
-            c[(ay + i) * c_cols_shift + cx + j] += val;
-          }
+          a.V = a_raw(poff_high, poff_low);
+          b.V = b_raw(poff_high, poff_low);
+
+          val += a * b;
         }
+      }
+
+      // Get the indices
+      int cx_mod = cx & (kPackets - 1);
+      int cx_div = cx >> kShiftData;
+      int val_mod = (cx + 1) & (kPackets - 1);
+
+      // Write accordingly 
+      int poff_low = cx_mod * kDataWidth;
+      int poff_high = poff_low + kDataWidth - 1;
+
+      valpacket(poff_high, poff_low) = val.V;
+
+      // Stream out if done
+      if (val_mod == 0) {
+        c[cx_div + ay * c_cols_shift] = valpacket;
+        valpacket = 0;
       }
     }
   }
