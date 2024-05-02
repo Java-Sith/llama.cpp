@@ -504,8 +504,8 @@ GGML_CALL void ggml_init_xrt() {
 
         //hardcode, force set to 1 device
         g_device_count = 1;
-        // ggml_xrt_set_device(user_device_id);
-        // fprintf(stderr, "Using Device %d\n", user_device_id);
+        ggml_xrt_set_device(user_device_id);
+        fprintf(stderr, "Using Device %d\n", user_device_id);
 
         // for (int id = 0; id < g_all_sycl_device_count; ++id) {
         //     GGML_SYCL_DEBUG("id=%d  g_device_caps[%d].device_id=%d g_sycl_device_id2index[%d].index=%d ", id, id,
