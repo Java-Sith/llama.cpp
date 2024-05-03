@@ -288,7 +288,73 @@ void ggml_xrt_mul_mat(
         return;
     }
 
-    
+    int size_a = ne1*ne10;
+    int size_b = ne01*ne10;
+    int size_c = ne01*ne1;
+    DataT as[size_a], bs[size_b], cs[size_c];
+    //const int64_t tgemm0 = ggml_perf_time_us();
+    for (int64_t i13 = 0; i13 < ne13; i13++) {
+        for (int64_t i12 = 0; i12 < ne12; i12++) {
+            const int64_t i03 = i13/r3;
+            const int64_t i02 = i12/r2;
+
+            const float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
+            const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
+            float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+
+            if (type != GGML_TYPE_F32) {
+                x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+            }
+            printf("Checking if its here! 2");
+
+            auto bo_a_mm = xrt::bo(myDevice, size_a * sizeof(uint32_t), matmul.group_id(0));
+            auto bo_b_mm = xrt::bo(myDevice, size_b * sizeof(uint32_t), matmul.group_id(1));
+            auto bo_c_mm = xrt::bo(myDevice, size_c * sizeof(uint32_t), matmul.group_id(2));
+            auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
+            auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
+            auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
+            std::cout << "Filling Buffers\n";
+            printf("Checking if its here! 3");
+
+            for (int elem = 0; elem < size_a; ++elem) {
+                //std::cout << as.V << " ";
+                as[elem] = x[elem];
+                bo_a_mm_map[elem] = as[elem].V;
+            }
+            for (int elem = 0; elem < size_b; ++elem) {
+                //std::cout << as.V << " ";
+                bs[elem] = y[elem];
+                bo_b_mm_map[elem] = bs[elem].V;
+            }
+            for (int elem = 0; elem < size_c; ++elem) {
+                //std::cout << as.V << " ";
+                cs[elem] = d[elem];
+                bo_c_mm_map[elem] = cs[elem].V;
+            }
+            bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+            std::cout << "Execution of the kernel: matmul\n";
+            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne1, ne01, ne10);
+            std::cout << "Waiting to the end\n";
+            run_mm.wait();
+
+            bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+            /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                        ne1, ne01, ne10,
+                        1.0f,    y, ne10,
+                                x, ne00,
+                        0.0f,    d, ne01);*/
+            for (int elem = 0; elem < size_c; ++elem) {
+                cs[elem].V = bo_c_mm_map[elem];
+                d[elem] = cs[elem];
+                //std::cout << cs << " ";
+                //std::cout << std::hex << cs.V << " ";
+                //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
+            }
+        }
+    }
     std::cout << "TEST PASSED\n";
 }
 
