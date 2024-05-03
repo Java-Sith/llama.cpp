@@ -312,7 +312,6 @@ void ggml_xrt_mul_mat(
             auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
-            std::cout << "Filling Buffers\n";
 
             for (int elem = 0; elem < size_a; ++elem) {
                 //std::cout << as.V << " ";
@@ -332,9 +331,7 @@ void ggml_xrt_mul_mat(
             bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-            std::cout << "Execution of the kernel: matmul\n";
             auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne1, ne01, ne10);
-            std::cout << "Waiting to the end\n";
             run_mm.wait();
 
             bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -356,7 +353,6 @@ void ggml_xrt_mul_mat(
     delete[] as;
     delete[] bs;
     delete[] cs;
-    std::cout << "TEST PASSED\n";
 }
 
 static void ggml_xrt_unary(
@@ -483,15 +479,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     if (tensor->op != GGML_OP_NONE && tensor->op != GGML_OP_RESHAPE && tensor->op != GGML_OP_VIEW &&
     tensor->op != GGML_OP_TRANSPOSE && tensor->op != GGML_OP_PERMUTE)
     {
-        if (tensor->op == GGML_OP_MUL_MAT)
-        {
-            printf("Entering Matmul!");
-        }
         func(params, tensor);
-        if (tensor->op == GGML_OP_MUL_MAT)
-        {
-            printf("Exiting Matmul!");
-        }
     }
     return true;
 }
