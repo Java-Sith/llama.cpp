@@ -237,7 +237,6 @@ void ggml_xrt_mul_mat(
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
     printf("Checking if its here! 1");
-    ggml_compute_forward_mul_mat(params, dst);
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
@@ -398,7 +397,9 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             func = ggml_xrt_rms_norm;
             break;
         case GGML_OP_MUL_MAT:
+            printf("Hello World!\n");
             func = ggml_xrt_mul_mat;
+            printf("Goodbye World!\n");
             break;
         case GGML_OP_MUL_MAT_ID:
             func = ggml_xrt_mul_mat;
