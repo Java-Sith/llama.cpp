@@ -289,7 +289,9 @@ void ggml_xrt_mul_mat(
     int size_a = ne1*ne10; //MxK
     int size_b = ne01*ne10; //KxN
     int size_c = ne01*ne1; //MxN
-    DataT as[size_a], bs[size_b], cs[size_c];
+    DataT *as = new DataT[size_a];
+    DataT *bs = new DataT[size_b];
+    DataT *cs = new DataT[size_c];
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -314,17 +316,17 @@ void ggml_xrt_mul_mat(
 
             for (int elem = 0; elem < size_a; ++elem) {
                 //std::cout << as.V << " ";
-                as[elem] = x[elem];
+                as[elem] = static_cast<DataT>(x[elem]);;
                 bo_a_mm_map[elem] = as[elem].V;
             }
             for (int elem = 0; elem < size_b; ++elem) {
                 //std::cout << as.V << " ";
-                bs[elem] = y[elem];
+                bs[elem] = static_cast<DataT>(y[elem]);;
                 bo_b_mm_map[elem] = bs[elem].V;
             }
             for (int elem = 0; elem < size_c; ++elem) {
                 //std::cout << as.V << " ";
-                cs[elem] = d[elem];
+                cs[elem] = static_cast<DataT>(d[elem]);;
                 bo_c_mm_map[elem] = cs[elem].V;
             }
             bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -344,13 +346,16 @@ void ggml_xrt_mul_mat(
                         0.0f,    d, ne01);*/
             for (int elem = 0; elem < size_c; ++elem) {
                 cs[elem].V = bo_c_mm_map[elem];
-                d[elem] = cs[elem];
+                d[elem] = static_cast<float>(cs[elem]);
                 //std::cout << cs << " ";
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
             }
         }
     }
+    delete[] as;
+    delete[] bs;
+    delete[] cs;
     std::cout << "TEST PASSED\n";
 }
 
