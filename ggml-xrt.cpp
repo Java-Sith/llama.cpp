@@ -236,7 +236,6 @@ void ggml_xrt_mul_mat(
     // broadcast factors
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
-    printf("Checking if its here! 1");
 
     /*const void * wdata    = params->wdata;
     const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
@@ -287,9 +286,9 @@ void ggml_xrt_mul_mat(
         return;
     }
 
-    int size_a = ne1*ne10;
-    int size_b = ne01*ne10;
-    int size_c = ne01*ne1;
+    int size_a = ne1*ne10; //MxK
+    int size_b = ne01*ne10; //KxN
+    int size_c = ne01*ne1; //MxN
     DataT as[size_a], bs[size_b], cs[size_c];
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
@@ -304,7 +303,6 @@ void ggml_xrt_mul_mat(
             if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
             }
-            printf("Checking if its here! 2");
 
             auto bo_a_mm = xrt::bo(myDevice, size_a * sizeof(uint32_t), matmul.group_id(0));
             auto bo_b_mm = xrt::bo(myDevice, size_b * sizeof(uint32_t), matmul.group_id(1));
@@ -313,7 +311,6 @@ void ggml_xrt_mul_mat(
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
             std::cout << "Filling Buffers\n";
-            printf("Checking if its here! 3");
 
             for (int elem = 0; elem < size_a; ++elem) {
                 //std::cout << as.V << " ";
@@ -397,9 +394,8 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             func = ggml_xrt_rms_norm;
             break;
         case GGML_OP_MUL_MAT:
-            printf("Hello World!\n");
             func = ggml_xrt_mul_mat;
-            printf("Goodbye World!\n");
+            printf("Func: Matmul!\n");
             break;
         case GGML_OP_MUL_MAT_ID:
             func = ggml_xrt_mul_mat;
@@ -483,7 +479,15 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     if (tensor->op != GGML_OP_NONE && tensor->op != GGML_OP_RESHAPE && tensor->op != GGML_OP_VIEW &&
     tensor->op != GGML_OP_TRANSPOSE && tensor->op != GGML_OP_PERMUTE)
     {
+        if (tensor->op == GGML_OP_MUL_MAT)
+        {
+            printf("Entering Matmul!");
+        }
         func(params, tensor);
+        if (tensor->op == GGML_OP_MUL_MAT)
+        {
+            printf("Exiting Matmul!");
+        }
     }
     return true;
 }
