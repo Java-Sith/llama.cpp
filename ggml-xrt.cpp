@@ -395,7 +395,6 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             break;
         case GGML_OP_MUL_MAT:
             func = ggml_xrt_mul_mat;
-            printf("Func: Matmul!\n");
             break;
         case GGML_OP_MUL_MAT_ID:
             func = ggml_xrt_mul_mat;
