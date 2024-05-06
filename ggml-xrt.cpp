@@ -237,46 +237,6 @@ void ggml_xrt_mul_mat(
     const int64_t r2 = ne12/ne02;
     const int64_t r3 = ne13/ne03;
 
-    /*const void * wdata    = params->wdata;
-    const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne10);
-
-    const int64_t nr0 = ne01;          // src0 rows
-    const int64_t nr1 = ne1*ne12*ne13; // src1 rows
-
-    const int64_t nth0 = nr0 > nr1 ? nth : 1; // parallelize by src0 rows
-    const int64_t nth1 = nr0 > nr1 ? 1 : nth; // parallelize by src1 rows
-
-    const int64_t ith0 = ith % nth0;
-    const int64_t ith1 = ith / nth0;
-
-    const int64_t dr0 = (nr0 + nth0 - 1)/nth0;
-    const int64_t dr1 = (nr1 + nth1 - 1)/nth1;
-
-    const int64_t ir010 = dr0*ith0;
-    const int64_t ir011 = MIN(ir010 + dr0, nr0);
-
-    const int64_t ir110 = dr1*ith1;
-    const int64_t ir111 = MIN(ir110 + dr1, nr1);
-
-    if (ir010 >= ir011 || ir110 >= ir111) {
-        sched_yield();
-        return;
-    }
-
-    assert(ne12 % ne02 == 0);
-    assert(ne13 % ne03 == 0);
-
-    // block-tiling attempt
-    const int64_t blck_0 = 16;
-    const int64_t blck_1 = 16;
-
-    int64_t nrc = 1;
-    if ((nr0 % 2 != 0) || (ne11 % 2 != 0)) {
-        nrc = 1;
-    }
-
-    const size_t src1_col_stride = row_size;*/
-
     if (params->type == GGML_TASK_FINALIZE) {
         return;
     }

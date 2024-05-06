@@ -83,8 +83,6 @@ int main(int argc, char** argv) {
     int size_c = a_rows * c_cols;
 
     std::vector<DataT> a, b, c;
-    load_tensor("tensor1.txt", a);
-    load_tensor("tensor2.txt", b);
 
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
@@ -130,7 +128,7 @@ int main(int argc, char** argv) {
         //std::cout << std::hex << as.V << " ";
         as += DataT{0.03};
         if ((elem + 1) % b_cols == 0) {
-            std::cout << std::endl;
+            //std::cout << std::endl;
             as = 0.025;
         }
     }
@@ -141,7 +139,7 @@ int main(int argc, char** argv) {
         bo_b_mm_map[elem] = bs.V;
         bs += DataT{0.07};
         if ((elem + 1) % b_cols == 0) {
-            std::cout << std::endl;
+            //std::cout << std::endl;
             bs = 0.04;
         }
     }
@@ -153,12 +151,12 @@ int main(int argc, char** argv) {
         bo_b_ew_map[elem] = bs.V;
         bs += DataT{0.07};
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
     std::fill(bo_c_mm_map, bo_c_mm_map + size_c, 0);
     std::fill(bo_c_ew_map, bo_c_ew_map + size_em, 0);
 
     // Synchronize buffer content with device side
-    std::cout << "synchronize input buffer data to device global memory\n";
+    std::cout << "Synchronize input buffer data to device global memory\n";
     //START_PROFILE(kernel_execution, cynq_profiler, 1000)
     bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -202,7 +200,7 @@ int main(int argc, char** argv) {
         cs.V = bo_c_ew_map[elem];
         //std::cout << cs << " ";
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
     // Print the duration
     std::cout << "Milliseconds = " << time/std::chrono::milliseconds(1) << " ms " << '\n';
     std::cout << cynq_profiler << std::endl;

@@ -11,138 +11,159 @@
  * a_cols = b_cols -> inputs
  * b_rows = c_cols -> outputs
  */
-static void matmul_accel (StreamT &a, StreamT &b, StreamT &c, int a_rows, int b_cols, int c_cols) {
+ static void matmul_accel(StreamT &a, StreamT &b, StreamT &c, int a_rows, int b_cols, int c_cols) {
+     const int tile_size = 16;
+     const int num_tiles = a_rows / tile_size;
 
-matmul_samples:
-  for (int ay = 0; ay < a_rows; ++ay) {
-matmul_layers:
-    RawDataT valpacket = 0;
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS pipeline
-      DataT val = 0.f;
-matmul_perceptron:
-      for (int bx = 0; bx < b_cols; bx += kPackets) {
-        RawDataT a_raw = a.read();
-        RawDataT b_raw = b.read();
-        for (int p = 0; p < kPackets; ++p) {
-#pragma HLS unroll
-          int poff_low = p * kDataWidth;
-          int poff_high = poff_low + kDataWidth - 1;
-          
-          DataT a, b;
+     // Loop over tiles
+     for (int tile_row = 0; tile_row < num_tiles; ++tile_row) {
+         for (int tile_col = 0; tile_col < num_tiles; ++tile_col) {
+             // Loop over tiles within a tile row/column
+             for (int tile_iter = 0; tile_iter < num_tiles; ++tile_iter) {
+                 // Compute indices for current tile
+                 const int a_tile_row_start = tile_row * tile_size;
+                 const int a_tile_col_start = tile_iter * tile_size;
+                 const int b_tile_row_start = tile_iter * tile_size;
+                 const int b_tile_col_start = tile_col * tile_size;
+                 const int c_tile_row_start = tile_row * tile_size;
+                 const int c_tile_col_start = tile_col * tile_size;
 
-          a.V = a_raw(poff_high, poff_low);
-          b.V = b_raw(poff_high, poff_low);
+                 // Initialize accumulator for the current tile
+                 DataT accumulator[tile_size][tile_size];
+ #pragma HLS array_partition variable=accumulator complete dim=0
 
-          val += a * b;
-        }
-      }
-      // Get the indices
-      int cx_p_1 = cx + 1;
-      int val_mod = cx_p_1 & (kPackets - 1);
-      int cx_mod = cx & (kPackets - 1);
+                 // Perform matrix multiplication for the current tile
+                 for (int i = 0; i < tile_size; ++i) {
+                     for (int j = 0; j < tile_size; ++j) {
+ #pragma HLS PIPELINE II=1
+                         // Initialize accumulator element
+                         accumulator[i][j] = 0;
 
-      // Write accordingly 
-      int poff_low = cx_mod * kDataWidth;
-      int poff_high = poff_low + kDataWidth - 1;
+                         // Perform dot product for elements within the tile
+                         for (int k = 0; k < tile_size; ++k) {
+ #pragma HLS UNROLL
+                             RawDataT a_raw = a.read();
+                             RawDataT b_raw = b.read();
 
-      valpacket(poff_high, poff_low) = val.V;
-      
-      // Stream out if done
-      if (val_mod == 0) {
-        c.write(valpacket);
-        valpacket = 0;
-      }
-    }
-  }
-}
+                             // Extract data from raw input
+                             DataT a_val, b_val;
+                             a_val.V = a_raw((k + 1) * 16 - 1, k * 16);
+                             b_val.V = b_raw((k + 1) * 16 - 1, k * 16);
 
-static void load_data(RawDataT *a, RawDataT *b, StreamT &a_s, StreamT &b_s,
-               int a_rows, int b_cols, int c_cols) {
-  // Load B
-  for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS pipeline
-    for (int cx = 0; cx < c_cols; ++cx) {
-      for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
-        int bidx = bx + cx * (b_cols >> kShiftData);
-        b_s.write(b[bidx]);
-      }
-    }
-  }
+                             // Perform multiplication and accumulation
+                             accumulator[i][j] += a_val * b_val;
+                         }
+                     }
+                 }
 
-  // Load A
-  for (int ay = 0; ay < a_rows; ++ay) {
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS pipeline
-      for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
-        int aidx = ax + ay * (b_cols >> kShiftData);
-        a_s.write(a[aidx]);
-      }
-    }
-  }
-}
+                 // Write the accumulated result to the output stream
+                 for (int i = 0; i < tile_size; ++i) {
+                     for (int j = 0; j < tile_size; ++j) {
+ #pragma HLS PIPELINE II=1
+                         // Write the result to the output stream
+                         RawDataT c_raw;
+                         c_raw.V = accumulator[i][j].V;
+                         c.write(c_raw);
+                     }
+                 }
+             }
+         }
+     }
+ }
 
-static void store_data(RawDataT *c, StreamT &c_s,
-               int a_rows, int b_cols, int c_cols) {
 
-  // Load C
-  for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS pipeline
-    for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-      int cidx = cx + cy * (c_cols >> kShiftData);
-      c[cidx] = c_s.read();
-    }
-  }
-}
+ static void load_data(RawDataT *a, RawDataT *b, StreamT &a_s, StreamT &b_s,
+                       int a_rows, int b_cols, int c_cols) {
+ #pragma HLS inline off
+     // Load B
+     for (int ay = 0; ay < a_rows; ++ay) {
+ #pragma HLS pipeline
+         for (int cx = 0; cx < c_cols; ++cx) {
+             for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
+                 int bidx = bx + cx * (b_cols >> kShiftData);
+                 // Write data to stream 'b_s'
+                 b_s.write(b[bidx]);
+             }
+         }
+     }
+
+     // Load A
+     for (int cx = 0; cx < c_cols; ++cx) {
+         for (int ay = 0; ay < a_rows; ++ay) {
+ #pragma HLS pipeline
+             for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
+                 int aidx = ax + ay * (b_cols >> kShiftData);
+                 // Write data to stream 'a_s'
+                 a_s.write(a[aidx]);
+             }
+         }
+     }
+ }
+
+ static void store_data(RawDataT *c, StreamT &c_s,
+                        int a_rows, int b_cols, int c_cols) {
+ #pragma HLS inline off
+     // Store C
+     for (int cy = 0; cy < a_rows; ++cy) {
+ #pragma HLS pipeline
+         for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
+             int cidx = cx + cy * (c_cols >> kShiftData);
+             // Read data from stream 'c_s' and store in array 'c'
+             c[cidx] = c_s.read();
+         }
+     }
+ }
+
 #else
-static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
-  int b_cols_shift = b_cols >> kShiftData;
-  int c_cols_shift = c_cols >> kShiftData;
+static void matmul_accel(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
+    const int tile_size = 16;
+    const int num_tiles = a_rows / tile_size;
 
-matmul_samples:
-  for (int ay = 0; ay < a_rows; ++ay) {
-matmul_layers:
-    RawDataT valpacket = 0;
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS pipeline
-      DataT val = 0.f;
-matmul_perceptron:
-      for (int bx = 0; bx < b_cols_shift; ++bx) {
-        RawDataT a_raw = a[ay * b_cols_shift + bx];
-        RawDataT b_raw = b[cx * b_cols_shift + bx];
-        for (int p = 0; p < kPackets; ++p) {
-#pragma HLS unroll
-          int poff_low = p * kDataWidth;
-          int poff_high = poff_low + kDataWidth - 1;
-          
-          DataT a, b;
+    // Loop over tiles
+    for (int tile_row = 0; tile_row < num_tiles; ++tile_row) {
+        for (int tile_col = 0; tile_col < num_tiles; ++tile_col) {
+            // Loop over tiles within a tile row/column
+            for (int tile_iter = 0; tile_iter < num_tiles; ++tile_iter) {
+                // Compute indices for current tile
+                const int a_tile_row_start = tile_row * tile_size;
+                const int a_tile_col_start = tile_iter * tile_size;
+                const int b_tile_row_start = tile_iter * tile_size;
+                const int b_tile_col_start = tile_col * tile_size;
+                const int c_tile_row_start = tile_row * tile_size;
+                const int c_tile_col_start = tile_col * tile_size;
 
-          a.V = a_raw(poff_high, poff_low);
-          b.V = b_raw(poff_high, poff_low);
+                // Perform matrix multiplication for the current tile
+                for (int i = 0; i < tile_size; ++i) {
+                    for (int j = 0; j < tile_size; ++j) {
+#pragma HLS PIPELINE II=1
+                        // Initialize accumulator element
+                        DataT accumulator = 0;
 
-          val += a * b;
+                        // Perform dot product for elements within the tile
+                        for (int k = 0; k < tile_size; ++k) {
+#pragma HLS UNROLL
+                            // Access elements from input matrices 'a' and 'b'
+                            RawDataT a_raw = a[(a_tile_row_start + i) * (b_cols >> kShiftData) + (a_tile_col_start + k)];
+                            RawDataT b_raw = b[(b_tile_row_start + k) * (b_cols >> kShiftData) + (b_tile_col_start + j)];
+
+                            // Extract data from raw input
+                            DataT a_val, b_val;
+                            a_val.V = a_raw((k + 1) * 16 - 1, k * 16);
+                            b_val.V = b_raw((k + 1) * 16 - 1, k * 16);
+
+                            // Perform multiplication and accumulation
+                            accumulator += a_val * b_val;
+                        }
+
+                        // Write the accumulated result to the output matrix 'c'
+                        c[(c_tile_row_start + i) * (c_cols >> kShiftData) + (c_tile_col_start + j)] = accumulator;
+                    }
+                }
+            }
         }
-      }
-
-      // Get the indices
-      int cx_mod = cx & (kPackets - 1);
-      int cx_div = cx >> kShiftData;
-      int val_mod = (cx + 1) & (kPackets - 1);
-
-      // Write accordingly 
-      int poff_low = cx_mod * kDataWidth;
-      int poff_high = poff_low + kDataWidth - 1;
-
-      valpacket(poff_high, poff_low) = val.V;
-
-      // Stream out if done
-      if (val_mod == 0) {
-        c[cx_div + ay * c_cols_shift] = valpacket;
-        valpacket = 0;
-      }
     }
-  }
 }
+
 #endif
 
 extern "C" {
