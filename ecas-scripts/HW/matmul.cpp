@@ -116,53 +116,55 @@
 
 #else
 static void matmul_accel(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
-    const int tile_size = 16;
-    const int num_tiles = a_rows / tile_size;
+  int b_cols_shift = b_cols >> kShiftData;
+  int c_cols_shift = c_cols >> kShiftData;
 
-    // Loop over tiles
-    for (int tile_row = 0; tile_row < num_tiles; ++tile_row) {
-        for (int tile_col = 0; tile_col < num_tiles; ++tile_col) {
-            // Loop over tiles within a tile row/column
-            for (int tile_iter = 0; tile_iter < num_tiles; ++tile_iter) {
-                // Compute indices for current tile
-                const int a_tile_row_start = tile_row * tile_size;
-                const int a_tile_col_start = tile_iter * tile_size;
-                const int b_tile_row_start = tile_iter * tile_size;
-                const int b_tile_col_start = tile_col * tile_size;
-                const int c_tile_row_start = tile_row * tile_size;
-                const int c_tile_col_start = tile_col * tile_size;
+  // Crear arrays locales para almacenar los tiles
+  RawDataT a_tile[TILE_SIZE][TILE_SIZE];
+  RawDataT b_tile[TILE_SIZE][TILE_SIZE];
+  RawDataT c_tile[TILE_SIZE][TILE_SIZE];
 
-                // Perform matrix multiplication for the current tile
-                for (int i = 0; i < tile_size; ++i) {
-                    for (int j = 0; j < tile_size; ++j) {
-#pragma HLS PIPELINE II=1
-                        // Initialize accumulator element
-                        DataT accumulator = 0;
+  // Particionar los arrays
+#pragma HLS ARRAY_PARTITION variable=a_tile complete dim=0
+#pragma HLS ARRAY_PARTITION variable=b_tile complete dim=0
+#pragma HLS ARRAY_PARTITION variable=c_tile complete dim=0
 
-                        // Perform dot product for elements within the tile
-                        for (int k = 0; k < tile_size; ++k) {
-#pragma HLS UNROLL
-                            // Access elements from input matrices 'a' and 'b'
-                            RawDataT a_raw = a[(a_tile_row_start + i) * (b_cols >> kShiftData) + (a_tile_col_start + k)];
-                            RawDataT b_raw = b[(b_tile_row_start + k) * (b_cols >> kShiftData) + (b_tile_col_start + j)];
-
-                            // Extract data from raw input
-                            DataT a_val, b_val;
-                            a_val.V = a_raw((k + 1) * 16 - 1, k * 16);
-                            b_val.V = b_raw((k + 1) * 16 - 1, k * 16);
-
-                            // Perform multiplication and accumulation
-                            accumulator += a_val * b_val;
-                        }
-
-                        // Write the accumulated result to the output matrix 'c'
-                        c[(c_tile_row_start + i) * (c_cols >> kShiftData) + (c_tile_col_start + j)] = accumulator;
-                    }
-                }
-            }
+  for (int ay_tile = 0; ay_tile < a_rows; ay_tile += TILE_SIZE) {
+    for (int cx_tile = 0; cx_tile < c_cols; cx_tile += TILE_SIZE) {
+      for (int bx_tile = 0; bx_tile < b_cols_shift; bx_tile += TILE_SIZE) {
+#pragma HLS pipeline II=1
+        // Cargar los tiles en los arrays locales
+        for (int i = 0; i < TILE_SIZE; ++i) {
+          for (int j = 0; j < TILE_SIZE; ++j) {
+            a_tile[i][j] = a[(ay_tile + i) * b_cols_shift + bx_tile + j];
+            b_tile[i][j] = b[(cx_tile + i) * b_cols_shift + bx_tile + j];
+          }
         }
+
+        // Realizar la multiplicación de matrices en los tiles
+        for (int ay = 0; ay < TILE_SIZE; ++ay) {
+          for (int cx = 0; cx < TILE_SIZE; ++cx) {
+#pragma HLS pipeline II=1
+            DataT val = 0.f;
+            for (int bx = 0; bx < TILE_SIZE; ++bx) {
+#pragma HLS unroll
+              val += a_tile[ay][bx] * b_tile[bx][cx];
+            }
+            c_tile[ay][cx] = val;
+          }
+        }
+
+        // Escribir los resultados en la matriz c
+        for (int i = 0; i < TILE_SIZE; ++i) {
+          for (int j = 0; j < TILE_SIZE; ++j) {
+            c[(ay_tile + i) * c_cols_shift + cx_tile + j] = c_tile[i][j];
+          }
+        }
+      }
     }
+  }
 }
+
 
 #endif
 
