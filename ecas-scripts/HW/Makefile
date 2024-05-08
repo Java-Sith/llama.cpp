@@ -26,7 +26,7 @@ HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(HLS_FILES:.cpp=.xo))
 # Setting V++ Flags
 VPP_PFLAGS :=
 VPP_LDFLAGS :=
-VPP_FLAGS += --save-temps --jobs 6 -DUSE_AXI_STREAM
+VPP_FLAGS += --save-temps --jobs 6
 
 RMDIR = rm -rf
 

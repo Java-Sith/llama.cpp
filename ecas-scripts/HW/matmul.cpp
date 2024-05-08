@@ -98,12 +98,6 @@ static void store_data(RawDataT *c, StreamT &c_s,
 static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
-#pragma HLS ARRAY_RESHAPE variable=b complete dim=1
-#pragma HLS ARRAY_RESHAPE variable=a complete dim=2
-#pragma HLS INTERFACE ap_fifo port=a
-#pragma HLS INTERFACE ap_fifo port=b
-#pragma HLS INTERFACE ap_fifo port=c
-#pragma HLS pipeline
 
 matmul_samples:
   for (int ay = 0; ay < a_rows; ++ay) {
@@ -114,6 +108,7 @@ matmul_layers:
       DataT val = 0.f;
 matmul_perceptron:
       for (int bx = 0; bx < b_cols_shift; ++bx) {
+#pragma HLS pipeline
         RawDataT a_raw = a[ay * b_cols_shift + bx];
         RawDataT b_raw = b[cx * b_cols_shift + bx];
         for (int p = 0; p < kPackets; ++p) {
@@ -134,7 +129,7 @@ matmul_perceptron:
       int cx_mod = cx & (kPackets - 1);
       int cx_div = cx >> kShiftData;
       int val_mod = (cx + 1) & (kPackets - 1);
-
+#pragma HLS pipeline
       // Write accordingly 
       int poff_low = cx_mod * kDataWidth;
       int poff_high = poff_low + kDataWidth - 1;
@@ -180,7 +175,22 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   store_data(c, c_stream, a_rows, b_cols, c_cols);
 
 #else
-  matmul_accel(a, b, c, a_rows, b_cols, c_cols);
+  // Define partition size and number of partitions
+  const int partition_size = 64; // Adjust partition size as needed
+  const int num_partitions = (a_rows + partition_size - 1) / partition_size;
+
+matmul_loop:
+#pragma HLS PIPELINE
+  // Loop over partitions of matrices 'a' and 'b'
+  for (int partition = 0; partition < num_partitions; ++partition) {
+#pragma HLS loop_tripcount min = 1 max = num_partitions
+      // Compute indices for current partition
+      int start_row = partition * partition_size;
+      int end_row = std::min(start_row + partition_size, a_rows);
+
+      // Call matmul_accel for the current partition
+      matmul_accel(&a[start_row * b_cols], b, &c[start_row * c_cols], end_row - start_row, b_cols, c_cols);
+  }
 #endif
 
 }
