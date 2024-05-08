@@ -102,7 +102,7 @@ static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int
 #pragma HLS ARRAY_RESHAPE variable=a complete dim=2
 #pragma HLS INTERFACE ap_fifo port=a
 #pragma HLS INTERFACE ap_fifo port=b
-#pragma HLS INTERFACE ap_fifo port=res
+#pragma HLS INTERFACE ap_fifo port=c
 #pragma HLS pipeline
 
 matmul_samples:
