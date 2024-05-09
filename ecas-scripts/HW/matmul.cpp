@@ -178,9 +178,16 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   // Define partition size and number of partitions
   const int partition_size = 64; // Adjust partition size as needed
   const int num_partitions = (a_rows + partition_size - 1) / partition_size;
+#pragma HLS ARRAY_PARTITION block variable=a factor=num_partitions
+#pragma HLS ARRAY_PARTITION block variable=b factor=num_partitions
+#pragma HLS ARRAY_PARTITION block variable=c factor=num_partitions
+
+#pragma HLS resource variable=a core=XPM_MEMORY uram
+#pragma HLS resource variable=b core=XPM_MEMORY uram
+#pragma HLS resource variable=c core=XPM_MEMORY uram
 
 matmul_loop:
-#pragma HLS PIPELINE
+#pragma HLS pipeline
   // Loop over partitions of matrices 'a' and 'b'
   for (int partition = 0; partition < num_partitions; ++partition) {
 #pragma HLS loop_tripcount min = 1 max = num_partitions
