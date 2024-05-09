@@ -1,4 +1,5 @@
 #include "config.h"
+#include <algorithm>
 
 #ifdef USE_AXI_STREAM
 /**
