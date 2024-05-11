@@ -242,7 +242,7 @@ readIn:
   for (int i = 0; i < partitions; ++i) {
 #pragma HLS LOOP_TRIPCOUNT min = size_a max = size_b
     load_data(a[size_a*i/partitions], b[size_b*i/partitions], localA[size_a*i/partitions], 
-            localB[size_b*i/partitions], a_rows, b_cols, c_cols)
+            localB[size_b*i/partitions], a_rows, b_cols, c_cols);
   }
 
 
@@ -258,7 +258,7 @@ matmul_loop:
 writeOut:
   for (int i = 0; i < partitions; ++i) {
 #pragma HLS LOOP_TRIPCOUNT min = size_c max = size_c
-    store_data(c[size_c*i/partitions], localC[size_c*i/partitions], a_rows, b_cols, c_cols)
+    store_data(c[size_c*i/partitions], localC[size_c*i/partitions], a_rows, b_cols, c_cols);
   }
 
 #endif
