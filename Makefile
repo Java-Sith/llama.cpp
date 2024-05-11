@@ -574,7 +574,7 @@ endif # LLAMA_MPI
 
 ifdef LLAMA_XRT
 	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I ./blas/L3/include/sw -I ./blas/L1/include/hw
-	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -lxrt_coreutil
+	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -luuid -lxrt_coreutil
 	OBJS        += ggml-xrt.o
 endif
 
