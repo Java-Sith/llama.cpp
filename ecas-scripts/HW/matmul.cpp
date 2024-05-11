@@ -105,9 +105,9 @@ static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int
   int size_b = (c_cols * b_cols) / partitions;
   int size_c = (a_rows * c_cols) / partitions;
 
-  RawDataT arrA[size_a];
-  RawDataT arrB[size_b];
-  RawDataT arrC[size_c];
+  uint16_t arrA[size_a];
+  uint16_t arrB[size_b];
+  uint16_t arrC[size_c];
 
 #pragma HLS resource variable=arrA core=XPM_MEMORY uram
 #pragma HLS resource variable=arrB core=XPM_MEMORY uram

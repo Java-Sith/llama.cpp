@@ -269,17 +269,9 @@ void ggml_xrt_mul_mat(
             float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
             float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
             float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
-            printf("X %d:", sizeof(*x));
-            printf("Y %d:", sizeof(*y));
-            printf("D %d:", sizeof(*d));
 
             if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
-            }
-            status = xfblasMallocRestricted(m, k, sizeof(*x), x, k, numKernel - 1);
-            if (status != XFBLAS_STATUS_SUCCESS) {
-                cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
-                //return EXIT_FAILURE;
             }
 
             status = xfblasMallocRestricted(k, n, sizeof(*y), y, n, numKernel - 1);
@@ -289,6 +281,13 @@ void ggml_xrt_mul_mat(
                 xfblasDestroy();
                 //return EXIT_FAILURE;
             }
+
+            status = xfblasMallocRestricted(m, k, sizeof(*x), x, k, numKernel - 1);
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
+                //return EXIT_FAILURE;
+            }
+
             status = xfblasMallocRestricted(m, n, sizeof(*d), d, n, numKernel - 1);
 
             if (status != XFBLAS_STATUS_SUCCESS) {
