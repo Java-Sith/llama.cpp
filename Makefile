@@ -107,11 +107,11 @@ MK_NVCCFLAGS = -std=c++17
 ifdef LLAMA_FAST
 MK_CFLAGS     += -Ofast
 HOST_CXXFLAGS += -Ofast
-MK_NVCCFLAGS  += -O3
+MK_NVCCFLAGS  += -O0
 else
-MK_CFLAGS     += -O3
-MK_CXXFLAGS   += -O3
-MK_NVCCFLAGS  += -O3
+MK_CFLAGS     += -O0
+MK_CXXFLAGS   += -O0
+MK_NVCCFLAGS  += -O0
 endif
 
 ifndef LLAMA_NO_CCACHE
@@ -455,7 +455,7 @@ ifdef LLAMA_CUDA_CCBIN
 endif
 ggml-cuda.o: ggml-cuda.cu ggml-cuda.h
 ifdef JETSON_EOL_MODULE_DETECT
-	$(NVCC) -I. -Icommon -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -DNDEBUG -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I/usr/local/cuda/targets/aarch64-linux/include -std=c++11 -O3 $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
+	$(NVCC) -I. -Icommon -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -DNDEBUG -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I/usr/local/cuda/targets/aarch64-linux/include -std=c++11 -O0 $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
 else
 	$(NVCC) $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
 endif # JETSON_EOL_MODULE_DETECT
