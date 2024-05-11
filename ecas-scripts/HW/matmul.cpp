@@ -240,7 +240,6 @@ readIn:
   }
 
 
-#pragma HLS DATAFLOW
 matmul_loop:
   for (int i=0; i < partitions; ++i) {
       #pragma HLS UNROLL
