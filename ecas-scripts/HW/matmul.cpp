@@ -97,8 +97,23 @@ static void store_data(RawDataT *c, StreamT &c_s,
 }
 #else
 
-static void load_data(RawDataT *a, RawDataT *b, RawDataT arrA[], RawDataT arrB[],
-               int a_rows, int b_cols, int c_cols) {
+static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
+  int b_cols_shift = b_cols >> kShiftData;
+  int c_cols_shift = c_cols >> kShiftData;
+  // Define array size and URAM access
+  int size_a = (a_rows * b_cols) / partitions;
+  int size_b = (c_cols * b_cols) / partitions;
+  int size_c = (a_rows * c_cols) / partitions;
+
+  RawDataT localA[size_a];
+  RawDataT localB[size_b];
+  RawDataT localC[size_c];
+
+#pragma HLS resource variable=localA core=XPM_MEMORY uram
+#pragma HLS resource variable=localB core=XPM_MEMORY uram
+#pragma HLS resource variable=localC core=XPM_MEMORY uram
+
+readIn:
   // Load B
   for (int ay = 0; ay < a_rows; ++ay) {
 #pragma HLS pipeline
@@ -109,7 +124,6 @@ static void load_data(RawDataT *a, RawDataT *b, RawDataT arrA[], RawDataT arrB[]
       }
     }
   }
-
   // Load A
   for (int cx = 0; cx < c_cols; ++cx) {
     for (int ay = 0; ay < a_rows; ++ay) {
@@ -120,34 +134,20 @@ static void load_data(RawDataT *a, RawDataT *b, RawDataT arrA[], RawDataT arrB[]
       }
     }
   }
-}
 
-static void store_data(RawDataT *c, RawDataT arrC[],
-               int a_rows, int b_cols, int c_cols) {
 
-  // Load C
-  for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS pipeline
-    for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-      int cidx = cx + cy * (c_cols >> kShiftData);
-      c[cidx] = arrC[cidx];
-    }
-  }
-}
-
-static void matmul_accel (RawDataT *arrA, RawDataT *arrB, RawDataT *arrC, int a_rows, int b_cols, int c_cols) {
-  int b_cols_shift = b_cols >> kShiftData;
-  int c_cols_shift = c_cols >> kShiftData;
-
+matmul_tiling:
   for (int ay_tile = 0; ay_tile < a_rows; ay_tile += TILE_SIZE) {
     for (int cx_tile = 0; cx_tile < c_cols; cx_tile += TILE_SIZE) {
       for (int bx_tile = 0; bx_tile < b_cols_shift; bx_tile += TILE_SIZE) {
 #pragma HLS pipeline
+matmul_samples:
         for (int ay = ay_tile; ay < std::min(ay_tile + TILE_SIZE, a_rows); ++ay) {
           RawDataT valpacket = 0;
           for (int cx = cx_tile; cx < std::min(cx_tile + TILE_SIZE, c_cols); ++cx) {
 #pragma HLS pipeline
             DataT val = 0.f;
+matmul_perceptron:
             for (int bx = bx_tile; bx < std::min(bx_tile + TILE_SIZE, b_cols_shift); ++bx) {
 #pragma HLS unroll
               RawDataT a_raw = arrA[ay * b_cols_shift + bx];
@@ -180,6 +180,16 @@ static void matmul_accel (RawDataT *arrA, RawDataT *arrB, RawDataT *arrC, int a_
       }
     }
   }
+// Load C
+writeC:
+  for (int cy = 0; cy < a_rows; ++cy) {
+#pragma HLS pipeline
+    for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
+      int cidx = cx + cy * (c_cols >> kShiftData);
+      c[cidx] = arrC[cidx];
+    }
+  }
+
 }
 #endif
 
@@ -212,30 +222,10 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   store_data(c, c_stream, a_rows, b_cols, c_cols);
 
 #else
-  // Define array size and URAM access
-  int size_a = a_rows * b_cols;
-  int size_b = c_cols * b_cols;
-  int size_c = a_rows * c_cols;
 
-  RawDataT localA[size_a];
-  RawDataT localB[size_b];
-  RawDataT localC[size_c];
-
-// #pragma HLS ARRAY_PARTITION block variable=localA factor=partitions
-// #pragma HLS ARRAY_PARTITION block variable=localB factor=partitions
-// #pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
-
-#pragma HLS resource variable=localA core=XPM_MEMORY uram
-#pragma HLS resource variable=localB core=XPM_MEMORY uram
-#pragma HLS resource variable=localC core=XPM_MEMORY uram
-
-readIn:
-  for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = size_a max = size_b
-    load_data(&a[size_a*i/partitions], &b[size_b*i/partitions], &localA[size_a*i/partitions], 
-            &localB[size_b*i/partitions], a_rows, b_cols, c_cols);
-  }
-
+int size_a = a_rows * b_cols;
+int size_b = c_cols * b_cols;
+int size_c = a_rows * c_cols;
 
 #pragma HLS DATAFLOW
 matmul_loop:
@@ -244,12 +234,6 @@ matmul_loop:
     // each instance accesses a different block
     matmul_accel(&localA[size_a*i/partitions], &localB[size_b*i/partitions], &localC[size_c*i/partitions],
                 a_rows, b_cols, c_cols);
-  }
-
-writeOut:
-  for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = size_c max = size_c
-    store_data(&c[size_c*i/partitions], &localC[size_c*i/partitions], a_rows, b_cols, c_cols);
   }
 
 #endif
