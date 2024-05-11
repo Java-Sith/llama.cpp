@@ -30,12 +30,13 @@ VPP_FLAGS += --save-temps --jobs 6
 
 RMDIR = rm -rf
 
-.PHONY: all clean cleanall #fpgabin
+.PHONY: all clean cleanall hls-build
 
 all: build
 
 .PHONY: build
 build: check_platform emconfig $(LINK_OUTPUT) $(XCL_BIN) #$(FPGA_BIN) 
+hls-build: check_platform emconfig $(TEMP_DIR)/%.xo
 
 # Rules for creating the HW
 check_platform:
