@@ -153,8 +153,8 @@ static void matmul_accel (RawDataT (&arrA)[N], RawDataT (&arrB)[N], RawDataT (&a
             DataT val = 0.f;
             for (int bx = bx_tile; bx < std::min(bx_tile + TILE_SIZE, b_cols_shift); ++bx) {
 #pragma HLS unroll
-              RawDataT a_raw = a[ay * b_cols_shift + bx];
-              RawDataT b_raw = b[cx * b_cols_shift + bx];
+              RawDataT a_raw = arrA[ay * b_cols_shift + bx];
+              RawDataT b_raw = arrB[cx * b_cols_shift + bx];
               for (int p = 0; p < kPackets; ++p) {
 #pragma HLS unroll
                 int poff_low = p * kDataWidth;
@@ -175,7 +175,7 @@ static void matmul_accel (RawDataT (&arrA)[N], RawDataT (&arrB)[N], RawDataT (&a
             valpacket(poff_high, poff_low) = val.V;
             // Stream out if done
             if (val_mod == 0) {
-              c[cx_div + ay * c_cols_shift] = valpacket;
+              arrC[cx_div + ay * c_cols_shift] = valpacket;
               valpacket = 0;
             }
           }
@@ -240,9 +240,9 @@ Usar la URAM de la siguiente forma:
 
 readIn:
   for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = a_size max = b_size
-    load_data(a[size_a*i/partitions], b[size_a*i/partitions], localA[size_a*i/partitions], 
-            localB[size_a*i/partitions], a_rows, b_cols, c_cols)
+#pragma HLS LOOP_TRIPCOUNT min = size_a max = size_b
+    load_data(a[size_a*i/partitions], b[size_b*i/partitions], localA[size_a*i/partitions], 
+            localB[size_b*i/partitions], a_rows, b_cols, c_cols)
   }
 
 
@@ -251,14 +251,14 @@ matmul_loop:
   for (int i=0; i < partitions; ++i) {
       #pragma HLS UNROLL
       // each instance accesses a different block
-      matmul_accel(localA[size_a*i/partitions], localB[size_a*i/partitions], localC[size_a*i/partitions],
+      matmul_accel(localA[size_a*i/partitions], localB[size_b*i/partitions], localC[size_c*i/partitions],
                   a_rows, b_cols, c_cols);
   }
 
 writeOut:
   for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = c_size max = c_size
-    store_data(c[size_a*i/partitions], localC[size_a*i/partitions], a_rows, b_cols, c_cols)
+#pragma HLS LOOP_TRIPCOUNT min = size_c max = size_c
+    store_data(c[size_c*i/partitions], localC[size_c*i/partitions], a_rows, b_cols, c_cols)
   }
 
 #endif
