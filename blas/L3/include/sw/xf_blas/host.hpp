@@ -163,8 +163,12 @@ class XHost {
         auto& l_hostPtr = m_hostMat;
         auto& l_hostSzPtr = m_hostMatSz;
         if (((unsigned long)p_matPtr & (PAGE_SIZE - 1)) != 0) {
-            void* l_matPtr;
+            void* l_matPtr = nullptr;
             posix_memalign((void**)&l_matPtr, 4096, p_bufSize);
+            if (!l_matPtr) {
+              std::cerr << "------ Cannot memalign -------" << std::endl;
+              return false;
+            }
             memcpy(l_matPtr, p_matPtr, p_bufSize);
             if (l_hostPtr.find(p_hostHandle) == l_hostPtr.end()) {
                 l_hostPtr[p_hostHandle] = l_matPtr;
