@@ -224,6 +224,14 @@ void ggml_xrt_mul_mat(
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
 
+    const int64_t ne02 = src0->ne[2];
+    const int64_t ne03 = src0->ne[3];
+
+    const int64_t nb02 = src0->nb[2];
+    const int64_t nb03 = src0->nb[3];
+    const int64_t nb12 = src1->nb[2];
+    const int64_t nb13 = src1->nb[3];
+
     const int nb2  = dst->nb[2];
     const int nb3  = dst->nb[3];
 
@@ -269,7 +277,7 @@ void ggml_xrt_mul_mat(
             printf("D %d:", sizeof(*d));
 
             if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+                x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }
             status = xfblasMallocRestricted(m, k, sizeof(*x), x, k, numKernel - 1);
             if (status != XFBLAS_STATUS_SUCCESS) {

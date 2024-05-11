@@ -221,9 +221,9 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   RawDataT localB[size_b];
   RawDataT localC[size_c];
 
-#pragma HLS ARRAY_PARTITION block variable=localA factor=partitions
-#pragma HLS ARRAY_PARTITION block variable=localB factor=partitions
-#pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
+// #pragma HLS ARRAY_PARTITION block variable=localA factor=partitions
+// #pragma HLS ARRAY_PARTITION block variable=localB factor=partitions
+// #pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
 
 #pragma HLS resource variable=localA core=XPM_MEMORY uram
 #pragma HLS resource variable=localB core=XPM_MEMORY uram
