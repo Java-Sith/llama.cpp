@@ -34,7 +34,7 @@
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
 #include "ggml-quants.h"
-#include "ap_fixed.h"
+//#include "ap_fixed.h"
 
 // XRT includes
 //#include "experimental/xrt_bo.h"
@@ -51,9 +51,11 @@ static int g_main_device = 0;
 static int g_main_device_index = 0;
 
 //static xrt::device myDevice;
-static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
+static std::string binaryFile = "./blas/L3/examples/memKernel/gemm/build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/blas.xclbin";
 //static xrt::kernel matmul;
+static std::string configFile = "./blas/L3/examples/memKernel/gemm/build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/config_info.dat";
 static int numKernel = 1;
+static xfblasStatus_t status;
 
 static bool g_xrt_loaded = false;
 //using DataT = ap_fixed<32, 8>;
@@ -106,7 +108,7 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     }
     std::cout << "Open the device: " << g_main_device << std::endl;
     xfblasEngine_t engineName = XFBLAS_ENGINE_GEMM;
-    xfblasStatus_t status = xfblasCreate(binaryFile.c_str(), configFile, engineName, numKernel);
+    status = xfblasCreate(binaryFile.c_str(), configFile, engineName, numKernel);
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout << "Create Handle failed with error code: " << status << "\n";
         return EXIT_FAILURE;
@@ -253,9 +255,9 @@ void ggml_xrt_mul_mat(
     int size_a = ne1*ne10; //MxK
     int size_b = ne01*ne10; //KxN
     int size_c = ne01*ne1; //MxN
-    DataT *as = new DataT[size_a];
-    DataT *bs = new DataT[size_b];
-    DataT *cs = new DataT[size_c];
+    int m = ne1;
+    int n = ne10;
+    int k = ne10;
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -269,54 +271,63 @@ void ggml_xrt_mul_mat(
             if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
             }
-
-            auto bo_a_mm = xrt::bo(myDevice, size_a * sizeof(uint32_t), matmul.group_id(0));
-            auto bo_b_mm = xrt::bo(myDevice, size_b * sizeof(uint32_t), matmul.group_id(1));
-            auto bo_c_mm = xrt::bo(myDevice, size_c * sizeof(uint32_t), matmul.group_id(2));
-            auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
-            auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
-            auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
-
-            for (int elem = 0; elem < size_a; ++elem) {
-                //std::cout << as.V << " ";
-                as[elem] = static_cast<DataT>(x[elem]);;
-                bo_a_mm_map[elem] = as[elem].V;
+            status = xfblasMallocRestricted(m, k, sizeof(*x), x, k, numKernel - 1);
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
+                return EXIT_FAILURE;
             }
-            for (int elem = 0; elem < size_b; ++elem) {
-                //std::cout << as.V << " ";
-                bs[elem] = static_cast<DataT>(y[elem]);;
-                bo_b_mm_map[elem] = bs[elem].V;
-            }
-            for (int elem = 0; elem < size_c; ++elem) {
-                //std::cout << as.V << " ";
-                cs[elem] = static_cast<DataT>(d[elem]);;
-                bo_c_mm_map[elem] = cs[elem].V;
-            }
-            bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-            bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne1, ne01, ne10);
-            run_mm.wait();
+            status = xfblasMallocRestricted(k, n, sizeof(*y), y, n, numKernel - 1);
 
-            bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Malloc memory for matrix B failed with error code: " << status << "\n";
+                xfblasDestroy();
+                return EXIT_FAILURE;
+            }
+            status = xfblasMallocRestricted(m, n, sizeof(*d), d, n, numKernel - 1);
+
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Malloc memory for matrix C failed with error code: " << status << "\n";
+                xfblasDestroy();
+                return EXIT_FAILURE;
+            }
+
+            status = xfblasSetMatrixRestricted(x, numKernel - 1);
+            status = xfblasSetMatrixRestricted(y, numKernel - 1);
+            status = xfblasSetMatrixRestricted(d, numKernel - 1);
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Set Matrix failed with error code: " << status << "\n";
+                xfblasDestroy();
+                return EXIT_FAILURE;
+            }
+
+            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, x, k, y, n, 1, d, n, numKernel - 1);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
                         1.0f,    y, ne10,
                                 x, ne00,
                         0.0f,    d, ne01);*/
-            for (int elem = 0; elem < size_c; ++elem) {
-                cs[elem].V = bo_c_mm_map[elem];
-                d[elem] = static_cast<float>(cs[elem]);
-                //std::cout << cs << " ";
-                //std::cout << std::hex << cs.V << " ";
-                //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
+
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Matrix Multiplication failed with error code: " << status << "\n";
+                xfblasDestroy();
+                return EXIT_FAILURE;
             }
+
+            status = xfblasGetMatrixRestricted(d, numKernel - 1);
+
+            if (status != XFBLAS_STATUS_SUCCESS) {
+                cout << "Get Matrix failed with error code: " << status << "\n";
+                xfblasDestroy();
+                return EXIT_FAILURE;
+            }
+
+            xfblasFree(x, numKernel - 1);
+            xfblasFree(y, numKernel - 1);
+            xfblasFree(d, numKernel - 1);
         }
     }
-    delete[] as;
-    delete[] bs;
-    delete[] cs;
 }
 
 static void ggml_xrt_unary(
@@ -480,6 +491,11 @@ GGML_CALL void ggml_init_xrt() {
         initialized = true;
         g_xrt_loaded = true;
     }
+}
+
+GGML_CALL void ggml_end_xrt() {
+    g_xrt_loaded = false;
+    xfblasDestroy(numKernel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

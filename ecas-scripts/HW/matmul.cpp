@@ -98,7 +98,7 @@ static void store_data(RawDataT *c, StreamT &c_s,
 #else
 
 template <size_t N>
-static void load_data(RawDataT *a, RawDataT *b, RawDataT (&arrA)[N], RawDataT (&arrB)[N],
+static void load_data(RawDataT *a, RawDataT *b, RawDataT arrA[], RawDataT arrB[],
                int a_rows, int b_cols, int c_cols) {
   // Load B
   for (int ay = 0; ay < a_rows; ++ay) {
@@ -123,8 +123,7 @@ static void load_data(RawDataT *a, RawDataT *b, RawDataT (&arrA)[N], RawDataT (&
   }
 }
 
-template <size_t N>
-static void store_data(RawDataT *c, RawDataT (&arrC)[N],
+static void store_data(RawDataT *c, RawDataT arrC[],
                int a_rows, int b_cols, int c_cols) {
 
   // Load C
@@ -137,8 +136,7 @@ static void store_data(RawDataT *c, RawDataT (&arrC)[N],
   }
 }
 
-template <size_t N>
-static void matmul_accel (RawDataT (&arrA)[N], RawDataT (&arrB)[N], RawDataT (&arrC)[N], int a_rows, int b_cols, int c_cols) {
+static void matmul_accel (RawDataT arrA[], RawDataT arrB[], RawDataT arrC[], int a_rows, int b_cols, int c_cols) {
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
 
@@ -232,33 +230,27 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
 #pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
 #pragma HLS resource variable=localC core=XPM_MEMORY uram
 
-/*Systolic Array usa caching y fijarme en eso
-Usar la URAM de la siguiente forma:
-#pragma HLS resource variable=a core=XPM_MEMORY uram
-#pragma HLS resource variable=b core=XPM_MEMORY uram
-#pragma HLS resource variable=c core=XPM_MEMORY uram*/
-
 readIn:
   for (int i = 0; i < partitions; ++i) {
 #pragma HLS LOOP_TRIPCOUNT min = size_a max = size_b
-    load_data(a[size_a*i/partitions], b[size_b*i/partitions], localA[size_a*i/partitions], 
-            localB[size_b*i/partitions], a_rows, b_cols, c_cols);
+    load_data(&a[size_a*i/partitions], &b[size_b*i/partitions], &localA[size_a*i/partitions], 
+            &localB[size_b*i/partitions], a_rows, b_cols, c_cols);
   }
 
 
 #pragma HLS DATAFLOW
 matmul_loop:
   for (int i=0; i < partitions; ++i) {
-      #pragma HLS UNROLL
-      // each instance accesses a different block
-      matmul_accel(localA[size_a*i/partitions], localB[size_b*i/partitions], localC[size_c*i/partitions],
-                  a_rows, b_cols, c_cols);
+    #pragma HLS UNROLL
+    // each instance accesses a different block
+    matmul_accel(&localA[size_a*i/partitions], &localB[size_b*i/partitions], &localC[size_c*i/partitions],
+                a_rows, b_cols, c_cols);
   }
 
 writeOut:
   for (int i = 0; i < partitions; ++i) {
 #pragma HLS LOOP_TRIPCOUNT min = size_c max = size_c
-    store_data(c[size_c*i/partitions], localC[size_c*i/partitions], a_rows, b_cols, c_cols);
+    store_data(&c[size_c*i/partitions], &localC[size_c*i/partitions], a_rows, b_cols, c_cols);
   }
 
 #endif
