@@ -37,7 +37,6 @@ all: build
 
 .PHONY: build
 build: check_platform emconfig $(LINK_OUTPUT) $(XCL_BIN) #$(FPGA_BIN) 
-hls-build: check_platform emconfig $(HLS_BUILD)
 
 # Rules for creating the HW
 check_platform:
@@ -45,13 +44,15 @@ ifndef PLATFORM
 	$(error PLATFORM not set. Please set the PLATFORM properly and rerun. Run "make help" for more details.)
 endif
 
-$(HLS_BUILD): %.cpp
+$(TEMP_DIR)/%.xo: %.cpp
 	mkdir -p $(TEMP_DIR)
 	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(<:.cpp=) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o '$@' '$<'
 
 $(LINK_OUTPUT): $(HLS_KERNEL_FILES)
 	mkdir -p $(BUILD_DIR)
 	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --temp_dir $(TEMP_DIR) -o'$(LINK_OUTPUT)' $^
+
+hls-build: check_platform emconfig $(HLS_KERNEL_FILES)
 
 emconfig:$(EMCONFIG_DIR)/emconfig.json
 $(EMCONFIG_DIR)/emconfig.json:
