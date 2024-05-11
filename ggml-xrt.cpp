@@ -37,9 +37,10 @@
 #include "ap_fixed.h"
 
 // XRT includes
-#include "experimental/xrt_bo.h"
-#include "experimental/xrt_device.h"
-#include "experimental/xrt_kernel.h"
+//#include "experimental/xrt_bo.h"
+//#include "experimental/xrt_device.h"
+//#include "experimental/xrt_kernel.h"
+#include "xf_blas.hpp"
 
 #define MATRIX_ROW_PADDING 512
 #define UNUSED GGML_UNUSED
@@ -49,12 +50,13 @@ static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
 
-static xrt::device myDevice;
+//static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
-static xrt::kernel matmul;
+//static xrt::kernel matmul;
+static int numKernel = 1;
 
 static bool g_xrt_loaded = false;
-using DataT = ap_fixed<32, 8>;
+//using DataT = ap_fixed<32, 8>;
 
 bool ggml_xrt_loaded(void) {
     return g_xrt_loaded;
@@ -102,11 +104,13 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
     }
-    std::cout << "Open the device " << g_main_device << std::endl;
-    myDevice = xrt::device(g_main_device);
-    std::cout << "Load the xclbin " << binaryFile << std::endl;
-    auto uuid = myDevice.load_xclbin(binaryFile);
-    matmul = xrt::kernel(myDevice, uuid, "matmul");
+    std::cout << "Open the device: " << g_main_device << std::endl;
+    xfblasEngine_t engineName = XFBLAS_ENGINE_GEMM;
+    xfblasStatus_t status = xfblasCreate(binaryFile.c_str(), configFile, engineName, numKernel);
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Create Handle failed with error code: " << status << "\n";
+        return EXIT_FAILURE;
+    }
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 

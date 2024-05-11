@@ -172,13 +172,18 @@ int main(int argc, char** argv) {
     run_mm.wait();
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto time = end_time - start_time;
+    auto matmul_time = end_time - start_time;
+
+    // Start the clock
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     std::cout << "Execution of the kernel: elemwise\n";
     auto run_ew = elementwise(bo_a_ew, bo_b_ew, bo_c_ew, size_em, 0); // 0: add, 1: addrelu, 2: mult
     std::cout << "Waiting to the end\n";
     run_ew.wait();
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto elementwise_time = end_time - start_time;
 
     // Get the output;
     std::cout << "Get the output data from the device" << std::endl;
@@ -202,7 +207,8 @@ int main(int argc, char** argv) {
     }
     // std::cout << std::endl;
     // Print the duration
-    std::cout << "Milliseconds = " << time/std::chrono::milliseconds(1) << " ms " << '\n';
+    std::cout << "Matrix multiplication = " << matmul_time/std::chrono::milliseconds(1) << " ms " << '\n';
+    std::cout << "Element wise = " << elementwise_time/std::chrono::milliseconds(1) << " ms " << '\n';
     std::cout << cynq_profiler << std::endl;
     std::cout << "TEST PASSED\n";
     return 0;
