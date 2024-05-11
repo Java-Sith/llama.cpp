@@ -303,7 +303,7 @@ void ggml_xrt_mul_mat(
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, alpha, x, k, y, n, beta, d, n, numKernel - 1);
+            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, alpha, y, k, x, n, beta, d, n, numKernel - 1);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
