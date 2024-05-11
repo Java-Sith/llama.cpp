@@ -224,9 +224,6 @@ void ggml_xrt_mul_mat(
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
 
-    const int64_t ne02 = src0->ne[2];
-    const int64_t ne03 = src0->ne[3];
-
     const int64_t nb02 = src0->nb[2];
     const int64_t nb03 = src0->nb[3];
     const int64_t nb12 = src1->nb[2];
