@@ -135,7 +135,7 @@ static void store_data(RawDataT *c, RawDataT arrC[],
   }
 }
 
-static void matmul_accel (RawDataT arrA[], RawDataT arrB[], RawDataT arrC[], int a_rows, int b_cols, int c_cols) {
+static void matmul_accel (RawDataT *arrA, RawDataT *arrB, RawDataT *arrC, int a_rows, int b_cols, int c_cols) {
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
 
@@ -218,15 +218,15 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   int size_c = a_rows * c_cols;
 
   RawDataT localA[size_a];
-//#pragma HLS ARRAY_PARTITION block variable=localA factor=partitions
-#pragma HLS resource variable=localA core=XPM_MEMORY uram
-
   RawDataT localB[size_b];
-//#pragma HLS ARRAY_PARTITION block variable=localB factor=partitions
-#pragma HLS resource variable=localB core=XPM_MEMORY uram
-
   RawDataT localC[size_c];
-//#pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
+
+#pragma HLS ARRAY_PARTITION block variable=localA factor=partitions
+#pragma HLS ARRAY_PARTITION block variable=localB factor=partitions
+#pragma HLS ARRAY_PARTITION block variable=localC factor=partitions
+
+#pragma HLS resource variable=localA core=XPM_MEMORY uram
+#pragma HLS resource variable=localB core=XPM_MEMORY uram
 #pragma HLS resource variable=localC core=XPM_MEMORY uram
 
 readIn:

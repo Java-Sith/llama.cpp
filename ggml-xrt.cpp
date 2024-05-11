@@ -209,39 +209,36 @@ void ggml_xrt_mul_mat(
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
-    GGML_TENSOR_BINARY_OP_LOCALS
-
     const int ith = params->ith;
     const int nth = params->nth;
 
     const enum ggml_type type = src0->type;
 
-    //const bool src1_cont = ggml_is_contiguous(src1);
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+    const int64_t ne02 = src0->ne[2];
+    const int64_t ne03 = src0->ne[3];
 
-    const int64_t ne_plane = ne01*ne00;
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+    const int64_t ne12 = src1->ne[2];
+    const int64_t ne13 = src1->ne[3];
 
-    GGML_ASSERT(ne0 == ne01);
-    GGML_ASSERT(ne1 == ne11);
-    GGML_ASSERT(ne2 == ne12);
-    GGML_ASSERT(ne3 == ne13);
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
 
-    // we don't support permuted src0 or src1
-    GGML_ASSERT(nb00 == ggml_type_size(type));
-    GGML_ASSERT(nb10 == ggml_type_size(src1->type));
+    const int64_t r2 = ne12 / ne02;
+    const int64_t r3 = ne13 / ne03;
 
-    // dst cannot be transposed or permuted
-    GGML_ASSERT(nb0 == sizeof(float));
-    GGML_ASSERT(nb0 <= nb1);
-    GGML_ASSERT(nb1 <= nb2);
-    GGML_ASSERT(nb2 <= nb3);
+    const float alpha = 1;
+    const float beta = 1;
+    const int x_ne = ne01 * ne00;
+    const int y_ne = ne11 * ne10;
+    const int d_ne = ne11 * ne01;
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
     }
-
-    // broadcast factors
-    const int64_t r2 = ne12/ne02;
-    const int64_t r3 = ne13/ne03;
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
@@ -255,9 +252,9 @@ void ggml_xrt_mul_mat(
     //int size_a = ne1*ne10; //MxK
     //int size_b = ne01*ne10; //KxN
     //int size_c = ne01*ne1; //MxN
-    int m = ne1;
-    int n = ne10;
-    int k = ne10;
+    int m = ne00;
+    int n = ne11;
+    int k = ne01;
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -267,6 +264,9 @@ void ggml_xrt_mul_mat(
             float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
             float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
             float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+            printf("X %d:", sizeof(*x));
+            printf("Y %d:", sizeof(*y));
+            printf("D %d:", sizeof(*d));
 
             if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
@@ -301,7 +301,7 @@ void ggml_xrt_mul_mat(
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, x, k, y, n, 1, d, n, numKernel - 1);
+            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, alpha, x, k, y, n, beta, d, n, numKernel - 1);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
