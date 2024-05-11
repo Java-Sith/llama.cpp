@@ -105,13 +105,13 @@ static void matmul_accel (RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int
   int size_b = (c_cols * b_cols) / partitions;
   int size_c = (a_rows * c_cols) / partitions;
 
-  RawDataT localA[size_a];
-  RawDataT localB[size_b];
-  RawDataT localC[size_c];
+  RawDataT arrA[size_a];
+  RawDataT arrB[size_b];
+  RawDataT arrC[size_c];
 
-#pragma HLS resource variable=localA core=XPM_MEMORY uram
-#pragma HLS resource variable=localB core=XPM_MEMORY uram
-#pragma HLS resource variable=localC core=XPM_MEMORY uram
+#pragma HLS resource variable=arrA core=XPM_MEMORY uram
+#pragma HLS resource variable=arrB core=XPM_MEMORY uram
+#pragma HLS resource variable=arrC core=XPM_MEMORY uram
 
 readIn:
   // Load B
@@ -232,7 +232,7 @@ matmul_loop:
   for (int i=0; i < partitions; ++i) {
     #pragma HLS UNROLL
     // each instance accesses a different block
-    matmul_accel(&localA[size_a*i/partitions], &localB[size_b*i/partitions], &localC[size_c*i/partitions],
+    matmul_accel(&a[size_a*i/partitions], &b[size_b*i/partitions], &c[size_c*i/partitions],
                 a_rows, b_cols, c_cols);
   }
 
