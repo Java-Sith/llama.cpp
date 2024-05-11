@@ -24,6 +24,7 @@ extern "C" {
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 GGML_API void ggml_init_xrt(void);
+GGML_API void ggml_end_xrt(void);
 GGML_API bool   ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor);
 GGML_API ggml_backend_t ggml_backend_xrt_init(int device);
 GGML_API ggml_backend_buffer_type_t ggml_backend_xrt_buffer_type(int device);

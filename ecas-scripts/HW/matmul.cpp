@@ -97,7 +97,6 @@ static void store_data(RawDataT *c, StreamT &c_s,
 }
 #else
 
-template <size_t N>
 static void load_data(RawDataT *a, RawDataT *b, RawDataT arrA[], RawDataT arrB[],
                int a_rows, int b_cols, int c_cols) {
   // Load B
