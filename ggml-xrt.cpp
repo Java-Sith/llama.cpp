@@ -257,45 +257,53 @@ void ggml_xrt_mul_mat(
     //int size_a = ne1*ne10; //MxK
     //int size_b = ne01*ne10; //KxN
     //int size_c = ne01*ne1; //MxN
-    int m = ne11;
-    int n = ne01;
-    int k = ne10;
+    const float alpha = 1;
+    const float beta = 1;
+    const int x_ne = ne01 * ne00;
+    const int y_ne = ne11 * ne10;
+    const int d_ne = ne11 * ne01;
+
+    float *x, *y, *d;
+
+    posix_memalign((void**)&x, 4096, x_ne * sizeof(float));
+    posix_memalign((void**)&y, 4096, y_ne * sizeof(float));
+    posix_memalign((void**)&d, 4096, d_ne * sizeof(float));
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
             const int64_t i03 = i13/r3;
             const int64_t i02 = i12/r2;
 
-            float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
-            float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
-            float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+            x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
+            y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
+            d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
 
             if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }
 
-            status = xfblasMallocRestricted(m, k, sizeof(*y), y, k, numKernel - 1);
+            status = xfblasMallocRestricted(ne11, ne10, sizeof(*y), y, ne10, numKernel - 1);
             if (status != XFBLAS_STATUS_SUCCESS) {
                 cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasMallocRestricted(k, n, sizeof(*x), x, n, numKernel - 1);
+            status = xfblasMallocRestricted(ne01, ne00, sizeof(*x), x, ne00, numKernel - 1);
             if (status != XFBLAS_STATUS_SUCCESS) {
                 cout << "Malloc memory for matrix B failed with error code: " << status << "\n";
                 xfblasDestroy();
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasMallocRestricted(m, n, sizeof(*d), d, n, numKernel - 1);
+            status = xfblasMallocRestricted(ne11, ne01, sizeof(*d), d, ne01, numKernel - 1);
             if (status != XFBLAS_STATUS_SUCCESS) {
                 cout << "Malloc memory for matrix C failed with error code: " << status << "\n";
                 xfblasDestroy();
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasSetMatrixRestricted(x, numKernel - 1);
             status = xfblasSetMatrixRestricted(y, numKernel - 1);
+            status = xfblasSetMatrixRestricted(x, numKernel - 1);
             status = xfblasSetMatrixRestricted(d, numKernel - 1);
             if (status != XFBLAS_STATUS_SUCCESS) {
                 cout << "Set Matrix failed with error code: " << status << "\n";
@@ -303,7 +311,7 @@ void ggml_xrt_mul_mat(
                 //return EXIT_FAILURE;
             }
 
-            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, alpha, y, k, x, n, beta, d, n, numKernel - 1);
+            status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, ne11, ne00, ne10, alpha, y, ne10, x, ne00, beta, d, ne01, numKernel - 1);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,

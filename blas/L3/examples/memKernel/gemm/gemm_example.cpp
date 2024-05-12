@@ -24,9 +24,9 @@
 #include "xf_blas.hpp"
 
 #define IDX2R(i, j, ld) (((i) * (ld)) + (j))
-#define m 64 // a - mxk matrix
-#define n 64 // b - kxn matrix
-#define k 64 // c - mxn matrix
+#define m 2 // a - mxk matrix
+#define n 4096 // b - kxn matrix
+#define k 4096 // c - mxn matrix
 
 using namespace std;
 

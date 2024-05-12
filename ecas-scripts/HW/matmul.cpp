@@ -1,5 +1,4 @@
 #include "config.h"
-#include <algorithm>
 
 #ifdef USE_AXI_STREAM
 /**
@@ -101,6 +100,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
                int a_rows, int b_cols, int c_cols) {
   // Load B
   for (int ay = 0; ay < a_rows; ++ay) {
+#pragma HLS LOOP_TRIPCOUNT min = a_rows max = a_rows
 #pragma HLS pipeline
     for (int cx = 0; cx < c_cols; ++cx) {
       for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
@@ -113,6 +113,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
   // Load A
   for (int cx = 0; cx < c_cols; ++cx) {
     for (int ay = 0; ay < a_rows; ++ay) {
+#pragma HLS LOOP_TRIPCOUNT min = a_rows max = a_rows
 #pragma HLS pipeline
       for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
         int aidx = ax + ay * (b_cols >> kShiftData);
@@ -127,6 +128,7 @@ static void store_data(RawDataT *c, uint16_t* arrC,
 
   // Load C
   for (int cy = 0; cy < a_rows; ++cy) {
+#pragma HLS LOOP_TRIPCOUNT min = a_rows max = a_rows
 #pragma HLS pipeline
     for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
       int cidx = cx + cy * (c_cols >> kShiftData);
@@ -135,48 +137,53 @@ static void store_data(RawDataT *c, uint16_t* arrC,
   }
 }
 
-static void matmul_accel (uint16_t* arrA, uint16_t* arrB, uint16_t* arrC, int a_rows, int b_cols, int c_cols) {
+static void matmul_accel (uint16_t *arrA, uint16_t *arrB, uint16_t *arrC, int a_rows, int b_cols, int c_cols) {
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
 
-  for (int ay_tile = 0; ay_tile < a_rows; ay_tile += TILE_SIZE) {
-    for (int cx_tile = 0; cx_tile < c_cols; cx_tile += TILE_SIZE) {
-      for (int bx_tile = 0; bx_tile < b_cols_shift; bx_tile += TILE_SIZE) {
+matmul_samples:
+  for (int ay = 0; ay < a_rows; ++ay) {
+#pragma HLS LOOP_TRIPCOUNT min = a_rows max = a_rows
+matmul_layers:
+    RawDataT valpacket = 0;
+    for (int cx = 0; cx < c_cols; ++cx) {
+#pragma HLS LOOP_TRIPCOUNT min = c_cols max = c_cols
 #pragma HLS pipeline
-        for (int ay = ay_tile; ay < std::min(ay_tile + TILE_SIZE, a_rows); ++ay) {
-          RawDataT valpacket = 0;
-          for (int cx = cx_tile; cx < std::min(cx_tile + TILE_SIZE, c_cols); ++cx) {
-#pragma HLS pipeline
-            DataT val = 0.f;
-            for (int bx = bx_tile; bx < std::min(bx_tile + TILE_SIZE, b_cols_shift); ++bx) {
+      DataT val = 0.f;
+matmul_perceptron:
+      for (int bx = 0; bx < b_cols_shift; ++bx) {
+#pragma HLS LOOP_TRIPCOUNT min = b_cols_shift max = b_cols_shift
+        RawDataT a_raw = arrA[ay * b_cols_shift + bx];
+        RawDataT b_raw = arrB[cx * b_cols_shift + bx];
+        for (int p = 0; p < kPackets; ++p) {
 #pragma HLS unroll
-              RawDataT a_raw = arrA[ay * b_cols_shift + bx];
-              RawDataT b_raw = arrB[cx * b_cols_shift + bx];
-              for (int p = 0; p < kPackets; ++p) {
-#pragma HLS unroll
-                int poff_low = p * kDataWidth;
-                int poff_high = poff_low + kDataWidth - 1;
-                DataT a, b;
-                a.V = a_raw(poff_high, poff_low);
-                b.V = b_raw(poff_high, poff_low);
-                val += a * b;
-              }
-            }
-            // Get the indices
-            int cx_mod = cx & (kPackets - 1);
-            int cx_div = cx >> kShiftData;
-            int val_mod = (cx + 1) & (kPackets - 1);
-            // Write accordingly 
-            int poff_low = cx_mod * kDataWidth;
-            int poff_high = poff_low + kDataWidth - 1;
-            valpacket(poff_high, poff_low) = val.V;
-            // Stream out if done
-            if (val_mod == 0) {
-              arrC[cx_div + ay * c_cols_shift] = valpacket;
-              valpacket = 0;
-            }
-          }
+          int poff_low = p * kDataWidth;
+          int poff_high = poff_low + kDataWidth - 1;
+          
+          DataT a, b;
+
+          a.V = a_raw(poff_high, poff_low);
+          b.V = b_raw(poff_high, poff_low);
+
+          val += a * b;
         }
+      }
+
+      // Get the indices
+      int cx_mod = cx & (kPackets - 1);
+      int cx_div = cx >> kShiftData;
+      int val_mod = (cx + 1) & (kPackets - 1);
+
+      // Write accordingly 
+      int poff_low = cx_mod * kDataWidth;
+      int poff_high = poff_low + kDataWidth - 1;
+
+      valpacket(poff_high, poff_low) = val.V;
+
+      // Stream out if done
+      if (val_mod == 0) {
+        arrC[cx_div + ay * c_cols_shift] = valpacket;
+        valpacket = 0;
       }
     }
   }
@@ -212,8 +219,6 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   store_data(c, c_stream, a_rows, b_cols, c_cols);
 
 #else
-  // Define array size and URAM access
-
   int size_a = MAX_SIZE * kShiftData;
   int size_b = MAX_SIZE * MAX_SIZE;
   int size_c = MAX_SIZE * kShiftData;
@@ -226,33 +231,10 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
 #pragma HLS resource variable=localB core=XPM_MEMORY uram
 #pragma HLS resource variable=localC core=XPM_MEMORY uram
 
-/*Systolic Array usa caching y fijarme en eso
-Usar la URAM de la siguiente forma:
-#pragma HLS resource variable=a core=XPM_MEMORY uram
-#pragma HLS resource variable=b core=XPM_MEMORY uram
-#pragma HLS resource variable=c core=XPM_MEMORY uram*/
-
-readIn:
-  for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = size_a max = size_b
-    load_data(&a[size_a*i/partitions], &b[size_b*i/partitions], &localA[size_a*i/partitions], 
-            &localB[size_b*i/partitions], a_rows, b_cols, c_cols);
-  }
-
-
-matmul_loop:
-  for (int i=0; i < partitions; ++i) {
-      #pragma HLS UNROLL
-      // each instance accesses a different block
-      matmul_accel(&localA[size_a*i/partitions], &localB[size_b*i/partitions], &localC[size_c*i/partitions],
-                  a_rows, b_cols, c_cols);
-  }
-
-writeOut:
-  for (int i = 0; i < partitions; ++i) {
-#pragma HLS LOOP_TRIPCOUNT min = size_c max = size_c
-    store_data(&c[size_c*i/partitions], &localC[size_c*i/partitions], a_rows, b_cols, c_cols);
-  }
+#pragma HLS dataflow
+ load_data(a, b, localA, localB, a_rows, b_cols, c_cols);
+ matmul_accel(localA, localB, localC, a_rows, b_cols, c_cols);
+ store_data(c, localC, a_rows, b_cols, c_cols);
 
 #endif
 
