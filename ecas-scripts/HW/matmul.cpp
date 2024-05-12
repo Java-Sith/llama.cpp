@@ -104,6 +104,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
 #pragma HLS pipeline
     for (int cx = 0; cx < c_cols; ++cx) {
       for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
+#pragma HLS LOOP_TRIPCOUNT min = MAX_SIZE/4 max = MAX_SIZE/4
         int bidx = bx + cx * (b_cols >> kShiftData);
         arrB[bidx] = b[bidx];
       }
@@ -116,6 +117,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
 #pragma HLS LOOP_TRIPCOUNT min = kShiftData max = kShiftData
 #pragma HLS pipeline
       for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
+#pragma HLS LOOP_TRIPCOUNT min = MAX_SIZE/4 max = MAX_SIZE/4
         int aidx = ax + ay * (b_cols >> kShiftData);
         arrA[aidx] = a[aidx];
       }
@@ -131,6 +133,7 @@ static void store_data(RawDataT *c, uint16_t* arrC,
 #pragma HLS LOOP_TRIPCOUNT min = kShiftData max = kShiftData
 #pragma HLS pipeline
     for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
+#pragma HLS LOOP_TRIPCOUNT min = MAX_SIZE/4 max = MAX_SIZE/4
       int cidx = cx + cy * (c_cols >> kShiftData);
       c[cidx] = arrC[cidx];
     }

@@ -22,9 +22,12 @@
 #include <iomanip>
 #include <cmath>
 #include "xf_blas.hpp"
+#include <iostream>
+#include <cstdint>
+#include <cstring>
 
 #define IDX2R(i, j, ld) (((i) * (ld)) + (j))
-#define m 32 // a - mxk matrix
+#define m 2 // a - mxk matrix
 #define n 4096 // b - kxn matrix
 #define k 4096 // c - mxn matrix
 
@@ -119,49 +122,54 @@ int main(int argc, char** argv) {
 
     BLAS_dataType* goldenC = getGoldenMat(a, b, c);
 
-    status = xfblasMallocRestricted(m, k, sizeof(*a), a, k, l_numKernel - 1);
+    BLAS_dataType *d_a, *d_b, *d_c;
+
+    status = xfblasMalloc(&d_a, m, k, sizeof(*a), l_numKernel-1);
+
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
+        cout<<"Malloc memory for matrix A failed with error code: "<< status << "\n";
+        return EXIT_FAILURE;
+    }
+    status = xfblasMalloc(&d_b, k, n, sizeof(*b), l_numKernel-1);
+
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout<<"Malloc memory for matrix B failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasMallocRestricted(k, n, sizeof(*b), b, n, l_numKernel - 1);
+    status = xfblasMalloc(&d_c, m, n, sizeof(*c), l_numKernel-1);
 
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Malloc memory for matrix B failed with error code: " << status << "\n";
-        xfblasDestroy();
-        return EXIT_FAILURE;
-    }
-    status = xfblasMallocRestricted(m, n, sizeof(*c), c, n, l_numKernel - 1);
-
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Malloc memory for matrix C failed with error code: " << status << "\n";
-        xfblasDestroy();
+        cout<<"Malloc memory for matrix C failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasSetMatrixRestricted(a, l_numKernel - 1);
-    status = xfblasSetMatrixRestricted(b, l_numKernel - 1);
-    status = xfblasSetMatrixRestricted(c, l_numKernel - 1);
+    status = xfblasSetMatrix(m, k, sizeof(*a), a, k, d_a, l_numKernel-1);
+    status = xfblasSetMatrix(k, n, sizeof(*b), b, n, d_b, l_numKernel-1);
+    status = xfblasSetMatrix(m, n, sizeof(*c), c, n, d_c, l_numKernel-1);
+
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Set Matrix failed with error code: " << status << "\n";
-        xfblasDestroy();
+        cout<<"Set Matrix failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
+
+    // Start the clock
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n, l_numKernel - 1);
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto matmul_time = end_time - start_time;
+
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Matrix Multiplication failed with error code: " << status << "\n";
-        xfblasDestroy();
+        cout<<"Matrix Multiplication failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
-
-    status = xfblasGetMatrixRestricted(c, l_numKernel - 1);
+    
+    status = xfblasGetMatrix(m,n,sizeof(*c),d_c,c,n, l_numKernel-1);
 
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout << "Get Matrix failed with error code: " << status << "\n";
-        xfblasDestroy();
+        cout<<"Get Matirx failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
@@ -177,6 +185,8 @@ int main(int argc, char** argv) {
     } else {
         cout << "Test failed!\n";
     }
+
+    std::cout << "Matrix multiplication = " << matmul_time/std::chrono::milliseconds(1) << " ms " << '\n';
 
     xfblasFree(a, l_numKernel - 1);
     xfblasFree(b, l_numKernel - 1);
