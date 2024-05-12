@@ -125,13 +125,13 @@ int main(int argc, char **argv) {
 
     for( i = 0; i<  m; i ++){
         for( j = 0; j < k; j ++){
-            a[ IDX2R (i,j,padded_lda)]=( XFBLAS_dataType ) ind++;
+            a[ IDX2R (i,j,padded_lda)]=( BLAS_dataType ) ind++;
         }
     }
 
     for( i = 0; i<  k; i ++){
         for( j = 0; j < n; j ++){
-            b[ IDX2R (i,j,padded_ldb )]=( XFBLAS_dataType ) ind++;
+            b[ IDX2R (i,j,padded_ldb )]=( BLAS_dataType ) ind++;
         }
     }
 
