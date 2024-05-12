@@ -27,9 +27,9 @@
 #include <cstring>
 
 #define IDX2R(i, j, ld) (((i) * (ld)) + (j))
-#define m 5 // a - mxk matrix
-#define n 5 // b - kxn matrix
-#define k 5 // c - mxn matrix
+#define m 2 // a - mxk matrix
+#define n 4096 // b - kxn matrix
+#define k 4096 // c - mxn matrix
 
 using namespace std;
 
@@ -72,108 +72,126 @@ bool compareGemm(BLAS_dataType* c, BLAS_dataType* goldenC, float p_TolRel = 1e-3
 
 int main(int argc, char **argv) {
 
-    if (argc < 3){
+    if (argc < 3) {
         cerr << " usage: \n"
-            << " gemm_pre_allocated_test.exe gemx.xclbin config_info.dat\n";
+             << " gemm_test.exe gemx.xclbin config_info.dat 1\n"
+             << " gemm_test.exe gemx.xclbin config_info.dat\n";
         return EXIT_FAILURE;
     }
     unsigned int l_argIdx = 1;
     string l_xclbinFile(argv[l_argIdx++]);
     string l_configFile(argv[l_argIdx++]);
+    int l_numKernel = 1;
 
-    int i, j; // i-row index ,j- column index
-
-    BLAS_dataType * a, * b, * c;
-
-    int padded_lda, padded_ldb, padded_ldc;
+    if (argc == 4) {
+        cout << "read custom number of kernels\n";
+        l_numKernel = stoi(argv[l_argIdx++]);
+    }
 
     xfblasEngine_t engineName = XFBLAS_ENGINE_GEMM;
-    xfblasStatus_t status = XFBLAS_STATUS_SUCCESS;
-
-    status = xfblasCreate(l_xclbinFile.c_str(), l_configFile, engineName);
+    xfblasStatus_t status = xfblasCreate(l_xclbinFile.c_str(), l_configFile, engineName, l_numKernel);
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Create Handle failed with error code: "<< status << "\n";
+        cout << "Create Handle failed with error code: " << status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasMallocManaged(&a, &padded_lda, m,k,sizeof(*a));
+    int i, j; // i-row l_numKernel -1 ,j- column l_numKernel -1
+    BLAS_dataType *a, *b, *c;
 
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Malloc memory for matrix A failed with error code: "<< status << "\n";
-        return EXIT_FAILURE;
-    }
-    status = xfblasMallocManaged(&b, &padded_ldb, k,n,sizeof(*b));
-
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Malloc memory for matrix B failed with error code: "<< status << "\n";
-        return EXIT_FAILURE;
-    }
-
-    status = xfblasMallocManaged(&c, &padded_ldc, m,n,sizeof(*c));
-
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Malloc memory for matrix C failed with error code: "<< status << "\n";
-        return EXIT_FAILURE;
-    }
+    posix_memalign((void**)&a, 4096, m * k * sizeof(BLAS_dataType));
+    posix_memalign((void**)&b, 4096, k * n * sizeof(BLAS_dataType));
+    posix_memalign((void**)&c, 4096, m * n * sizeof(BLAS_dataType));
 
     int ind = 1;
-
-    for( i = 0; i<  m; i ++){
-        for( j = 0; j < k; j ++){
-            a[ IDX2R (i,j,padded_lda)]=( BLAS_dataType ) ind++;
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < k; j++) {
+            a[IDX2R(i, j, k)] = ind;
+        }
+    }
+    ind = 1;
+    for (i = 0; i < k; i++) {
+        for (j = 0; j < n; j++) {
+            b[IDX2R(i, j, n)] = ind;
         }
     }
 
-    for( i = 0; i<  k; i ++){
-        for( j = 0; j < n; j ++){
-            b[ IDX2R (i,j,padded_ldb )]=( BLAS_dataType ) ind++;
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            c[IDX2R(i, j, n)] = 0;
         }
     }
 
-    for( i = 0; i<  m; i ++){
-        for( j = 0; j < n; j ++){
-            c[ IDX2R (i,j,padded_ldc )]= 1;
-        }
-    }
+    BLAS_dataType* goldenC = getGoldenMat(a, b, c);
 
-    cout<< "C before running GEMM\n";
-
-    for ( i = 0; i < m; i ++){
-            for ( j = 0; j < n; j ++){
-                cout<< (c[ IDX2R (i,j,padded_ldc)])<<" ";
-            }
-            cout<<"\n";
-    }
-
-    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n);
-
-    status = xfblasDeviceSynchronize();
-
+    status = xfblasMallocRestricted(m, k, sizeof(*a), a, k, l_numKernel - 1);
     if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Matrix Multiplication failed with error code: "<< status << "\n";
+        cout << "Malloc memory for matrix A failed with error code: " << status << "\n";
         return EXIT_FAILURE;
     }
 
-    cout<<"C after running GEMM\n";
+    status = xfblasMallocRestricted(k, n, sizeof(*b), b, n, l_numKernel - 1);
 
-    for ( i = 0; i < m; i ++){
-            for ( j = 0; j < n; j ++){
-                cout<< (c[ IDX2R (i,j, padded_ldc)])<<" ";
-            }
-            cout<<"\n";
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Malloc memory for matrix B failed with error code: " << status << "\n";
+        xfblasDestroy();
+        return EXIT_FAILURE;
     }
 
-    //  591 606 621 636 651
-    // 1491 1531 1571 1611 1651
-    // 2391 2456 2521 2586 2651
-    // 3291 3381 3471 3561 3651
-    // 4191 4306 4421 4536 4651
+    status = xfblasMallocRestricted(m, n, sizeof(*c), c, n, l_numKernel - 1);
 
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Malloc memory for matrix C failed with error code: " << status << "\n";
+        xfblasDestroy();
+        return EXIT_FAILURE;
+    }
 
-    xfblasFree(a);
-    xfblasFree(b);
-    xfblasFree(c);
-    xfblasDestroy();
+    status = xfblasSetMatrixRestricted(a, l_numKernel - 1);
+    status = xfblasSetMatrixRestricted(b, l_numKernel - 1);
+    status = xfblasSetMatrixRestricted(c, l_numKernel - 1);
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Set Matrix failed with error code: " << status << "\n";
+        xfblasDestroy();
+        return EXIT_FAILURE;
+    }
+
+    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n, l_numKernel - 1);
+
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Matrix Multiplication failed with error code: " << status << "\n";
+        xfblasDestroy();
+        return EXIT_FAILURE;
+    }
+
+    status = xfblasGetMatrixRestricted(c, l_numKernel - 1);
+
+    if (status != XFBLAS_STATUS_SUCCESS) {
+        cout << "Get Matrix failed with error code: " << status << "\n";
+        xfblasDestroy();
+        return EXIT_FAILURE;
+    }
+
+    for (i = 0; i < 10; i++) {
+        for (j = 0; j < 10; j++) {
+            cout << (c[IDX2R(i, j, k)]) << " ";
+        }
+        cout << "\n";
+    }
+
+    if (compareGemm(c, goldenC)) {
+        cout << "Test passed!\n";
+    } else {
+        cout << "Test failed!\n";
+    }
+
+    xfblasFree(a, l_numKernel - 1);
+    xfblasFree(b, l_numKernel - 1);
+    xfblasFree(c, l_numKernel - 1);
+    free(a);
+    free(b);
+    free(c);
+    free(goldenC);
+
+    xfblasDestroy(l_numKernel);
 
     return EXIT_SUCCESS;
 
