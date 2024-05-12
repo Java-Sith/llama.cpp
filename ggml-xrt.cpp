@@ -254,15 +254,6 @@ void ggml_xrt_mul_mat(
         return;
     }
 
-    //int size_a = ne1*ne10; //MxK
-    //int size_b = ne01*ne10; //KxN
-    //int size_c = ne01*ne1; //MxN
-    const float alpha = 1;
-    const float beta = 1;
-    const int x_ne = ne01 * ne00;
-    const int y_ne = ne11 * ne10;
-    const int d_ne = ne11 * ne01;
-
     float *x, *y, *d;
 
     posix_memalign((void**)&x, 4096, x_ne * sizeof(float));
