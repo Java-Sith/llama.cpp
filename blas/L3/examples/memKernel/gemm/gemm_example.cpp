@@ -70,125 +70,116 @@ bool compareGemm(BLAS_dataType* c, BLAS_dataType* goldenC, float p_TolRel = 1e-3
     return l_check;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
+
     if (argc < 3){
         cerr << " usage: \n"
-            << " gemm_common_test.exe gemx.xclbin config_info.dat 1\n"
-            << " gemm_common_test.exe gemx.xclbin config_info.dat\n";
+            << " gemm_pre_allocated_test.exe gemx.xclbin config_info.dat\n";
         return EXIT_FAILURE;
     }
     unsigned int l_argIdx = 1;
     string l_xclbinFile(argv[l_argIdx++]);
     string l_configFile(argv[l_argIdx++]);
+    string l_logFile;
 
-    int l_numKernel = 1;
-
-    if (argc == 4){
-        cout<<"read custom number of kernels\n";
-        l_numKernel = stoi(argv[l_argIdx++]);
-    }
+    ofstream logFile("xrt_report.txt");
+    logFile.close();
+    l_logFile = "xrt_report.txt";
 
     int i, j; // i-row index ,j- column index
 
     BLAS_dataType * a, * b, * c;
-    a = ( BLAS_dataType *) malloc (m*k* sizeof ( BLAS_dataType )); // host memory for a
-    b = ( BLAS_dataType *) malloc (k*n* sizeof ( BLAS_dataType ));
-    c = ( BLAS_dataType *) malloc (m*n* sizeof ( BLAS_dataType ));
 
-    int ind = 1;
-
-    for( i = 0; i<  m; i ++){
-        for( j = 0; j < k; j ++){
-        a[ IDX2R (i,j,k )]=( BLAS_dataType ) ind++;
-        }
-    }
-
-    for( i = 0; i<  k; i ++){
-        for( j = 0; j < n; j ++){
-        b[ IDX2R (i,j,n )]=( BLAS_dataType ) ind++;
-        }
-    }
-
-    for( i = 0; i<  m; i ++){
-        for( j = 0; j < n; j ++){
-        c[ IDX2R (i,j,n )]= 0;
-        }
-    }
-
-    BLAS_dataType * d_a, * d_b, * d_c;
-
+    int padded_lda, padded_ldb, padded_ldc;
 
     xfblasEngine_t engineName = XFBLAS_ENGINE_GEMM;
     xfblasStatus_t status = XFBLAS_STATUS_SUCCESS;
 
-    status = xfblasCreate(l_xclbinFile.c_str(), l_configFile, engineName, l_numKernel);
+    status = xfblasCreate(l_xclbinFile.c_str(), l_configFile, l_logFile.c_str(), engineName);
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout<<"Create Handle failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasMalloc(&d_a, m,k,sizeof(*a), l_numKernel-1);
+    status = xfblasMallocManaged(&a, &padded_lda, m,k,sizeof(*a));
 
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout<<"Malloc memory for matrix A failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
-    status = xfblasMalloc(&d_b, k,n,sizeof(*b), l_numKernel-1);
+    status = xfblasMallocManaged(&b, &padded_ldb, k,n,sizeof(*b));
 
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout<<"Malloc memory for matrix B failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasMalloc(&d_c, m,n,sizeof(*c), l_numKernel-1);
+    status = xfblasMallocManaged(&c, &padded_ldc, m,n,sizeof(*c));
 
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout<<"Malloc memory for matrix C failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
 
-    status = xfblasSetMatrix(m,k,sizeof(*a),a,k,d_a, l_numKernel-1);
-    status = xfblasSetMatrix(k,n,sizeof(*b),b,n,d_b, l_numKernel-1);
-    status = xfblasSetMatrix(m,n,sizeof(*c),c,n,d_c, l_numKernel-1);
+    int ind = 1;
 
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Set Matrix failed with error code: "<< status << "\n";
-        return EXIT_FAILURE;
+    for( i = 0; i<  m; i ++){
+        for( j = 0; j < k; j ++){
+            a[ IDX2R (i,j,padded_lda)]=( XFBLAS_dataType ) ind++;
+        }
     }
 
-    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, d_a, k, d_b, n, 1, d_c, n, l_numKernel-1);
+    for( i = 0; i<  k; i ++){
+        for( j = 0; j < n; j ++){
+            b[ IDX2R (i,j,padded_ldb )]=( XFBLAS_dataType ) ind++;
+        }
+    }
+
+    for( i = 0; i<  m; i ++){
+        for( j = 0; j < n; j ++){
+            c[ IDX2R (i,j,padded_ldc )]= 1;
+        }
+    }
+
+    cout<< "C before running GEMM\n";
+
+    for ( i = 0; i < m; i ++){
+            for ( j = 0; j < n; j ++){
+                cout<< (c[ IDX2R (i,j,padded_ldc)])<<" ";
+            }
+            cout<<"\n";
+    }
+
+    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n);
+
+    status = xfblasDeviceSynchronize();
 
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout<<"Matrix Multiplication failed with error code: "<< status << "\n";
         return EXIT_FAILURE;
     }
-    status = xfblasGetMatrix(m,n,sizeof(*c),d_c,c,n, l_numKernel-1);
 
-    if (status != XFBLAS_STATUS_SUCCESS) {
-        cout<<"Get Matrix failed with error code: "<< status << "\n";
-        return EXIT_FAILURE;
-    }
+    cout<<"C after running GEMM\n";
 
     for ( i = 0; i < m; i ++){
-        for ( j = 0; j < n; j ++){
-        cout<< (c[ IDX2R (i,j, k )])<<" ";
-        }
-        cout<<"\n";
+            for ( j = 0; j < n; j ++){
+                cout<< (c[ IDX2R (i,j, padded_ldc)])<<" ";
+            }
+            cout<<"\n";
     }
 
-    // 590 605 620 635 650
-    // 1490 1530 1570 1610 1650
-    // 2390 2455 2520 2585 2650
-    // 3290 3380 3470 3560 3650
-    // 4190 4305 4420 4535 4650
+    //  591 606 621 636 651
+    // 1491 1531 1571 1611 1651
+    // 2391 2456 2521 2586 2651
+    // 3291 3381 3471 3561 3651
+    // 4191 4306 4421 4536 4651
 
-    xfblasFree(d_a, l_numKernel-1);
-    xfblasFree(d_b, l_numKernel-1);
-    xfblasFree(d_c, l_numKernel-1);
-    xfblasDestroy(l_numKernel);
-    free(a);
-    free(b);
-    free(c);
+
+    xfblasFree(a);
+    xfblasFree(b);
+    xfblasFree(c);
+    xfblasDestroy();
 
     return EXIT_SUCCESS;
+
 }
