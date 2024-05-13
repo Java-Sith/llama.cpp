@@ -1,4 +1,4 @@
-BLAS_ddrWidth=1 
+BLAS_ddrWidth=16 
 BLAS_XddrWidth=16 
 BLAS_argInstrWidth=1 
 BLAS_numKernels=1 

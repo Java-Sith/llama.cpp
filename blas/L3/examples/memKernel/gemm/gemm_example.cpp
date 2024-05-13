@@ -27,7 +27,7 @@
 #include <cstring>
 
 #define IDX2R(i, j, ld) (((i) * (ld)) + (j))
-#define m 2 // a - mxk matrix
+#define m 32 // a - mxk matrix
 #define n 4096 // b - kxn matrix
 #define k 4096 // c - mxn matrix
 
@@ -154,7 +154,15 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    // Start the clock
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Execution of the kernel: matmul\n";
+
     status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n, l_numKernel - 1);
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto matmul_time = end_time - start_time;
 
     if (status != XFBLAS_STATUS_SUCCESS) {
         cout << "Matrix Multiplication failed with error code: " << status << "\n";
@@ -176,6 +184,8 @@ int main(int argc, char **argv) {
         }
         cout << "\n";
     }
+
+    std::cout << "Matrix multiplication = " << matmul_time/std::chrono::milliseconds(1) << " ms " << '\n';
 
     if (compareGemm(c, goldenC)) {
         cout << "Test passed!\n";
