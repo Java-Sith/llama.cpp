@@ -119,6 +119,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
 #pragma HLS pipeline
       for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
 #pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
+#pragma HLS unroll
         int aidx = ax + ay * (b_cols >> kShiftData);
         arrA[aidx] = a[aidx];
       }
@@ -233,9 +234,9 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   uint16_t localB[size_b];
   uint16_t localC[size_c];
 
-#pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
+// #pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
+// #pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
+// #pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
 
 #pragma HLS resource variable=localA core=XPM_MEMORY uram
 #pragma HLS resource variable=localB core=XPM_MEMORY uram

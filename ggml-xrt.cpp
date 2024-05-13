@@ -267,6 +267,11 @@ void ggml_xrt_mul_mat(
             posix_memalign((void**)&y, 4096, y_ne * sizeof(float));
             posix_memalign((void**)&d, 4096, d_ne * sizeof(float));
 
+            if (!x) {
+              std::cerr << "------ Cannot memalign -------" << std::endl;
+              break;
+            }
+
             x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
             y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
             d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
