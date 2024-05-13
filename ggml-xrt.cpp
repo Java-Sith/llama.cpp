@@ -237,7 +237,7 @@ void ggml_xrt_mul_mat(
 
     const float alpha = 1;
     const float beta = 1;
-    const int ne_pad = ne11 * 16
+    const int ne_pad = ne11 * 16;
     const int x_ne = ne01 * ne00;
     const int y_ne = ne_pad * ne10;
     const int d_ne = ne_pad * ne01;
