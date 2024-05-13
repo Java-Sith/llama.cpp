@@ -255,16 +255,17 @@ void ggml_xrt_mul_mat(
         return;
     }
 
-    float *x, *y, *d;
-
-    posix_memalign((void**)&x, 4096, x_ne * sizeof(float));
-    posix_memalign((void**)&y, 4096, y_ne * sizeof(float));
-    posix_memalign((void**)&d, 4096, d_ne * sizeof(float));
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
             const int64_t i03 = i13/r3;
             const int64_t i02 = i12/r2;
+
+            float *x, *y, *d;
+
+            posix_memalign((void**)&x, 4096, x_ne * sizeof(float));
+            posix_memalign((void**)&y, 4096, y_ne * sizeof(float));
+            posix_memalign((void**)&d, 4096, d_ne * sizeof(float));
 
             x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
             y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
