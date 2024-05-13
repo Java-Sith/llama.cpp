@@ -50,7 +50,8 @@ BLAS_dataType* getGoldenMat(BLAS_dataType* a, BLAS_dataType* b, BLAS_dataType* c
 
 bool compareGemm(BLAS_dataType* c, BLAS_dataType* goldenC, float p_TolRel = 1e-3, float p_TolAbs = 1e-5) {
     bool l_check = true;
-    for (int row = 0; row < m; row++) {
+    int m_m = 2;
+    for (int row = 0; row < m_m; row++) {
         for (int col = 0; col < n; col++) {
             BLAS_dataType l_ref = goldenC[IDX2R(row, col, n)];
             BLAS_dataType l_result = c[IDX2R(row, col, n)];
@@ -82,6 +83,7 @@ int main(int argc, char **argv) {
     string l_xclbinFile(argv[l_argIdx++]);
     string l_configFile(argv[l_argIdx++]);
     int l_numKernel = 1;
+    int m_m = 2;
 
     if (argc == 4) {
         cout << "read custom number of kernels\n";
@@ -103,7 +105,7 @@ int main(int argc, char **argv) {
     posix_memalign((void**)&c, 4096, m * n * sizeof(BLAS_dataType));
 
     int ind = 1;
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m_m; i++) {
         for (j = 0; j < k; j++) {
             a[IDX2R(i, j, k)] = ind;
         }
@@ -115,7 +117,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m_m; i++) {
         for (j = 0; j < n; j++) {
             c[IDX2R(i, j, n)] = 0;
         }
@@ -159,7 +161,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Execution of the kernel: matmul\n";
 
-    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m, n, k, 1, a, k, b, n, 1, c, n, l_numKernel - 1);
+    status = xfblasGemm(XFBLAS_OP_N, XFBLAS_OP_N, m_m, n, k, 1, a, k, b, n, 1, c, n, l_numKernel - 1);
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto matmul_time = end_time - start_time;

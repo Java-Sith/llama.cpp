@@ -105,7 +105,7 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
     for (int cx = 0; cx < c_cols; ++cx) {
 #pragma HLS unroll
       for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
-#pragma HLS LOOP_TRIPCOUNT min = 1024max = 1024
+#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
         int bidx = bx + cx * (b_cols >> kShiftData);
         arrB[bidx] = b[bidx];
       }
