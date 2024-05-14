@@ -242,9 +242,9 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   uint16_t localB[size_b];
   uint16_t localC[size_c];
 
-#pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
+//#pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
+//#pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
+//#pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
 
 #pragma HLS resource variable=localA core=XPM_MEMORY uram
 #pragma HLS resource variable=localB core=XPM_MEMORY uram
