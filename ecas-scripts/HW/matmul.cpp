@@ -253,7 +253,7 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
 #pragma HLS dataflow
  load_data(a, b, localA, localB, a_rows, b_cols, c_cols);
  matmul_accel(localA, localB, localC, a_rows, b_cols, c_cols);
- store_data(c, localC, a_rows, b_cols, c_cols);
+ store_data(c, localC, a_rows, c_cols);
 
 #endif
 
