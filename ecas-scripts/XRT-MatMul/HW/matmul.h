@@ -6,7 +6,7 @@
 #include <ap_fixed.h>
 #include <hls_stream.h>
 
-static constexpr int kBusWidth = 64;
+static constexpr int kBusWidth = 512;
 static constexpr int kDataWidth = 16;
 static constexpr int kDataInt = 6;
 static constexpr int kPackets = kBusWidth / kDataWidth;
