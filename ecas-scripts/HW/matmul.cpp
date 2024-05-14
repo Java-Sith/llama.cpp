@@ -99,12 +99,15 @@ static void store_data(RawDataT *c, StreamT &c_s,
 static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
                int a_rows, int b_cols, int c_cols) {
   // Load B
+readB:
   for (int ay = 0; ay < a_rows; ++ay) {
 #pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
 #pragma HLS pipeline
     for (int cx = 0; cx < c_cols; ++cx) {
 #pragma HLS unroll
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
       for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
+#pragma HLS unroll
 #pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
         int bidx = bx + cx * (b_cols >> kShiftData);
         arrB[bidx] = b[bidx];
@@ -113,7 +116,9 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
   }
 
   // Load A
+readA:
   for (int cx = 0; cx < c_cols; ++cx) {
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
     for (int ay = 0; ay < a_rows; ++ay) {
 #pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
 #pragma HLS pipeline
@@ -128,14 +133,14 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
 }
 
 static void store_data(RawDataT *c, uint16_t* arrC,
-               int a_rows, int b_cols, int c_cols) {
-
+               int a_rows, int c_cols) {
   // Load C
+writeC:
   for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS LOOP_TRIPCOUNT min = kShiftData max = kShiftData
+#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
 #pragma HLS pipeline
     for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = MAX_SIZE/4 max = MAX_SIZE/4
+#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
 #pragma HLS unroll
       int cidx = cx + cy * (c_cols >> kShiftData);
       c[cidx] = arrC[cidx];
@@ -146,16 +151,16 @@ static void store_data(RawDataT *c, uint16_t* arrC,
 static void matmul_accel (uint16_t *arrA, uint16_t *arrB, uint16_t *arrC, int a_rows, int b_cols, int c_cols) {
   int b_cols_shift = b_cols >> kShiftData;
   int c_cols_shift = c_cols >> kShiftData;
+  DataT val = 0.f;
+  RawDataT valpacket = 0;
 
 matmul_samples:
   for (int ay = 0; ay < a_rows; ++ay) {
 #pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
 matmul_layers:
-    RawDataT valpacket = 0;
     for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = MAX_SIZE max = MAX_SIZE
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
 #pragma HLS pipeline
-      DataT val = 0.f;
 matmul_perceptron:
       for (int bx = 0; bx < b_cols_shift; ++bx) {
 #pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
@@ -164,6 +169,7 @@ matmul_perceptron:
         RawDataT b_raw = arrB[cx * b_cols_shift + bx];
         for (int p = 0; p < kPackets; ++p) {
 #pragma HLS unroll
+#pragma HLS LOOP_TRIPCOUNT min = 4 max = 4
           int poff_low = p * kDataWidth;
           int poff_high = poff_low + kDataWidth - 1;
           
@@ -186,6 +192,7 @@ matmul_perceptron:
       int poff_high = poff_low + kDataWidth - 1;
 
       valpacket(poff_high, poff_low) = val.V;
+      val = 0.f;
 
       // Stream out if done
       if (val_mod == 0) {
@@ -193,6 +200,7 @@ matmul_perceptron:
         valpacket = 0;
       }
     }
+    valpacket = 0;
   }
 }
 #endif
@@ -226,17 +234,17 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   store_data(c, c_stream, a_rows, b_cols, c_cols);
 
 #else
-  int size_a = MAX_SIZE * kShiftData;
-  int size_b = MAX_SIZE * MAX_SIZE;
-  int size_c = MAX_SIZE * kShiftData;
+  int size_a = 8192;
+  int size_b = 4096*4096;
+  int size_c = 8192;
 
   uint16_t localA[size_a];
   uint16_t localB[size_b];
   uint16_t localC[size_c];
 
-// #pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
-// #pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
-// #pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
 
 #pragma HLS resource variable=localA core=XPM_MEMORY uram
 #pragma HLS resource variable=localB core=XPM_MEMORY uram

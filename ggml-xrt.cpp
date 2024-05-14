@@ -92,6 +92,36 @@ int get_device_index_by_id(int id){
     return res;
 }
 
+static void ggml_xrt_to_f32(const void *x, float* y, int k) {
+    if (type != GGML_TYPE_F32) {
+        assert(params->wsize >= desired_wsize);
+        // parallelize by src0 rows
+        for (int64_t i13 = 0; i13 < ne13; i13++) {
+            for (int64_t i12 = 0; i12 < ne12; i12++) {
+                // broadcast src0 into src1 across 2nd,3rd dimension
+                const int64_t i03 = i13/r3;
+                const int64_t i02 = i12/r2;
+
+                const void           *       x        = (char *)  src0->data    + i02*nb02          + i03*nb03;
+                        float          * const wdata    = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+                        ggml_to_float_t  const to_float = type_traits[type].to_float;
+
+                for (int64_t i01 = ith; i01 < ne01; i01 += nth) {
+                    switch (x->type)
+                    {
+                    case /* constant-expression */:
+                        /* code */
+                        break;
+                    
+                    default:
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     if (main_device >= g_device_count) {
         fprintf(stderr, "warning: cannot set main_device=%d because there are only %d devices. Using device %d instead.\n",
