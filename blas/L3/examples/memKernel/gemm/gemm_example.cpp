@@ -110,9 +110,6 @@ int main(int argc, char **argv) {
     }
 
     float * d_a, * d_b, * d_c;
-    posix_memalign((void**)&d_a, 4096, m * k * sizeof(float));
-    posix_memalign((void**)&d_b, 4096, k * n * sizeof(float));
-    posix_memalign((void**)&d_c, 4096, m * n * sizeof(float));
 
     xfblasEngine_t engineName = XFBLAS_ENGINE_GEMM;
     xfblasStatus_t status = xfblasCreate(l_xclbinFile.c_str(), l_configFile, engineName);
