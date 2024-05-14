@@ -1,7 +1,5 @@
 #include "matmul.h"
 
-#define MAX_DIM_SIZE 4096
-
 static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
                         const int b_cols, const int c_cols) {
 #pragma HLS INLINE off
