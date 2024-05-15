@@ -37,7 +37,7 @@ typedef union {
 } PacketU;
 
 int main(int argc, char** argv) {
-    INIT_PROFILER(cynq_profiler)
+    //INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
     if (argc != 5) {
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     int size_b = c_cols * b_cols;
     int size_c = a_rows * c_cols;
 
-    GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
+    //GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
 
     std::cout << "Open the device " << device_index << std::endl;
@@ -109,25 +109,27 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 1000)
+    //START_PROFILE(kernel_execution, cynq_profiler, 1000)
+
+    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Start the clock
     auto start_time = std::chrono::high_resolution_clock::now();
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     //std::cout << "Execution of the kernel\n";
     auto run = krnl(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
     //std::cout << "Waiting to the end\n";
     run.wait();
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
+
     // Get the output;
     //std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
-    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
-    END_PROFILE(kernel_execution);
+    
+    //END_PROFILE(kernel_execution);
     /*
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size_c; ++elem) {
@@ -136,7 +138,8 @@ int main(int argc, char** argv) {
         std::cout << cs << " ";
         if ((elem + 1) % c_cols == 0) std::cout << std::endl;
     }*/
-    std::cout << cynq_profiler << std::endl;
+    //std::cout << cynq_profiler << std::endl;
+    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
     std::cout << "TEST PASSED\n";
     return 0;
 }
