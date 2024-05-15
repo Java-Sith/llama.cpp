@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
 
-    std::cout << "Open the device" << device_index << std::endl;
+    std::cout << "Open the device " << device_index << std::endl;
     auto device = xrt::device(device_index);
     std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);;
@@ -113,11 +113,16 @@ int main(int argc, char** argv) {
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
+    // Start the clock
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     //std::cout << "Execution of the kernel\n";
     auto run = krnl(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
     //std::cout << "Waiting to the end\n";
     run.wait();
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto matmul_time = end_time - start_time;
 
     // Get the output;
     //std::cout << "Get the output data from the device" << std::endl;
@@ -131,6 +136,7 @@ int main(int argc, char** argv) {
         std::cout << cs << " ";
         if ((elem + 1) % c_cols == 0) std::cout << std::endl;
     }*/
+    std::cout << "Matrix multiplication = " << matmul_time/std::chrono::milliseconds(1) << " ms " << '\n';
     std::cout << cynq_profiler << std::endl;
     std::cout << "TEST PASSED\n";
     return 0;
