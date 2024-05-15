@@ -28,7 +28,7 @@ matmul_perceptron:
 #pragma HLS unroll
           int poff_low = p * kDataWidth;
           int poff_high = poff_low + kDataWidth - 1;
-          
+
           DataT a, b;
 
           a.V = a_raw(poff_high, poff_low);
@@ -42,12 +42,12 @@ matmul_perceptron:
       int val_mod = cx_p_1 & (kPackets - 1);
       int cx_mod = cx & (kPackets - 1);
 
-      // Write accordingly 
+      // Write accordingly
       int poff_low = cx_mod * kDataWidth;
       int poff_high = poff_low + kDataWidth - 1;
 
       valpacket(poff_high, poff_low) = val.V;
-      
+
       // Stream out if done
       if (val_mod == 0) {
         c.write(valpacket);
@@ -101,14 +101,14 @@ static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
   // Load B
 readB:
   for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
+#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg=2
 #pragma HLS pipeline
     for (int cx = 0; cx < c_cols; ++cx) {
 #pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
       for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
 #pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
+#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
         int bidx = bx + cx * (b_cols >> kShiftData);
         arrB[bidx] = b[bidx];
       }
@@ -118,12 +118,12 @@ readB:
   // Load A
 readA:
   for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
     for (int ay = 0; ay < a_rows; ++ay) {
 #pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
 #pragma HLS pipeline
       for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
-#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
+#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
 #pragma HLS unroll
         int aidx = ax + ay * (b_cols >> kShiftData);
         arrA[aidx] = a[aidx];
@@ -137,10 +137,10 @@ static void store_data(RawDataT *c, uint16_t* arrC,
   // Load C
 writeC:
   for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
+#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg = 2
 #pragma HLS pipeline
     for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
+#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
 #pragma HLS unroll
       int cidx = cx + cy * (c_cols >> kShiftData);
       c[cidx] = arrC[cidx];
@@ -156,23 +156,23 @@ static void matmul_accel (uint16_t *arrA, uint16_t *arrB, uint16_t *arrC, int a_
 
 matmul_samples:
   for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
+#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg = 2
 matmul_layers:
     for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096
+#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
 #pragma HLS pipeline
 matmul_perceptron:
       for (int bx = 0; bx < b_cols_shift; ++bx) {
-#pragma HLS LOOP_TRIPCOUNT min = 1024 max = 1024
+#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
 #pragma HLS unroll
         RawDataT a_raw = arrA[ay * b_cols_shift + bx];
         RawDataT b_raw = arrB[cx * b_cols_shift + bx];
         for (int p = 0; p < kPackets; ++p) {
 #pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 4 max = 4
+#pragma HLS LOOP_TRIPCOUNT min = 32 max = 32 avg = 32
           int poff_low = p * kDataWidth;
           int poff_high = poff_low + kDataWidth - 1;
-          
+
           DataT a, b;
 
           a.V = a_raw(poff_high, poff_low);
@@ -187,7 +187,7 @@ matmul_perceptron:
       int cx_div = cx >> kShiftData;
       int val_mod = (cx + 1) & (kPackets - 1);
 
-      // Write accordingly 
+      // Write accordingly
       int poff_low = cx_mod * kDataWidth;
       int poff_high = poff_low + kDataWidth - 1;
 
@@ -241,10 +241,6 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c
   uint16_t localA[size_a];
   uint16_t localB[size_b];
   uint16_t localC[size_c];
-
-//#pragma HLS ARRAY_PARTITION variable = localA complete dim = 1
-//#pragma HLS ARRAY_PARTITION variable = localB complete dim = 1
-//#pragma HLS ARRAY_PARTITION variable = localC complete dim = 1
 
 #pragma HLS resource variable=localA core=XPM_MEMORY uram
 #pragma HLS resource variable=localB core=XPM_MEMORY uram

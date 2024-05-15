@@ -100,7 +100,7 @@ endif
 # keep standard at C11 and C++11
 MK_CPPFLAGS  = -I. -Icommon
 MK_CFLAGS    = -std=c17   -fPIC
-MK_CXXFLAGS  = -std=c++17 -fPIC 
+MK_CXXFLAGS  = -std=c++17 -fPIC
 MK_NVCCFLAGS = -std=c++17
 
 # -Ofast tends to produce faster code, but may not be available for some compilers.
@@ -573,8 +573,8 @@ ggml-mpi.o: ggml-mpi.c ggml-mpi.h
 endif # LLAMA_MPI
 
 ifdef LLAMA_XRT
-	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I ./blas/L3/include/sw -I ./blas/L1/include/hw
-	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -luuid -lxrt_coreutil
+	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./ecas-scripts/SW/hls-types/include
+	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -lxrt_coreutil
 	OBJS        += ggml-xrt.o
 endif
 
