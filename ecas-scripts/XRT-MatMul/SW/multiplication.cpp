@@ -122,7 +122,6 @@ int main(int argc, char** argv) {
     run.wait();
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto matmul_time = end_time - start_time;
 
     // Get the output;
     //std::cout << "Get the output data from the device" << std::endl;
@@ -136,7 +135,8 @@ int main(int argc, char** argv) {
         std::cout << cs << " ";
         if ((elem + 1) % c_cols == 0) std::cout << std::endl;
     }*/
-    std::cout << "Matrix multiplication = " << matmul_time/std::chrono::milliseconds(1) << " ms " << '\n';
+    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
+    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
     std::cout << cynq_profiler << std::endl;
     std::cout << "TEST PASSED\n";
     return 0;
