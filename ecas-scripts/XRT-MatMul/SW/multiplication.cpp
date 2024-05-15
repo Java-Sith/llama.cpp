@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     int size_c = a_rows * c_cols;
 
     //GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
-    setup_time->reset();
+    //setup_time->reset();
 
     std::cout << "Open the device " << device_index << std::endl;
     auto device = xrt::device(device_index);
