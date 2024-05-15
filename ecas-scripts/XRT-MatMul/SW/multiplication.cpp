@@ -110,24 +110,23 @@ int main(int argc, char** argv) {
     // Synchronize buffer content with device side
     std::cout << "synchronize input buffer data to device global memory\n";
     START_PROFILE(kernel_execution, cynq_profiler, 1000)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Start the clock
     auto start_time = std::chrono::high_resolution_clock::now();
+    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     //std::cout << "Execution of the kernel\n";
     auto run = krnl(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
     //std::cout << "Waiting to the end\n";
     run.wait();
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
-    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
-
     // Get the output;
     //std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
+    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
     END_PROFILE(kernel_execution);
     /*
     std::cout << "C: " << std::endl;
