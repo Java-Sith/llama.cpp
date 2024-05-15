@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     auto uuid = device.load_xclbin(binaryFile);;
 
     auto krnl = xrt::kernel(device, uuid, "matmul");
-    setup_time->tick();
+    //setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
     auto bo_a = xrt::bo(device, size_a * sizeof(uint16_t), krnl.group_id(0));
