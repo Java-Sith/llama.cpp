@@ -58,7 +58,7 @@ static xrt::kernel matmul;
 //static xfblasStatus_t status;
 
 static bool g_xrt_loaded = false;
-using DataT = ap_fixed<32, 12>;
+using DataT = ap_fixed<32, 8>;
 
 bool ggml_xrt_loaded(void) {
     return g_xrt_loaded;
@@ -334,6 +334,7 @@ void ggml_xrt_mul_mat(
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
 
+            std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
                 as[elem] = static_cast<DataT>(y[elem]);
@@ -349,12 +350,15 @@ void ggml_xrt_mul_mat(
                 cs[elem] = static_cast<DataT>(d[elem]);
                 bo_c_mm_map[elem] = cs[elem].V;
             }
+            std::cout << "Synchronize input buffer data to device global memory\n";
             bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne11, ne01, ne10);
+            
+            std::cout << "Execution of the kernel\n";
+            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne11, ne10, ne01);
             run_mm.wait();
 
+            std::cout << "Get the output data from the device" << std::endl;
             bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,

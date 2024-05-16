@@ -37,7 +37,7 @@ typedef union {
 } PacketU;
 
 int main(int argc, char** argv) {
-    //INIT_PROFILER(cynq_profiler)
+    INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
     if (argc != 5) {
@@ -61,8 +61,8 @@ int main(int argc, char** argv) {
     int size_b = c_cols * b_cols;
     int size_c = a_rows * c_cols;
 
-    //GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
-    //setup_time->reset();
+    GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
+    setup_time->reset();
 
     std::cout << "Open the device " << device_index << std::endl;
     auto device = xrt::device(device_index);
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     auto uuid = device.load_xclbin(binaryFile);;
 
     auto krnl = xrt::kernel(device, uuid, "matmul");
-    //setup_time->tick();
+    setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
     auto bo_a = xrt::bo(device, size_a * sizeof(uint16_t), krnl.group_id(0));
@@ -108,28 +108,28 @@ int main(int argc, char** argv) {
     std::fill(bo_c_map, bo_c_map + size_c, 0);
 
     // Synchronize buffer content with device side
-    std::cout << "synchronize input buffer data to device global memory\n";
-    //START_PROFILE(kernel_execution, cynq_profiler, 1000)
+    std::cout << "Synchronize input buffer data to device global memory\n";
+    START_PROFILE(kernel_execution, cynq_profiler, 1000)
 
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Start the clock
-    auto start_time = std::chrono::high_resolution_clock::now();
+    //auto start_time = std::chrono::high_resolution_clock::now();
 
-    //std::cout << "Execution of the kernel\n";
+    std::cout << "Execution of the kernel\n";
     auto run = krnl(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
-    //std::cout << "Waiting to the end\n";
+    std::cout << "Waiting to the end\n";
     run.wait();
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
+    //auto end_time = std::chrono::high_resolution_clock::now();
+    //auto matmul_time = (end_time - start_time)/std::chrono::milliseconds(1);
 
     // Get the output;
-    //std::cout << "Get the output data from the device" << std::endl;
+    std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
     
-    //END_PROFILE(kernel_execution);
+    END_PROFILE(kernel_execution);
     /*
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size_c; ++elem) {
@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
         std::cout << cs << " ";
         if ((elem + 1) % c_cols == 0) std::cout << std::endl;
     }*/
-    //std::cout << cynq_profiler << std::endl;
-    std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
+    std::cout << cynq_profiler << std::endl;
+    //std::cout << "Matrix multiplication = " << matmul_time << " ms " << '\n';
     std::cout << "TEST PASSED\n";
     return 0;
 }
