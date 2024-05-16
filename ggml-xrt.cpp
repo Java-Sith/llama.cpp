@@ -34,7 +34,7 @@
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
 #include "ggml-quants.h"
-//#include "ap_fixed.h"
+#include "ap_fixed.h"
 
 // XRT includes
 #include "experimental/xrt_bo.h"
@@ -222,6 +222,7 @@ void ggml_xrt_mul_mat(
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
 
+    const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
     const int64_t nb03 = src0->nb[3];
     const int64_t nb12 = src1->nb[2];
@@ -252,10 +253,10 @@ void ggml_xrt_mul_mat(
                   const int64_t i02 = i12/r2;
 
                   const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
-                  float * const wdata = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+                  float * const wdata = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
 
                   for (int64_t i01 = ith; i01 < ne01; i01 += nth) {
-                      switch (x->type)
+                      switch (type)
                       {
                       case GGML_TYPE_F16:
                           (ggml_to_float_t) ggml_fp16_to_fp32_row((const char *) x + i01*nb01, wdata + i01*ne00, ne00)
@@ -304,17 +305,17 @@ void ggml_xrt_mul_mat(
             auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
             auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
 
-            for (int elem = 0; elem < size_a; ++elem) {
+            for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
                 as[elem] = static_cast<DataT>(y[elem]);;
                 bo_a_mm_map[elem] = as[elem].V;
             }
-            for (int elem = 0; elem < size_b; ++elem) {
+            for (int elem = 0; elem < x_ne; ++elem) {
                 //std::cout << as.V << " ";
                 bs[elem] = static_cast<DataT>(x[elem]);;
                 bo_b_mm_map[elem] = bs[elem].V;
             }
-            for (int elem = 0; elem < size_c; ++elem) {
+            for (int elem = 0; elem < d_ne; ++elem) {
                 //std::cout << as.V << " ";
                 cs[elem] = static_cast<DataT>(d[elem]);;
                 bo_c_mm_map[elem] = cs[elem].V;
@@ -332,7 +333,7 @@ void ggml_xrt_mul_mat(
                         1.0f,    y, ne10,
                                 x, ne00,
                         0.0f,    d, ne01);*/
-            for (int elem = 0; elem < size_c; ++elem) {
+            for (int elem = 0; elem < d_ne; ++elem) {
                 cs[elem].V = bo_c_mm_map[elem];
                 d[elem] = static_cast<float>(cs[elem]);
                 //std::cout << cs << " ";
@@ -511,7 +512,6 @@ GGML_CALL void ggml_init_xrt() {
 
 GGML_CALL void ggml_end_xrt() {
     g_xrt_loaded = false;
-    xfblasDestroy(numKernel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
