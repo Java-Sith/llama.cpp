@@ -259,7 +259,7 @@ void ggml_xrt_mul_mat(
                       switch (type)
                       {
                       case GGML_TYPE_F16:
-                          ggml_fp16_to_fp32_row((const ggml_fp16_t *) x + i01*nb01, wdata + i01*ne00, ne00)
+                          ggml_fp16_to_fp32_row((const ggml_fp16_t *) x + i01*nb01, wdata + i01*ne00, ne00);
                           break;
 
                       default:
