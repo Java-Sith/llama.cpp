@@ -240,7 +240,7 @@ void ggml_xrt_mul_mat(
     const int y_ne = ne11 * ne10;
     const int d_ne = ne11 * ne01;
 
-    if (params->type == GGML_TASK_INIT) {
+    /*if (params->type == GGML_TASK_INIT) {
       const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
       UNUSED(desired_wsize);
       if (type != GGML_TYPE_F32) {
@@ -269,7 +269,7 @@ void ggml_xrt_mul_mat(
               }
           }
        }
-    }
+    }*/
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
@@ -307,17 +307,17 @@ void ggml_xrt_mul_mat(
 
             for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
-                as[elem] = static_cast<DataT>(y[elem]);;
+                as[elem] = static_cast<DataT>(y[elem]);
                 bo_a_mm_map[elem] = as[elem].V;
             }
             for (int elem = 0; elem < x_ne; ++elem) {
                 //std::cout << as.V << " ";
-                bs[elem] = static_cast<DataT>(x[elem]);;
+                bs[elem] = static_cast<DataT>(x[elem]);
                 bo_b_mm_map[elem] = bs[elem].V;
             }
             for (int elem = 0; elem < d_ne; ++elem) {
                 //std::cout << as.V << " ";
-                cs[elem] = static_cast<DataT>(d[elem]);;
+                cs[elem] = static_cast<DataT>(d[elem]);
                 bo_c_mm_map[elem] = cs[elem].V;
             }
             bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
