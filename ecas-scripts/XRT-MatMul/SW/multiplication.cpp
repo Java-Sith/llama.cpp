@@ -29,7 +29,7 @@
 // HLS Types
 #include "ap_fixed.h"
 
-using DataT = ap_fixed<32, 12>;
+using DataT = ap_fixed<16, 6>;
 
 typedef union {
   uint16_t rvalues[4];
@@ -73,9 +73,9 @@ int main(int argc, char** argv) {
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, size_a * sizeof(uint32_t), krnl.group_id(0));
-    auto bo_b = xrt::bo(device, size_b * sizeof(uint32_t), krnl.group_id(1));
-    auto bo_c = xrt::bo(device, size_c * sizeof(uint32_t), krnl.group_id(2));
+    auto bo_a = xrt::bo(device, size_a * sizeof(uint16_t), krnl.group_id(0));
+    auto bo_b = xrt::bo(device, size_b * sizeof(uint16_t), krnl.group_id(1));
+    auto bo_c = xrt::bo(device, size_c * sizeof(uint16_t), krnl.group_id(2));
 
     // Map the contents of the buffer object into host memory
     auto bo_a_map = bo_a.map<uint16_t*>();
@@ -84,25 +84,25 @@ int main(int argc, char** argv) {
     
     // Filling data
     std::cout << "Filling Buffers\n";
-    DataT as = 123.456, bs = -123.456;
+    DataT as = 0.002, bs = 0.003;
     //std::cout << "A: " << std::endl;
     for (int elem = 0; elem < size_a; ++elem) {
         //std::cout << as << " ";
         bo_a_map[elem] = as.V;
-        as += DataT{1.0};
+        as += DataT{0.003};
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
-            as = 123.456;
+            as = 0.0025;
         }
     }
     //std::cout << "B: " << std::endl;
     for (int elem = 0; elem < size_b; ++elem) {
         //std::cout << bs << " ";
         bo_b_map[elem] = bs.V;
-        bs += DataT{1.0};
+        bs += DataT{0.007};
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
-            bs = -123.456;
+            bs = 0.004;
         }
     }
     std::fill(bo_c_map, bo_c_map + size_c, 0);
