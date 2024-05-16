@@ -240,7 +240,7 @@ void ggml_xrt_mul_mat(
     const int y_ne = ne11 * ne10;
     const int d_ne = ne11 * ne01;
 
-    /*if (params->type == GGML_TASK_INIT) {
+    if (params->type == GGML_TASK_INIT) {
       const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
       UNUSED(desired_wsize);
       if (type != GGML_TYPE_F32) {
@@ -261,7 +261,39 @@ void ggml_xrt_mul_mat(
                       case GGML_TYPE_F16:
                           ggml_fp16_to_fp32_row((const ggml_fp16_t *) x + i01*nb01, wdata + i01*ne00, ne00);
                           break;
-
+                      case GGML_TYPE_Q4_0:
+                          dequantize_row_q4_0((const block_q4_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q4_1:
+                          dequantize_row_q4_1((const block_q4_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q5_0:
+                          dequantize_row_q5_0((const block_q5_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q5_1:
+                          dequantize_row_q5_1((const block_q5_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q8_0:
+                          dequantize_row_q8_0((const block_q8_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q8_1:
+                          dequantize_row_q8_1((const block_q8_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q2_K:
+                          dequantize_row_q2_K((const block_q2_K *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q3_K:
+                          dequantize_row_q3_K((const block_q3_K *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q4_K:
+                          dequantize_row_q4_K((const block_q4_K *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q5_K:
+                          dequantize_row_q5_K((const block_q5_K *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
+                      case GGML_TYPE_Q6_K:
+                          dequantize_row_q6_K((const block_q6_K *) x + i01*nb01, wdata + i01*ne00, ne00);
+                          break;
                       default:
                           break;
                       }
@@ -269,7 +301,7 @@ void ggml_xrt_mul_mat(
               }
           }
        }
-    }*/
+    }
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
@@ -294,9 +326,9 @@ void ggml_xrt_mul_mat(
             const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
             float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
 
-            if (type != GGML_TYPE_F32) {
+            /*if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
-            }
+            }*/
 
             auto bo_a_mm = xrt::bo(myDevice, y_ne * sizeof(uint32_t), matmul.group_id(0));
             auto bo_b_mm = xrt::bo(myDevice, x_ne * sizeof(uint32_t), matmul.group_id(1));
