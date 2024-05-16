@@ -276,9 +276,6 @@ void ggml_xrt_mul_mat(
                       case GGML_TYPE_Q8_0:
                           dequantize_row_q8_0((const block_q8_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
                           break;
-                      case GGML_TYPE_Q8_1:
-                          dequantize_row_q8_1((const block_q8_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
                       case GGML_TYPE_Q2_K:
                           dequantize_row_q2_K((const block_q2_K *) x + i01*nb01, wdata + i01*ne00, ne00);
                           break;
