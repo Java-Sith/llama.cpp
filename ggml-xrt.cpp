@@ -252,7 +252,7 @@ void ggml_xrt_mul_mat(
                   const int64_t i03 = i13/r3;
                   const int64_t i02 = i12/r2;
 
-                  const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
+                  const float * x = (float *)((char *) src0->data + i02*nb02 + i03*nb03);
                   float * const wdata = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
 
                   for (int64_t i01 = ith; i01 < ne01; i01 += nth) {
@@ -290,7 +290,7 @@ void ggml_xrt_mul_mat(
             const int64_t i03 = i13/r3;
             const int64_t i02 = i12/r2;
 
-            const float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
+            const float * x = (float *)((char *) src0->data + i02*nb02 + i03*nb03);
             const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
             float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
 
