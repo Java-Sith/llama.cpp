@@ -259,7 +259,7 @@ void ggml_xrt_mul_mat(
                       switch (type)
                       {
                       case GGML_TYPE_F16:
-                          (ggml_to_float_t) ggml_fp16_to_fp32_row((const char *) x + i01*nb01, wdata + i01*ne00, ne00)
+                          (ggml_to_float_t) ggml_fp16_to_fp32_row((const ggml_fp16_t *) x + i01*nb01, wdata + i01*ne00, ne00)
                           break;
 
                       default:
@@ -295,7 +295,7 @@ void ggml_xrt_mul_mat(
             float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
 
             if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
+                x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }
 
             auto bo_a_mm = xrt::bo(myDevice, y_ne * sizeof(uint32_t), matmul.group_id(0));
