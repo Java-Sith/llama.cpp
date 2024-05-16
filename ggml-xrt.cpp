@@ -58,7 +58,7 @@ static xrt::kernel matmul;
 //static xfblasStatus_t status;
 
 static bool g_xrt_loaded = false;
-using DataT = ap_fixed<32, 8>;
+using DataT = ap_fixed<32, 12>;
 
 bool ggml_xrt_loaded(void) {
     return g_xrt_loaded;
