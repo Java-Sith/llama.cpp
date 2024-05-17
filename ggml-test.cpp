@@ -247,9 +247,9 @@ static void ggml_test_mul_mat(
     printf("NE0: %d\n", ne0);
     printf("NE1: %d\n", ne1);
 
-    save_tensor_info("Matmul.txt", dst);
-    save_tensor_info("Matmul1.txt", src0);
-    save_tensor_info("Matmul2.txt", src1);
+    //save_tensor_info("Matmul.txt", dst);
+    //save_tensor_info("Matmul1.txt", src0);
+    //save_tensor_info("Matmul2.txt", src1);
     ggml_compute_forward_mul_mat(params, dst);
 }
 
