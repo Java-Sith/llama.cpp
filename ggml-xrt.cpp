@@ -327,12 +327,12 @@ void ggml_xrt_mul_mat(
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }*/
 
-            auto bo_a_mm = xrt::bo(myDevice, y_ne * sizeof(uint32_t), matmul.group_id(0));
-            auto bo_b_mm = xrt::bo(myDevice, x_ne * sizeof(uint32_t), matmul.group_id(1));
-            auto bo_c_mm = xrt::bo(myDevice, d_ne * sizeof(uint32_t), matmul.group_id(2));
-            auto bo_a_mm_map = bo_a_mm.map<uint32_t*>();
-            auto bo_b_mm_map = bo_b_mm.map<uint32_t*>();
-            auto bo_c_mm_map = bo_c_mm.map<uint32_t*>();
+            auto bo_a = xrt::bo(myDevice, y_ne * sizeof(uint16_t), matmul.group_id(0));
+            auto bo_b = xrt::bo(myDevice, x_ne * sizeof(uint16_t), matmul.group_id(1));
+            auto bo_c = xrt::bo(myDevice, d_ne * sizeof(uint16_t), matmul.group_id(2));
+            auto bo_a_map = bo_a.map<uint16_t*>();
+            auto bo_b_map = bo_b.map<uint16_t*>();
+            auto bo_c_map = bo_c.map<uint16_ts*>();
 
             std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
@@ -351,15 +351,21 @@ void ggml_xrt_mul_mat(
                 bo_c_mm_map[elem] = cs[elem].V;
             }
             std::cout << "Synchronize input buffer data to device global memory\n";
-            bo_a_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-            bo_b_mm.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-            
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
             std::cout << "Execution of the kernel\n";
-            auto run_mm = matmul(bo_a_mm, bo_b_mm, bo_c_mm, ne11, ne10, ne01);
+            auto run_mm = matmul(bo_a, bo_b, bo_c, 2, 4096, 4096);
             run_mm.wait();
 
+            // Obtener el tamaño del buffer
+            size_t buffer_size = bo_c.size();
+
+            // Imprimir el tamaño del buffer
+            std::cout << "El tamaño del buffer es: " << buffer_size << " bytes.\n";
+
             std::cout << "Get the output data from the device" << std::endl;
-            bo_c_mm.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
