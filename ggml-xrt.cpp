@@ -92,14 +92,61 @@ int get_device_index_by_id(int id){
     return res;
 }
 
+void save_tensor_info(const std::string& filename, const struct ggml_tensor* tensor) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "No se pudo abrir el archivo " << filename << std::endl;
+        return;
+    }
+
+    // Guarda el tipo de datos del tensor
+    file << "Tipo de datos: " << tensor->type << std::endl;
+
+    // Guarda las dimensiones del tensor
+    file << "Dimensiones: ";
+    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
+        file << tensor->ne[i] << " ";
+    }
+    file << std::endl;
+
+    // Guarda el número de elementos del tensor
+    file << "Número de elementos: ";
+    int num_elements = 1;
+    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
+        num_elements *= tensor->ne[i];
+    }
+    file << num_elements << std::endl;
+
+    // Guarda el tamaño en bytes del tensor
+    file << "Tamaño en bytes: " << num_elements * sizeof(float) << std::endl; // Asume que el tipo de datos es float
+
+    // Guarda la operación del tensor
+    file << "Operación: " << tensor->op << std::endl;
+
+    // Guarda los datos reales del tensor
+    file << "Datos: ";
+    float* data = (float*) tensor->data; // Asume que el tipo de datos es float
+    for (int i = 0; i < num_elements; i++) {
+        file << data[i] << " ";
+    }
+    file << std::endl;
+
+    file.close();
+}
+
 // Function to get the number of elements in the buffer
-void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size) {
+void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "No se pudo abrir el archivo " << filename << std::endl;
+        return;
+    }
     size_t num_elements = buffer.size() / element_size;
     if (num_elements == expected_size) {
-        std::cout << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
+        file << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
     } else {
-        std::cout << "Buffer size does NOT match the expected number of elements." << std::endl;
-        std::cout << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
+        file << "Buffer size does NOT match the expected number of elements." << std::endl;
+        file << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
     }
 }
 
@@ -117,9 +164,9 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
     }
-    std::cout << "Open the device " << g_main_device << std::endl;
+    std::cout << "Open the device: " << g_main_device << std::endl;
     myDevice = xrt::device(g_main_device);
-    std::cout << "Load the xclbin " << binaryFile << std::endl;
+    std::cout << "Load the xclbin: " << binaryFile << std::endl;
     auto uuid = myDevice.load_xclbin(binaryFile);
     matmul = xrt::kernel(myDevice, uuid, "matmul");
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
@@ -217,6 +264,10 @@ void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
+
+    save_tensor_info("Matmul.txt", dst);
+    save_tensor_info("Matmul1.txt", src0);
+    wsave_tensor_info("Matmul2.txt", src1);
 
     const int ith = params->ith;
     const int nth = params->nth;
