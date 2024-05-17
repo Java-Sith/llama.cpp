@@ -18,7 +18,7 @@ using StreamT = hls::stream<RawDataT>;
 using DataT = ap_fixed<kDataWidth, kDataInt>;
 
 extern "C" {
-void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols);
+void matmul(float *a, float *b, float *c, int a_rows, int b_cols, int c_cols);
 }
 
 #endif // __MATMUL_H__
