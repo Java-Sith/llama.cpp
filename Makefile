@@ -584,7 +584,7 @@ ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h ggml.h
 
 endif #LLAMA_XRT
 
-ifdef LLAMA_VULKAN_RUN_TESTS
+ifdef LLAMA_TESTS
 	MK_CPPFLAGS  += -DGGML_USE_TEST
 endif
 
