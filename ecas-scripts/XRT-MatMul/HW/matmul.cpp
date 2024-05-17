@@ -37,7 +37,7 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
         c_packet(high, low) = c_val;
       }
 
-      c.write(static_cast<float>c_packet);
+      c.write(static_cast<float>(c_packet));
     }
   }
 }
