@@ -15360,7 +15360,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     if (do_test) {
         return;
     }
-#endif // GGML_USE_SYCL
+#endif // GGML_USE_TEST
 
 #ifdef GGML_USE_XRT
     bool skip_cpu = ggml_xrt_compute_forward(params, tensor);

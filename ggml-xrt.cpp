@@ -92,48 +92,6 @@ int get_device_index_by_id(int id){
     return res;
 }
 
-void save_tensor_info(const std::string& filename, const struct ggml_tensor* tensor) {
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        std::cout << "No se pudo abrir el archivo " << filename << std::endl;
-        return;
-    }
-
-    // Guarda el tipo de datos del tensor
-    file << "Tipo de datos: " << tensor->type << std::endl;
-
-    // Guarda las dimensiones del tensor
-    file << "Dimensiones: ";
-    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
-        file << tensor->ne[i] << " ";
-    }
-    file << std::endl;
-
-    // Guarda el número de elementos del tensor
-    file << "Número de elementos: ";
-    int num_elements = 1;
-    for (int i = 0; i < GGML_MAX_DIMS && tensor->ne[i] != 0; i++) {
-        num_elements *= tensor->ne[i];
-    }
-    file << num_elements << std::endl;
-
-    // Guarda el tamaño en bytes del tensor
-    file << "Tamaño en bytes: " << num_elements * sizeof(float) << std::endl; // Asume que el tipo de datos es float
-
-    // Guarda la operación del tensor
-    file << "Operación: " << tensor->op << std::endl;
-
-    // Guarda los datos reales del tensor
-    file << "Datos: ";
-    float* data = (float*) tensor->data; // Asume que el tipo de datos es float
-    for (int i = 0; i < num_elements; i++) {
-        file << data[i] << " ";
-    }
-    file << std::endl;
-
-    file.close();
-}
-
 // Function to get the number of elements in the buffer
 void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size, const std::string& filename) {
     std::ofstream file(filename);
@@ -264,11 +222,6 @@ void ggml_xrt_mul_mat(
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
-
-    save_tensor_info("Matmul.txt", dst);
-    save_tensor_info("Matmul1.txt", src0);
-    save_tensor_info("Matmul2.txt", src1);
-
     const int ith = params->ith;
     const int nth = params->nth;
 
@@ -279,16 +232,10 @@ void ggml_xrt_mul_mat(
     const int64_t ne02 = src0->ne[2];
     const int64_t ne03 = src0->ne[3];
 
-    printf("Ne00: %ld\n", ne00);
-    printf("Ne01: %ld\n", ne01);
-
     const int64_t ne10 = src1->ne[0];
     const int64_t ne11 = src1->ne[1];
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
-
-    printf("Ne10: %ld\n", ne10);
-    printf("Ne11: %ld\n", ne11);
 
     const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
@@ -296,16 +243,8 @@ void ggml_xrt_mul_mat(
     const int64_t nb12 = src1->nb[2];
     const int64_t nb13 = src1->nb[3];
 
-    printf("Ne0: %ld\n", dst->ne[0]);
-    printf("Ne1: %ld\n", dst->ne[1]);
-
     const int nb2  = dst->nb[2];
     const int nb3  = dst->nb[3];
-
-    printf("Nb2: %ld\n", nb2);
-    printf("Nb3: %ld\n", nb3);
-
-    printf("Passing...\n");
 
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
@@ -425,17 +364,12 @@ void ggml_xrt_mul_mat(
                 bo_c_map[elem] = cs[elem];
             }
             //std::cout << "Synchronize input buffer data to device global memory\n";
-            get_num_elements(bo_a, sizeof(float), y_ne, "BufferA.txt");
-            get_num_elements(bo_b, sizeof(float), x_ne, "BufferB.txt");
-            get_num_elements(bo_c, sizeof(float), d_ne, "BufferC.txt");
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
             //std::cout << "Execution of the kernel\n";
             auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, 4096, 4096);
             run_mm.wait();
-
-            get_num_elements(bo_c, sizeof(float), d_ne, "BufferC_2.txt");
 
             //std::cout << "Get the output data from the device" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);

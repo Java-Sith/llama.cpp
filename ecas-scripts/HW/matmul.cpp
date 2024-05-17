@@ -127,7 +127,7 @@ void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
 #pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2 depth = 128
 #pragma HLS INTERFACE s_axilite register port = a_rows
 #pragma HLS INTERFACE s_axilite register port = b_cols
-#pragma HLS INTERFACE s_axilite register port = c_cols
+#pragma HLS INTERFACE s_axilite register port = c_cols 
 #pragma HLS INTERFACE s_axilite register port = return
 
   static StreamT stream_a;

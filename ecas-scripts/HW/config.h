@@ -8,7 +8,7 @@
 
 static constexpr int kBusWidth = 512;
 static constexpr int kDataWidth = 32;
-static constexpr int kDataInt = 6;
+static constexpr int kDataInt = 12;
 static constexpr int kPackets = kBusWidth / kDataWidth; //16
 static constexpr int kShiftData = 2; // Packets 4
 static constexpr int MAX_DIM_SIZE = 11008;
