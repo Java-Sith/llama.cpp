@@ -586,10 +586,6 @@ endif #LLAMA_XRT
 
 ifdef LLAMA_TESTS
 	MK_CPPFLAGS  += -DGGML_USE_TEST
-endif
-
-ifdef LLAMA_VULKAN_RUN_TESTS
-	MK_CPPFLAGS  += -DGGML_VULKAN_RUN_TESTS
 	OBJS += ggml-test.o
 endif
 
