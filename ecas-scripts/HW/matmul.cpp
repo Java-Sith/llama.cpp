@@ -12,29 +12,29 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
     
       for (int c_p = 0; c_p < kPackets; ++c_p) {
 #pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
-        DataT c_val{0.f};                  
+        float c_val = 0.f;                  
         for (int b_col = 0; b_col < b_cols; b_col += kPackets) { // k
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
           RawDataT a_packet = a.read();
           RawDataT b_packet = b.read();
-          DataT res{0.f};
+          float res = 0.f; 
           // Decompose packets
           for (int p = 0; p < kPackets; ++p) {
 #pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
 #pragma HLS UNROLL
             const int low = p * kDataWidth;
             const int high = low + kDataWidth - 1;
-            DataT a_val;
-            a_val.V = a_packet(high, low);
-            DataT b_val;
-            b_val.V = b_packet(high, low);
-            res += a_val * b_val;
+            d32 a_val;
+            a_val.i = a_packet(high, low);
+            d32 b_val;
+            b_val.i = b_packet(high, low);
+            res += a_val.f * b_val.f;
           }
           c_val += res;
         }
         const int low = c_p * kDataWidth;
         const int high = low + kDataWidth - 1;
-        c_packet(high, low) = c_val.V;
+        c_packet(high, low) = c_val;
       }
 
       c.write(c_packet);

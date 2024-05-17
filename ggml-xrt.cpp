@@ -279,16 +279,16 @@ void ggml_xrt_mul_mat(
     const int64_t ne02 = src0->ne[2];
     const int64_t ne03 = src0->ne[3];
 
-    //printf("Ne00: %ld\n", ne00);
-    //printf("Ne01: %ld\n", ne01);
+    printf("Ne00: %ld\n", ne00);
+    printf("Ne01: %ld\n", ne01);
 
     const int64_t ne10 = src1->ne[0];
     const int64_t ne11 = src1->ne[1];
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
 
-    //printf("Ne10: %ld\n", ne10);
-    //printf("Ne11: %ld\n", ne11);
+    printf("Ne10: %ld\n", ne10);
+    printf("Ne11: %ld\n", ne11);
 
     const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
@@ -296,19 +296,20 @@ void ggml_xrt_mul_mat(
     const int64_t nb12 = src1->nb[2];
     const int64_t nb13 = src1->nb[3];
 
-    //printf("Ne0: %ld\n", dst->ne[0]);
-    //printf("Ne1: %ld\n", dst->ne[1]);
+    printf("Ne0: %ld\n", dst->ne[0]);
+    printf("Ne1: %ld\n", dst->ne[1]);
 
     const int nb2  = dst->nb[2];
     const int nb3  = dst->nb[3];
 
-    //printf("Passing...\n");
+    printf("Nb2: %ld\n", nb2);
+    printf("Nb3: %ld\n", nb3);
+
+    printf("Passing...\n");
 
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
 
-    const float alpha = 1;
-    const float beta = 1;
     const int x_ne = ne01 * ne00;
     const int y_ne = ne11 * ne10;
     const int d_ne = ne11 * ne01;
@@ -431,7 +432,7 @@ void ggml_xrt_mul_mat(
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
             //std::cout << "Execution of the kernel\n";
-            auto run_mm = matmul(bo_a, bo_b, bo_c, 2, 4096, 4096);
+            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, 4096, 4096);
             run_mm.wait();
 
             get_num_elements(bo_c, sizeof(float), d_ne, "BufferC_2.txt");
