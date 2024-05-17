@@ -8,15 +8,15 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
 #pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
     for (int c_col = 0; c_col < c_cols; c_col += kPackets) { // n
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
-      float c_packet = 0;
+      RawDataT c_packet = 0;
     
       for (int c_p = 0; c_p < kPackets; ++c_p) {
 #pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
         float c_val = 0;                  
         for (int b_col = 0; b_col < b_cols; b_col += kPackets) { // k
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
-          float a_packet = a.read();
-          float b_packet = b.read();
+          RawDataT a_packet = a.read();
+          RawDataT b_packet = b.read();
           float res = 0;
           // Decompose packets
           for (int p = 0; p < kPackets; ++p) {
@@ -24,11 +24,11 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
 #pragma HLS UNROLL
             const int low = p * kDataWidth;
             const int high = low + kDataWidth - 1;
-            float a_val;
+            DataT a_val;
             a_val = a_packet(high, low);
-            float b_val;
+            DataT b_val;
             b_val = b_packet(high, low);
-            res += a_val * b_val;
+            res += static_cast<float>(a_val) * static_cast<float>(b_val);
           }
           c_val += res;
         }
@@ -37,7 +37,7 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
         c_packet(high, low) = c_val;
       }
 
-      c.write(c_packet);
+      c.write(static_cast<float>c_packet);
     }
   }
 }
