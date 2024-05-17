@@ -267,7 +267,7 @@ void ggml_xrt_mul_mat(
 
     save_tensor_info("Matmul.txt", dst);
     save_tensor_info("Matmul1.txt", src0);
-    wsave_tensor_info("Matmul2.txt", src1);
+    save_tensor_info("Matmul2.txt", src1);
 
     const int ith = params->ith;
     const int nth = params->nth;
@@ -413,9 +413,9 @@ void ggml_xrt_mul_mat(
                 bo_c_map[elem] = cs[elem];
             }
             std::cout << "Synchronize input buffer data to device global memory\n";
-            get_num_elements(bo_a, sizeof(float), y_ne);
-            get_num_elements(bo_b, sizeof(float), x_ne);
-            get_num_elements(bo_c, sizeof(float), d_ne);
+            get_num_elements(bo_a, sizeof(float), y_ne, "BufferA.txt");
+            get_num_elements(bo_b, sizeof(float), x_ne, "BufferB.txt");
+            get_num_elements(bo_c, sizeof(float), d_ne, "BufferC.txt");
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -423,7 +423,7 @@ void ggml_xrt_mul_mat(
             auto run_mm = matmul(bo_a, bo_b, bo_c, 2, 4096, 4096);
             run_mm.wait();
 
-            get_num_elements(bo_c, sizeof(float), d_ne);
+            get_num_elements(bo_c, sizeof(float), d_ne, "BufferC_2.txt");
 
             std::cout << "Get the output data from the device" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
