@@ -92,6 +92,17 @@ int get_device_index_by_id(int id){
     return res;
 }
 
+// Function to get the number of elements in the buffer
+void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size) {
+    size_t num_elements = buffer.size() / element_size;
+    if (num_elements == expected_size) {
+        std::cout << "Buffer size matches the expected number of elements." << std::endl;
+    } else {
+        std::cout << "Buffer size does NOT match the expected number of elements." << std::endl;
+        std::cout << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
+    }
+}
+
 GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     if (main_device >= g_device_count) {
         fprintf(stderr, "warning: cannot set main_device=%d because there are only %d devices. Using device %d instead.\n",
@@ -351,6 +362,9 @@ void ggml_xrt_mul_mat(
                 bo_c_map[elem] = cs[elem].V;
             }
             std::cout << "Synchronize input buffer data to device global memory\n";
+            get_num_elements(bo_a, 2, y_ne);
+            get_num_elements(bo_b, 2, x_ne);
+            get_num_elements(bo_c, 2, d_ne);
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -358,11 +372,7 @@ void ggml_xrt_mul_mat(
             auto run_mm = matmul(bo_a, bo_b, bo_c, 2, 4096, 4096);
             run_mm.wait();
 
-            // Obtener el tamaño del buffer
-            size_t buffer_size = bo_c.size();
-
-            // Imprimir el tamaño del buffer
-            std::cout << "El tamaño del buffer es: " << buffer_size << " bytes.\n";
+            get_num_elements(bo_c, 2, d_ne);
 
             std::cout << "Get the output data from the device" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
