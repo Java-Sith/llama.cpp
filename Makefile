@@ -593,7 +593,7 @@ ifdef LLAMA_VULKAN_RUN_TESTS
 	OBJS += ggml-test.o
 endif
 
-ifdef LLAMA_VULKAN_RUN_TESTS
+ifdef LLAMA_TESTS
 ggml-test.o: ggml-test.cpp ggml-test.h ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 endif
