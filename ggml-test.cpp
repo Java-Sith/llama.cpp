@@ -253,7 +253,7 @@ static void ggml_test_mul_mat(
     printf("NE00: %ld\n", ne00);
     printf("NE01: %ld\n", ne01);
     printf("NE10: %ld\n", ne10);
-    printf("NE10: %ld\n", ne11);
+    printf("NE11: %ld\n", ne11);
     printf("NE0: %ld\n", ne0);
     printf("NE1: %ld\n", ne1);
     printf("NB2: %d\n", nb2);
