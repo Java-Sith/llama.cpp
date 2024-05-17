@@ -238,14 +238,26 @@ static void ggml_test_mul_mat(
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
-    GGML_TENSOR_BINARY_OP_LOCALS
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
 
-    printf("NE00: %d\n", ne00);
-    printf("NE01: %d\n", ne01);
-    printf("NE10: %d\n", ne10);
-    printf("NE10: %d\n", ne11);
-    printf("NE0: %d\n", ne0);
-    printf("NE1: %d\n", ne1);
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE10: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
 
     //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
