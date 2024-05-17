@@ -1,258 +1,146 @@
 #include "config.h"
 
-#ifdef USE_AXI_STREAM
-/**
- * a: input (samples, inputs)
- * b: weights (outputs, inputs)
- * c: output (samples, outputs)
- *
- * here:
- * a_rows = c_rows -> samples
- * a_cols = b_cols -> inputs
- * b_rows = c_cols -> outputs
- */
-static void matmul_accel (StreamT &a, StreamT &b, StreamT &c, int a_rows, int b_cols, int c_cols) {
+static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
+                        const int b_cols, const int c_cols) {
+#pragma HLS INLINE off
 
-matmul_samples:
-  for (int ay = 0; ay < a_rows; ++ay) {
-matmul_layers:
-    RawDataT valpacket = 0;
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS pipeline
-      DataT val = 0.f;
-matmul_perceptron:
-      for (int bx = 0; bx < b_cols; bx += kPackets) {
-        RawDataT a_raw = a.read();
-        RawDataT b_raw = b.read();
-        for (int p = 0; p < kPackets; ++p) {
-#pragma HLS unroll
-          int poff_low = p * kDataWidth;
-          int poff_high = poff_low + kDataWidth - 1;
+  for (int c_row = 0; c_row < a_rows; ++c_row) { // m
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+    for (int c_col = 0; c_col < c_cols; c_col += kPackets) { // n
+#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+      RawDataT c_packet = 0;
+    
+      for (int c_p = 0; c_p < kPackets; ++c_p) {
+#pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
+        DataT c_val{0.f};                  
+        for (int b_col = 0; b_col < b_cols; b_col += kPackets) { // k
+#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+          RawDataT a_packet = a.read();
+          RawDataT b_packet = b.read();
+          DataT res{0.f};
+          // Decompose packets
+          for (int p = 0; p < kPackets; ++p) {
+#pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
+#pragma HLS UNROLL
+            const int low = p * kDataWidth;
+            const int high = low + kDataWidth - 1;
+            DataT a_val;
+            a_val.V = a_packet(high, low);
+            DataT b_val;
+            b_val.V = b_packet(high, low);
+            res += a_val * b_val;
+          }
+          c_val += res;
+        }
+        const int low = c_p * kDataWidth;
+        const int high = low + kDataWidth - 1;
+        c_packet(high, low) = c_val.V;
+      }
 
-          DataT a, b;
+      c.write(c_packet);
+    }
+  }
+}
 
-          a.V = a_raw(poff_high, poff_low);
-          b.V = b_raw(poff_high, poff_low);
+static void matmul_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
+                             const int cols, const int rep_rows,
+                             const int rep_mats) {
+#pragma HLS INLINE off
+  const int tcols = cols / kPackets;
 
-          val += a * b;
+  for (int rep_mat = 0; rep_mat < rep_mats; ++rep_mat) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=1 avg=1
+    // Repeated matrix transmission
+    for (int row = 0; row < rows; ++row) {
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+      // Repeated row transmission
+      for (int rep_row = 0; rep_row < rep_rows; ++rep_row) {
+#pragma HLS LOOP_TRIPCOUNT min=4096 max=4096 avg=4096
+        // Transmit columns
+        for (int col = 0; col < tcols; ++col) {
+#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS PIPELINE
+          const int row_shift = row * tcols;
+          const int cols_shift = col;
+          const int shift = cols_shift + row_shift;          
+          RawDataT packet = a[shift];
+          sa.write(packet);
         }
       }
-      // Get the indices
-      int cx_p_1 = cx + 1;
-      int val_mod = cx_p_1 & (kPackets - 1);
-      int cx_mod = cx & (kPackets - 1);
-
-      // Write accordingly
-      int poff_low = cx_mod * kDataWidth;
-      int poff_high = poff_low + kDataWidth - 1;
-
-      valpacket(poff_high, poff_low) = val.V;
-
-      // Stream out if done
-      if (val_mod == 0) {
-        c.write(valpacket);
-        valpacket = 0;
-      }
     }
   }
 }
 
-static void load_data(RawDataT *a, RawDataT *b, StreamT &a_s, StreamT &b_s,
-               int a_rows, int b_cols, int c_cols) {
-  // Load B
-  for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS pipeline
-    for (int cx = 0; cx < c_cols; ++cx) {
-      for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
-        int bidx = bx + cx * (b_cols >> kShiftData);
-        b_s.write(b[bidx]);
-      }
-    }
-  }
+static void matmul_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
+                             const int cols, const int rep_rows,
+                             const int rep_mats) {
+#pragma HLS INLINE off
+  const int tcols = cols / kPackets;
 
-  // Load A
-  for (int cx = 0; cx < c_cols; ++cx) {
-    for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS pipeline
-      for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
-        int aidx = ax + ay * (b_cols >> kShiftData);
-        a_s.write(a[aidx]);
-      }
-    }
-  }
-}
-
-static void store_data(RawDataT *c, StreamT &c_s,
-               int a_rows, int b_cols, int c_cols) {
-
-  // Load C
-  for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS pipeline
-    for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-      int cidx = cx + cy * (c_cols >> kShiftData);
-      c[cidx] = c_s.read();
-    }
-  }
-}
-#else
-
-static void load_data(RawDataT *a, RawDataT *b, uint16_t* arrA, uint16_t* arrB,
-               int a_rows, int b_cols, int c_cols) {
-  // Load B
-readB:
-  for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg=2
-#pragma HLS pipeline
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
-      for (int bx = 0; bx < (b_cols >> kShiftData); ++bx) {
-#pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
-        int bidx = bx + cx * (b_cols >> kShiftData);
-        arrB[bidx] = b[bidx];
-      }
-    }
-  }
-
-  // Load A
-readA:
-  for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
-    for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2
-#pragma HLS pipeline
-      for (int ax = 0; ax < (b_cols >> kShiftData); ++ax) {
-#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
-#pragma HLS unroll
-        int aidx = ax + ay * (b_cols >> kShiftData);
-        arrA[aidx] = a[aidx];
-      }
-    }
-  }
-}
-
-static void store_data(RawDataT *c, uint16_t* arrC,
-               int a_rows, int c_cols) {
-  // Load C
-writeC:
-  for (int cy = 0; cy < a_rows; ++cy) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg = 2
-#pragma HLS pipeline
-    for (int cx = 0; cx < (c_cols >> kShiftData); ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
-#pragma HLS unroll
-      int cidx = cx + cy * (c_cols >> kShiftData);
-      c[cidx] = arrC[cidx];
-    }
-  }
-}
-
-static void matmul_accel (uint16_t *arrA, uint16_t *arrB, uint16_t *arrC, int a_rows, int b_cols, int c_cols) {
-  int b_cols_shift = b_cols >> kShiftData;
-  int c_cols_shift = c_cols >> kShiftData;
-  DataT val = 0.f;
-  RawDataT valpacket = 0;
-
-matmul_samples:
-  for (int ay = 0; ay < a_rows; ++ay) {
-#pragma HLS LOOP_TRIPCOUNT min = 2 max = 2 avg = 2
-matmul_layers:
-    for (int cx = 0; cx < c_cols; ++cx) {
-#pragma HLS LOOP_TRIPCOUNT min = 4096 max = 4096 avg = 4096
-#pragma HLS pipeline
-matmul_perceptron:
-      for (int bx = 0; bx < b_cols_shift; ++bx) {
-#pragma HLS LOOP_TRIPCOUNT min = 128 max = 128 avg = 128
-#pragma HLS unroll
-        RawDataT a_raw = arrA[ay * b_cols_shift + bx];
-        RawDataT b_raw = arrB[cx * b_cols_shift + bx];
-        for (int p = 0; p < kPackets; ++p) {
-#pragma HLS unroll
-#pragma HLS LOOP_TRIPCOUNT min = 32 max = 32 avg = 32
-          int poff_low = p * kDataWidth;
-          int poff_high = poff_low + kDataWidth - 1;
-
-          DataT a, b;
-
-          a.V = a_raw(poff_high, poff_low);
-          b.V = b_raw(poff_high, poff_low);
-
-          val += a * b;
+  for (int rep_mat = 0; rep_mat < rep_mats; ++rep_mat) {
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+    // Repeated matrix transmission
+    for (int row = 0; row < rows; ++row) {
+#pragma HLS LOOP_TRIPCOUNT min=4096 max=4096 avg=4096
+      // Repeated row transmission
+      for (int rep_row = 0; rep_row < rep_rows; ++rep_row) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=1 avg=1
+        // Transmit columns
+        for (int col = 0; col < tcols; ++col) {
+#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS PIPELINE
+          const int row_shift = row * tcols;
+          const int cols_shift = col;
+          const int shift = cols_shift + row_shift;          
+          RawDataT packet = a[shift];
+          sa.write(packet);
         }
       }
-
-      // Get the indices
-      int cx_mod = cx & (kPackets - 1);
-      int cx_div = cx >> kShiftData;
-      int val_mod = (cx + 1) & (kPackets - 1);
-
-      // Write accordingly
-      int poff_low = cx_mod * kDataWidth;
-      int poff_high = poff_low + kDataWidth - 1;
-
-      valpacket(poff_high, poff_low) = val.V;
-      val = 0.f;
-
-      // Stream out if done
-      if (val_mod == 0) {
-        arrC[cx_div + ay * c_cols_shift] = valpacket;
-        valpacket = 0;
-      }
     }
-    valpacket = 0;
   }
 }
-#endif
+
+static void matmul_from_stream(RawDataT *a, StreamT &sa, const int length) {
+#pragma HLS INLINE off
+  const int tlength = length / kPackets;
+  for (int i = 0; i < tlength; ++i) {
+#pragma HLS PIPELINE
+#pragma HLS LOOP_TRIPCOUNT min=256 max=256 avg=256
+    a[i] = sa.read();
+  }
+}
 
 extern "C" {
 
 /**
  * matrix: (rows, cols)
  * a: input (samples, inputs)
- * b: weights (outputs, inputs)
+ * b: weights (outputs, inputs) assumed transposed
  * c: output (samples, outputs)
  */
-void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
-#pragma HLS INTERFACE m_axi offset=slave port=a bundle=gmem0
-#pragma HLS INTERFACE m_axi offset=slave port=b bundle=gmem1
-#pragma HLS INTERFACE m_axi offset=slave port=c bundle=gmem2
-#pragma HLS INTERFACE s_axilite register port=a_rows
-#pragma HLS INTERFACE s_axilite register port=b_cols
-#pragma HLS INTERFACE s_axilite register port=c_cols
-#pragma HLS INTERFACE s_axilite register port=return
+void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
+            int c_cols) {
+#pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0 depth = 128
+#pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1 depth = 128
+#pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2 depth = 128
+#pragma HLS INTERFACE s_axilite register port = a_rows
+#pragma HLS INTERFACE s_axilite register port = b_cols
+#pragma HLS INTERFACE s_axilite register port = c_cols
+#pragma HLS INTERFACE s_axilite register port = return
 
-#ifdef USE_AXI_STREAM
-  static StreamT a_stream, b_stream, c_stream;
-#pragma HLS stream variable = a_stream depth = 128
-#pragma HLS stream variable = b_stream depth = 128
-#pragma HLS stream variable = c_stream depth = 128
-
-#pragma HLS dataflow
-  load_data(a, b, a_stream, b_stream, a_rows, b_cols, c_cols);
-  matmul_accel(a_stream, b_stream, c_stream, a_rows, b_cols, c_cols);
-  store_data(c, c_stream, a_rows, b_cols, c_cols);
-
-#else
-  int size_a = 8192;
-  int size_b = 4096*4096;
-  int size_c = 8192;
-
-  uint16_t localA[size_a];
-  uint16_t localB[size_b];
-  uint16_t localC[size_c];
-
-#pragma HLS resource variable=localA core=XPM_MEMORY uram
-#pragma HLS resource variable=localB core=XPM_MEMORY uram
-#pragma HLS resource variable=localC core=XPM_MEMORY uram
+  static StreamT stream_a;
+  static StreamT stream_b;
+  static StreamT stream_c;
+#pragma HLS stream variable = stream_a depth = MAX_DIM_SIZE
+#pragma HLS stream variable = stream_b depth = MAX_DIM_SIZE
+#pragma HLS stream variable = stream_c depth = MAX_DIM_SIZE
 
 #pragma HLS dataflow
- load_data(a, b, localA, localB, a_rows, b_cols, c_cols);
- matmul_accel(localA, localB, localC, a_rows, b_cols, c_cols);
- store_data(c, localC, a_rows, c_cols);
-
-#endif
-
+  matmul_to_stream_a(a, stream_a, a_rows, b_cols, c_cols, 1);
+  matmul_to_stream_b(b, stream_b, b_cols, c_cols, 1, a_rows);
+  matmul_gemm(stream_a, stream_b, stream_c, a_rows, b_cols, c_cols);
+  matmul_from_stream(c, stream_c, c_cols * a_rows);
 }
-
 }

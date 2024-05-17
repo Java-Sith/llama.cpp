@@ -321,9 +321,9 @@ void ggml_xrt_mul_mat(
     }
 
     //const int64_t tgemm0 = ggml_perf_time_us();
-    DataT *as = new DataT[y_ne];
-    DataT *bs = new DataT[x_ne];
-    DataT *cs = new DataT[d_ne];
+    float *as = new float[y_ne];
+    float *bs = new float[x_ne];
+    float *cs = new float[d_ne];
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -338,33 +338,33 @@ void ggml_xrt_mul_mat(
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }*/
 
-            auto bo_a = xrt::bo(myDevice, y_ne * sizeof(uint16_t), matmul.group_id(0));
-            auto bo_b = xrt::bo(myDevice, x_ne * sizeof(uint16_t), matmul.group_id(1));
-            auto bo_c = xrt::bo(myDevice, d_ne * sizeof(uint16_t), matmul.group_id(2));
-            auto bo_a_map = bo_a.map<uint16_t*>();
-            auto bo_b_map = bo_b.map<uint16_t*>();
-            auto bo_c_map = bo_c.map<uint16_t*>();
+            auto bo_a = xrt::bo(myDevice, y_ne * sizeof(float), matmul.group_id(0));
+            auto bo_b = xrt::bo(myDevice, x_ne * sizeof(float), matmul.group_id(1));
+            auto bo_c = xrt::bo(myDevice, d_ne * sizeof(float), matmul.group_id(2));
+            auto bo_a_map = bo_a.map<float*>();
+            auto bo_b_map = bo_b.map<float*>();
+            auto bo_c_map = bo_c.map<float*>();
 
             std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
-                as[elem] = static_cast<DataT>(y[elem]);
-                bo_a_map[elem] = as[elem].V;
+                as[elem] = y[elem];
+                bo_a_map[elem] = as[elem];
             }
             for (int elem = 0; elem < x_ne; ++elem) {
                 //std::cout << as.V << " ";
-                bs[elem] = static_cast<DataT>(x[elem]);
-                bo_b_map[elem] = bs[elem].V;
+                bs[elem] = x[elem];
+                bo_b_map[elem] = bs[elem];
             }
             for (int elem = 0; elem < d_ne; ++elem) {
                 //std::cout << as.V << " ";
-                cs[elem] = static_cast<DataT>(d[elem]);
-                bo_c_map[elem] = cs[elem].V;
+                cs[elem] = d[elem];
+                bo_c_map[elem] = cs[elem];
             }
             std::cout << "Synchronize input buffer data to device global memory\n";
-            get_num_elements(bo_a, 2, y_ne);
-            get_num_elements(bo_b, 2, x_ne);
-            get_num_elements(bo_c, 2, d_ne);
+            get_num_elements(bo_a, sizeof(float), y_ne);
+            get_num_elements(bo_b, sizeof(float), x_ne);
+            get_num_elements(bo_c, sizeof(float), d_ne);
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -372,7 +372,7 @@ void ggml_xrt_mul_mat(
             auto run_mm = matmul(bo_a, bo_b, bo_c, 2, 4096, 4096);
             run_mm.wait();
 
-            get_num_elements(bo_c, 2, d_ne);
+            get_num_elements(bo_c, sizeof(float), d_ne);
 
             std::cout << "Get the output data from the device" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -383,8 +383,8 @@ void ggml_xrt_mul_mat(
                                 x, ne00,
                         0.0f,    d, ne01);*/
             for (int elem = 0; elem < d_ne; ++elem) {
-                cs[elem].V = bo_c_map[elem];
-                d[elem] = static_cast<float>(cs[elem]);
+                cs[elem] = bo_c_map[elem];
+                d[elem] = cs[elem];
                 //std::cout << cs << " ";
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;

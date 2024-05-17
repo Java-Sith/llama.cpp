@@ -8,33 +8,33 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
 #pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
     for (int c_col = 0; c_col < c_cols; c_col += kPackets) { // n
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
-      RawDataT c_packet = 0;
+      float c_packet = 0;
     
       for (int c_p = 0; c_p < kPackets; ++c_p) {
 #pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
-        DataT c_val{0.f};                  
+        float c_val = 0;                  
         for (int b_col = 0; b_col < b_cols; b_col += kPackets) { // k
 #pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
-          RawDataT a_packet = a.read();
-          RawDataT b_packet = b.read();
-          DataT res{0.f};
+          float a_packet = a.read();
+          float b_packet = b.read();
+          float res = 0;
           // Decompose packets
           for (int p = 0; p < kPackets; ++p) {
 #pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
 #pragma HLS UNROLL
             const int low = p * kDataWidth;
             const int high = low + kDataWidth - 1;
-            DataT a_val;
-            a_val.V = a_packet(high, low);
-            DataT b_val;
-            b_val.V = b_packet(high, low);
+            float a_val;
+            a_val = a_packet(high, low);
+            float b_val;
+            b_val = b_packet(high, low);
             res += a_val * b_val;
           }
           c_val += res;
         }
         const int low = c_p * kDataWidth;
         const int high = low + kDataWidth - 1;
-        c_packet(high, low) = c_val.V;
+        c_packet(high, low) = c_val;
       }
 
       c.write(c_packet);
@@ -42,7 +42,7 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
   }
 }
 
-static void matmul_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
+static void matmul_to_stream_a(float *a, StreamT &sa, const int rows,
                              const int cols, const int rep_rows,
                              const int rep_mats) {
 #pragma HLS INLINE off
@@ -64,7 +64,7 @@ static void matmul_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
           const int row_shift = row * tcols;
           const int cols_shift = col;
           const int shift = cols_shift + row_shift;          
-          RawDataT packet = a[shift];
+          float packet = a[shift];
           sa.write(packet);
         }
       }
@@ -72,7 +72,7 @@ static void matmul_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
   }
 }
 
-static void matmul_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
+static void matmul_to_stream_b(float *a, StreamT &sa, const int rows,
                              const int cols, const int rep_rows,
                              const int rep_mats) {
 #pragma HLS INLINE off
@@ -94,7 +94,7 @@ static void matmul_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
           const int row_shift = row * tcols;
           const int cols_shift = col;
           const int shift = cols_shift + row_shift;          
-          RawDataT packet = a[shift];
+          float packet = a[shift];
           sa.write(packet);
         }
       }
@@ -102,7 +102,7 @@ static void matmul_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
   }
 }
 
-static void matmul_from_stream(RawDataT *a, StreamT &sa, const int length) {
+static void matmul_from_stream(float *a, StreamT &sa, const int length) {
 #pragma HLS INLINE off
   const int tlength = length / kPackets;
   for (int i = 0; i < tlength; ++i) {
@@ -120,7 +120,7 @@ extern "C" {
  * b: weights (outputs, inputs) assumed transposed
  * c: output (samples, outputs)
  */
-void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
+void matmul(float *a, float *b, float *c, int a_rows, int b_cols,
             int c_cols) {
 #pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0 depth = 128
 #pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1 depth = 128
