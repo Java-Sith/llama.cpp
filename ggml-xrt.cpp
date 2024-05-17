@@ -332,7 +332,7 @@ void ggml_xrt_mul_mat(
             auto bo_c = xrt::bo(myDevice, d_ne * sizeof(uint16_t), matmul.group_id(2));
             auto bo_a_map = bo_a.map<uint16_t*>();
             auto bo_b_map = bo_b.map<uint16_t*>();
-            auto bo_c_map = bo_c.map<uint16_ts*>();
+            auto bo_c_map = bo_c.map<uint16_t*>();
 
             std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
