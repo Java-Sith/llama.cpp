@@ -143,10 +143,10 @@ void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expecte
     }
     size_t num_elements = buffer.size() / element_size;
     if (num_elements == expected_size) {
-        file << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
+        std::cout << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
     } else {
-        file << "Buffer size does NOT match the expected number of elements." << std::endl;
-        file << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
+        std::cout << "Buffer size does NOT match the expected number of elements." << std::endl;
+        std::cout << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
     }
 }
 
@@ -279,16 +279,16 @@ void ggml_xrt_mul_mat(
     const int64_t ne02 = src0->ne[2];
     const int64_t ne03 = src0->ne[3];
 
-    printf("Ne00: %ld\n", ne00);
-    printf("Ne01: %ld\n", ne01);
+    //printf("Ne00: %ld\n", ne00);
+    //printf("Ne01: %ld\n", ne01);
 
     const int64_t ne10 = src1->ne[0];
     const int64_t ne11 = src1->ne[1];
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
 
-    printf("Ne10: %ld\n", ne10);
-    printf("Ne11: %ld\n", ne11);
+    //printf("Ne10: %ld\n", ne10);
+    //printf("Ne11: %ld\n", ne11);
 
     const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
@@ -296,13 +296,13 @@ void ggml_xrt_mul_mat(
     const int64_t nb12 = src1->nb[2];
     const int64_t nb13 = src1->nb[3];
 
-    printf("Ne0: %ld\n", dst->ne[0]);
-    printf("Ne1: %ld\n", dst->ne[1]);
+    //printf("Ne0: %ld\n", dst->ne[0]);
+    //printf("Ne1: %ld\n", dst->ne[1]);
 
     const int nb2  = dst->nb[2];
     const int nb3  = dst->nb[3];
 
-    printf("Passing...\n");
+    //printf("Passing...\n");
 
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
