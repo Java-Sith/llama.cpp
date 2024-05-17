@@ -96,7 +96,7 @@ int get_device_index_by_id(int id){
 void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size) {
     size_t num_elements = buffer.size() / element_size;
     if (num_elements == expected_size) {
-        std::cout << "Buffer size matches the expected number of elements." << std::endl;
+        std::cout << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
     } else {
         std::cout << "Buffer size does NOT match the expected number of elements." << std::endl;
         std::cout << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
