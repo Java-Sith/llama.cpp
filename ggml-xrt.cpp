@@ -279,10 +279,16 @@ void ggml_xrt_mul_mat(
     const int64_t ne02 = src0->ne[2];
     const int64_t ne03 = src0->ne[3];
 
+    printf("Ne00: %d\n", ne00);
+    printf("Ne01: %d\n", ne01);
+
     const int64_t ne10 = src1->ne[0];
     const int64_t ne11 = src1->ne[1];
     const int64_t ne12 = src1->ne[2];
     const int64_t ne13 = src1->ne[3];
+
+    printf("Ne10: %d\n", ne10);
+    printf("Ne11: %d\n", ne11);
 
     const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
@@ -290,8 +296,13 @@ void ggml_xrt_mul_mat(
     const int64_t nb12 = src1->nb[2];
     const int64_t nb13 = src1->nb[3];
 
+    printf("Ne0: %d\n", dst->ne[0]);
+    printf("Ne1: %d\n", dst->ne[1]);
+
     const int nb2  = dst->nb[2];
     const int nb3  = dst->nb[3];
+
+    printf("Passing...\n")
 
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
