@@ -368,7 +368,7 @@ void ggml_xrt_mul_mat(
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
             //std::cout << "Execution of the kernel\n";
-            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, 4096, 4096);
+            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne00, ne01);
             run_mm.wait();
 
             //std::cout << "Get the output data from the device" << std::endl;
