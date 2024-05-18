@@ -6,8 +6,6 @@
 #include <ap_fixed.h>
 #include <hls_stream.h>
 
-#define USE_FLOAT16
-
 // FIXME: Modify to adjust
 static constexpr int kARows = 2;
 #ifndef B_COLS
@@ -21,7 +19,7 @@ static constexpr int kCCols = 32768;
 static constexpr int kCCols = C_COLS;
 #endif
 #ifndef BUS
-static constexpr int kBusWidth = 512; //2048
+static constexpr int kBusWidth = 2048; //2048
 #else
 static constexpr int kBusWidth = BUS;
 #endif
