@@ -37,26 +37,6 @@ typedef union {
   uint64_t packet;
 } PacketU;
 
-#include <fstream>
-#include <vector>
-
-// Function to load a tensor from a text file
-void load_tensor(const char *filename, std::vector<DataT>& buffer) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cout << "Error opening file for reading.\n";
-        return;
-    }
-
-    float value;
-    while (file >> value) {
-        DataT data_value = value; // Convert float to DataT
-        buffer.push_back(data_value);
-    }
-
-    file.close();
-}
-
 int main(int argc, char** argv) {
     INIT_PROFILER(cynq_profiler)
     int device_index = 0;
@@ -98,18 +78,18 @@ int main(int argc, char** argv) {
 
     std::cout << "Allocate Buffer in Global Memory\n";
     int size_em = 16;
-    auto bo_a_mm = xrt::bo(device, size_a * sizeof(uint16_t), matmul.group_id(0));
-    auto bo_b_mm = xrt::bo(device, size_b * sizeof(uint16_t), matmul.group_id(1));
-    auto bo_c_mm = xrt::bo(device, size_c * sizeof(uint16_t), matmul.group_id(2));
+    auto bo_a_mm = xrt::bo(device, size_a * sizeof(float), matmul.group_id(0));
+    auto bo_b_mm = xrt::bo(device, size_b * sizeof(float), matmul.group_id(1));
+    auto bo_c_mm = xrt::bo(device, size_c * sizeof(float), matmul.group_id(2));
     auto bo_a_ew = xrt::bo(device, size_em * sizeof(uint16_t), elementwise.group_id(0));
     auto bo_b_ew = xrt::bo(device, size_em * sizeof(uint16_t), elementwise.group_id(1));
     auto bo_c_ew = xrt::bo(device, size_em * sizeof(uint16_t), elementwise.group_id(2));
 
 
     // Map the contents of the buffer object into host memory
-    auto bo_a_mm_map = bo_a_mm.map<uint16_t*>();
-    auto bo_b_mm_map = bo_b_mm.map<uint16_t*>();
-    auto bo_c_mm_map = bo_c_mm.map<uint16_t*>();
+    auto bo_a_mm_map = bo_a_mm.map<float*>();
+    auto bo_b_mm_map = bo_b_mm.map<float*>();
+    auto bo_c_mm_map = bo_c_mm.map<float*>();
     auto bo_a_ew_map = bo_a_ew.map<uint16_t*>();
     auto bo_b_ew_map = bo_b_ew.map<uint16_t*>();
     auto bo_c_ew_map = bo_c_ew.map<uint16_t*>();
@@ -120,13 +100,13 @@ int main(int argc, char** argv) {
     //std::copy(a.begin(), a.end(), bo_a_mm_map);
     //std::copy(b.begin(), b.end(), bo_b_mm_map);
 
-    DataT as = 0.02, bs = 0.03;
+    float as = 0.02, bs = 0.03;
     std::cout << "A: " << std::endl;
     for (int elem = 0; elem < size_a; ++elem) {
         //std::cout << as.V << " ";
-        bo_a_mm_map[elem] = as.V;
+        bo_a_mm_map[elem] = as;
         //std::cout << std::hex << as.V << " ";
-        as += DataT{0.03};
+        as += 0.03;
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
             as = 0.025;
@@ -136,8 +116,8 @@ int main(int argc, char** argv) {
     for (int elem = 0; elem < size_b; ++elem) {
         //std::cout << bs.V << " ";
         //std::cout << std::hex << bs.V << " ";
-        bo_b_mm_map[elem] = bs.V;
-        bs += DataT{0.07};
+        bo_b_mm_map[elem] = bs;
+        bs += 0.07;
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
             bs = 0.04;
