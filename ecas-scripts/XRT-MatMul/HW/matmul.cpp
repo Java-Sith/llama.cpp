@@ -5,22 +5,22 @@ static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
 #pragma HLS INLINE off
 
   for (int c_row = 0; c_row < a_rows; ++c_row) { // m
-#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+#pragma HLS LOOP_TRIPCOUNT min=1 max=2 avg=1
     for (int c_col = 0; c_col < c_cols; c_col += kPackets) { // n
-#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2000 avg=256
       RawDataT c_packet = 0;
     
       for (int c_p = 0; c_p < kPackets; ++c_p) {
-#pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
+#pragma HLS LOOP_TRIPCOUNT min=16 max=16 avg=16
         float c_val = 0;                  
         for (int b_col = 0; b_col < b_cols; b_col += kPackets) { // k
-#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2000 avg=256
           RawDataT a_packet = a.read();
           RawDataT b_packet = b.read();
           float res = 0;
           // Decompose packets
           for (int p = 0; p < kPackets; ++p) {
-#pragma HLS LOOP_TRIPCOUNT min=32 max=32 avg=32
+#pragma HLS LOOP_TRIPCOUNT min=16 max=16 avg=16
 #pragma HLS UNROLL
             const int low = p * kDataWidth;
             const int high = low + kDataWidth - 1;
@@ -52,13 +52,13 @@ static void matmul_to_stream_a(float *a, StreamT &sa, const int rows,
 #pragma HLS LOOP_TRIPCOUNT min=1 max=1 avg=1
     // Repeated matrix transmission
     for (int row = 0; row < rows; ++row) {
-#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+#pragma HLS LOOP_TRIPCOUNT min=1 max=2 avg=1
       // Repeated row transmission
       for (int rep_row = 0; rep_row < rep_rows; ++rep_row) {
-#pragma HLS LOOP_TRIPCOUNT min=4096 max=4096 avg=4096
+#pragma HLS LOOP_TRIPCOUNT min=32 max=32000 avg=4096
         // Transmit columns
         for (int col = 0; col < tcols; ++col) {
-#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2000 avg=256
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
           const int row_shift = row * tcols;
@@ -79,16 +79,16 @@ static void matmul_to_stream_b(float *a, StreamT &sa, const int rows,
   const int tcols = cols / kPackets;
 
   for (int rep_mat = 0; rep_mat < rep_mats; ++rep_mat) {
-#pragma HLS LOOP_TRIPCOUNT min=2 max=2 avg=2
+#pragma HLS LOOP_TRIPCOUNT min=1 max=2 avg=1
     // Repeated matrix transmission
     for (int row = 0; row < rows; ++row) {
-#pragma HLS LOOP_TRIPCOUNT min=4096 max=4096 avg=4096
+#pragma HLS LOOP_TRIPCOUNT min=32 max=32000 avg=4096
       // Repeated row transmission
       for (int rep_row = 0; rep_row < rep_rows; ++rep_row) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=1 avg=1
         // Transmit columns
         for (int col = 0; col < tcols; ++col) {
-#pragma HLS LOOP_TRIPCOUNT min=128 max=128 avg=128
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2000 avg=256
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
           const int row_shift = row * tcols;
@@ -107,7 +107,7 @@ static void matmul_from_stream(float *a, StreamT &sa, const int length) {
   const int tlength = length / kPackets;
   for (int i = 0; i < tlength; ++i) {
 #pragma HLS PIPELINE
-#pragma HLS LOOP_TRIPCOUNT min=256 max=256 avg=256
+#pragma HLS LOOP_TRIPCOUNT min=2 max=4000 avg=256
     a[i] = sa.read();
   }
 }
