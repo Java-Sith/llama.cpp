@@ -253,7 +253,7 @@ void ggml_xrt_mul_mat(
     {
         ne00 = 64;
     }
-    
+
     if (ne01 < 64)
     {
         ne01 = 64;
@@ -338,9 +338,9 @@ void ggml_xrt_mul_mat(
     }
 
     //const int64_t tgemm0 = ggml_perf_time_us();
-    float *as = new float[y_ne];
-    float *bs = new float[x_ne];
-    float *cs = new float[d_ne];
+    //float *as = new float[y_ne];
+    //float *bs = new float[x_ne];
+    //float *cs = new float[d_ne];
     //const int64_t tgemm0 = ggml_perf_time_us();
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
@@ -361,38 +361,38 @@ void ggml_xrt_mul_mat(
             auto bo_a_map = bo_a.map<float*>();
             auto bo_b_map = bo_b.map<float*>();
             auto bo_c_map = bo_c.map<float*>();
-            printf("BufferA: %ld", bo_a.size());
-            printf("BufferB: %ld", bo_b.size());
-            printf("BufferC: %ld", bo_c.size());
-            printf("SizeX: %ld", x_ne);
-            printf("SizeY: %ld", y_ne);
-            printf("SizeD: %ld", d_ne);
+            printf("BufferA: %ld\n", bo_a.size() / 4);
+            printf("BufferB: %ld\n", bo_b.size() / 4);
+            printf("BufferC: %ld\n", bo_c.size() / 4);
+            printf("SizeX: %ld\n", x_ne);
+            printf("SizeY: %ld\n", y_ne);
+            printf("SizeD: %ld\n", d_ne);
 
             //std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
-                as[elem] = y[elem];
+                //as[elem] = y[elem];
                 bo_a_map[elem] = as[elem];
             }
             for (int elem = 0; elem < x_ne; ++elem) {
                 //std::cout << as.V << " ";
-                bs[elem] = x[elem];
+                //bs[elem] = x[elem];
                 bo_b_map[elem] = bs[elem];
             }
             for (int elem = 0; elem < d_ne; ++elem) {
                 //std::cout << as.V << " ";
-                cs[elem] = d[elem];
+                //cs[elem] = d[elem];
                 bo_c_map[elem] = cs[elem];
             }
             //std::cout << "Synchronize input buffer data to device global memory\n";
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-            //std::cout << "Execution of the kernel\n";
+            std::cout << "Execution of the kernel\n";
             auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne01, ne01);
             run_mm.wait();
 
-            //std::cout << "Get the output data from the device" << std::endl;
+            std::cout << "Get the output data from the device\n" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
