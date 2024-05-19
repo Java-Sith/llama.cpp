@@ -361,6 +361,12 @@ void ggml_xrt_mul_mat(
             auto bo_a_map = bo_a.map<float*>();
             auto bo_b_map = bo_b.map<float*>();
             auto bo_c_map = bo_c.map<float*>();
+            printf("BufferA: %ld", bo_a.size());
+            printf("BufferB: %ld", bo_b.size());
+            printf("BufferC: %ld", bo_c.size());
+            printf("SizeX: %ld", x_ne);
+            printf("SizeY: %ld", y_ne);
+            printf("SizeD: %ld", d_ne);
 
             //std::cout << "Filling Buffers\n";
             for (int elem = 0; elem < y_ne; ++elem) {
