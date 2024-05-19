@@ -343,6 +343,7 @@ void ggml_xrt_mul_mat(
     //float *bs = new float[x_ne];
     //float *cs = new float[d_ne];
     //const int64_t tgemm0 = ggml_perf_time_us();
+    float *xs = new float[x_ne];
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
             const int64_t i03 = i13/r3;
@@ -355,6 +356,12 @@ void ggml_xrt_mul_mat(
             /*if (type != GGML_TYPE_F32) {
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }*/
+
+            for (int i = 0; i < ne01; ++i) {
+                for (int j = 0; j < ne00; ++j) {
+                    xs[j * ne01 + i] = x[i * ne00 + j];
+                }
+            }
 
             auto bo_a = xrt::bo(myDevice, y_ne * sizeof(float), matmul.group_id(0));
             auto bo_b = xrt::bo(myDevice, x_ne * sizeof(float), matmul.group_id(1));
@@ -407,6 +414,7 @@ void ggml_xrt_mul_mat(
         }
     }
     iterations++;
+    delete[] xs;
 }
 
 static void ggml_xrt_unary(
