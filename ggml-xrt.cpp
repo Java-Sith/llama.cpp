@@ -50,7 +50,6 @@ static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
 static int iterations = 0;
-pthread_mutex_t mutex;
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
@@ -351,7 +350,6 @@ void ggml_xrt_mul_mat(
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
 
-            pthread_mutex_lock(&mutex);
             const int64_t i03 = i13/r3;
             const int64_t i02 = i12/r2;
 
@@ -365,7 +363,12 @@ void ggml_xrt_mul_mat(
 
             for (int i = 0; i < ne01; ++i) {
                 for (int j = 0; j < ne00; ++j) {
-                    xs[j * ne01 + i] = x[i * ne00 + j];
+                    if (i * ne00 + j >= 44573776)
+                    {
+                        xs[j * ne01 + i] = 0;
+                    } else {
+                        xs[j * ne01 + i] = x[i * ne00 + j];
+                    }           
                 }
             }
 
@@ -462,7 +465,6 @@ void ggml_xrt_mul_mat(
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
             }
-            pthread_mutex_unlock(&mutex);
         }
     }
     iterations++;
