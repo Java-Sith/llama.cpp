@@ -227,15 +227,15 @@ void ggml_xrt_mul_mat(
 
     const enum ggml_type type = src0->type;
 
-    const int64_t ne00 = src0->ne[0];
-    const int64_t ne01 = src0->ne[1];
-    const int64_t ne02 = src0->ne[2];
-    const int64_t ne03 = src0->ne[3];
+    int64_t ne00 = src0->ne[0];
+    int64_t ne01 = src0->ne[1];
+    int64_t ne02 = src0->ne[2];
+    int64_t ne03 = src0->ne[3];
 
-    const int64_t ne10 = src1->ne[0];
-    const int64_t ne11 = src1->ne[1];
-    const int64_t ne12 = src1->ne[2];
-    const int64_t ne13 = src1->ne[3];
+    int64_t ne10 = src1->ne[0];
+    int64_t ne11 = src1->ne[1];
+    int64_t ne12 = src1->ne[2];
+    int64_t ne13 = src1->ne[3];
 
     const int64_t nb01 = src0->nb[1];
     const int64_t nb02 = src0->nb[2];
@@ -269,7 +269,7 @@ void ggml_xrt_mul_mat(
     const int d_ne = ne11 * ne01;
 
     if (params->type == GGML_TASK_INIT) {
-      const size_t desired_wsize = ne13*ne12*ne_x*sizeof(float);
+      const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
       UNUSED(desired_wsize);
       if (type != GGML_TYPE_F32) {
           assert(params->wsize >= desired_wsize);
