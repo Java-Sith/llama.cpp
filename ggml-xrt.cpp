@@ -403,7 +403,6 @@ void ggml_xrt_mul_mat(
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
             }
-            free(d);
         }
     }
     //delete[] as;
