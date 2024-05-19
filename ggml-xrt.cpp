@@ -250,24 +250,27 @@ void ggml_xrt_mul_mat(
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
 
+    int64_t ne00_pad, ne01_pad, ne10_pad;
+    ne00_pad = ne00;
+    ne01_pad = ne01;
+    ne10_pad = ne10;
+
     if (ne00 < 64)
     {
-        ne00 = 64;
+        ne00_pad = 64;
     }
-
-    if (ne01 < 64)
+    else if (ne01 < 64)
     {
-        ne01 = 64;
+        ne01_pad = 64;
     }
-
-    if (ne10 < 64)
+    else if (ne10 < 64)
     {
-        ne10 = 64;
+        ne10_pad = 64;
     }
 
-    const int64_t x_ne = ne01 * ne00;
-    const int64_t y_ne = ne11 * ne10;
-    const int64_t d_ne = ne11 * ne01;
+    const int64_t x_ne = ne01_pad * ne00_pad;
+    const int64_t y_ne = ne11 * ne10_pad;
+    const int64_t d_ne = ne11 * ne01_pad;
 
     if (params->type == GGML_TASK_INIT) {
       const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
@@ -376,24 +379,69 @@ void ggml_xrt_mul_mat(
             printf("SizeY: %ld\n", y_ne);
             printf("SizeD: %ld\n", d_ne);
 
-            //std::cout << "Filling Buffers\n";
-            for (int elem = 0; elem < y_ne; ++elem) {
-                //std::cout << as.V << " ";
-                //as[elem] = y[elem];
-                bo_a_map[elem] = y[elem];
+            if (ne10 < 64)
+            {
+                for (int elem = 0; elem < y_ne / 2; ++elem) {
+                    //std::cout << as.V << " ";
+                    //as[elem] = y[elem];
+                    bo_a_map[elem] = y[elem];
+                }
+                for (int elem = y_ne / 2; elem < y_ne; ++elem) {
+                    //std::cout << as.V << " ";
+                    //as[elem] = y[elem];
+                    bo_a_map[elem] = 0;
+                }
+                
+            } else {
+                for (int elem = 0; elem < y_ne; ++elem) {
+                    //std::cout << as.V << " ";
+                    //as[elem] = y[elem];
+                    bo_a_map[elem] = y[elem];
+                }
             }
-            for (int elem = 0; elem < x_ne; ++elem) {
-                //std::cout << as.V << " ";
-                //bs[elem] = x[elem];
-                bo_b_map[elem] = x[elem];
+
+            if (ne00 < 64 || ne01 < 64)
+            {
+                if (ne00 < 64 && ne01 < 64)
+                {
+                    for (int elem = 0; elem < x_ne / 4; ++elem) {
+                        //std::cout << as.V << " ";
+                        //bs[elem] = x[elem];
+                        bo_b_map[elem] = xs[elem];
+                    }
+                    for (int elem = x_ne / 4; elem < x_ne; ++elem) {
+                        //std::cout << as.V << " ";
+                        //bs[elem] = x[elem];
+                        bo_b_map[elem] = xs[elem];
+                    }
+                } else {
+                    for (int elem = 0; elem < x_ne / 2; ++elem) {
+                        //std::cout << as.V << " ";
+                        //bs[elem] = x[elem];
+                        bo_b_map[elem] = xs[elem];
+                    }
+                    for (int elem = x_ne / 2; elem < x_ne; ++elem) {
+                        //std::cout << as.V << " ";
+                        //bs[elem] = x[elem];
+                        bo_b_map[elem] = xs[elem];
+                    }
+                }
+                
+            } else {
+                for (int elem = 0; elem < x_ne; ++elem) {
+                    //std::cout << as.V << " ";
+                    //bs[elem] = x[elem];
+                    bo_b_map[elem] = xs[elem];
+                }
             }
+
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
             std::cout << "Execution of the kernel\n";
-            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne01, ne01);
+            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne01_pad, ne01_pad);
             run_mm.wait();
 
             std::cout << "Get the output data from the device\n" << std::endl;

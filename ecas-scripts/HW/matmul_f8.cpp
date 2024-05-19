@@ -1,4 +1,4 @@
-#include "matmul.h"
+#include "matmul_f8.h"
 #include "hls_math.h"
 
 #ifdef USE_FLOAT32
