@@ -49,7 +49,7 @@ static int g_device_count = -1;
 static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
-static const int iterations = 0;
+static int iterations = 0;
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
