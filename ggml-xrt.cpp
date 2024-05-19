@@ -264,9 +264,9 @@ void ggml_xrt_mul_mat(
         ne10 = 64;
     }
 
-    const int x_ne = ne01 * ne00;
-    const int y_ne = ne11 * ne10;
-    const int d_ne = ne11 * ne01;
+    const int64_t x_ne = ne01 * ne00;
+    const int64_t y_ne = ne11 * ne10;
+    const int64_t d_ne = ne11 * ne01;
 
     if (params->type == GGML_TASK_INIT) {
       const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
