@@ -372,17 +372,17 @@ void ggml_xrt_mul_mat(
             for (int elem = 0; elem < y_ne; ++elem) {
                 //std::cout << as.V << " ";
                 //as[elem] = y[elem];
-                bo_a_map[elem] = as[elem];
+                bo_a_map[elem] = y[elem];
             }
             for (int elem = 0; elem < x_ne; ++elem) {
                 //std::cout << as.V << " ";
                 //bs[elem] = x[elem];
-                bo_b_map[elem] = bs[elem];
+                bo_b_map[elem] = x[elem];
             }
             for (int elem = 0; elem < d_ne; ++elem) {
                 //std::cout << as.V << " ";
                 //cs[elem] = d[elem];
-                bo_c_map[elem] = cs[elem];
+                bo_c_map[elem] = d[elem];
             }
             //std::cout << "Synchronize input buffer data to device global memory\n";
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -401,17 +401,17 @@ void ggml_xrt_mul_mat(
                                 x, ne00,
                         0.0f,    d, ne01);*/
             for (int elem = 0; elem < d_ne; ++elem) {
-                cs[elem] = bo_c_map[elem];
-                d[elem] = cs[elem];
+                //cs[elem] = bo_c_map[elem];
+                d[elem] = bo_c_map[elem];
                 //std::cout << cs << " ";
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
             }
         }
     }
-    delete[] as;
-    delete[] bs;
-    delete[] cs;
+    //delete[] as;
+    //delete[] bs;
+    //delete[] cs;
 }
 
 static void ggml_xrt_unary(
