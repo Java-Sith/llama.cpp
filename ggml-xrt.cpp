@@ -379,12 +379,8 @@ void ggml_xrt_mul_mat(
                 //bs[elem] = x[elem];
                 bo_b_map[elem] = x[elem];
             }
-            for (int elem = 0; elem < d_ne; ++elem) {
-                //std::cout << as.V << " ";
-                //cs[elem] = d[elem];
-                bo_c_map[elem] = d[elem];
-            }
             //std::cout << "Synchronize input buffer data to device global memory\n";
+            std::fill(bo_c_map, bo_c_map + d_ne, 0);
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -407,8 +403,8 @@ void ggml_xrt_mul_mat(
                 //std::cout << std::hex << cs.V << " ";
                 //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
             }
-            free(x);
-            free(y);
+            free((void*)x);
+            free((void*)y);
             free(d);
         }
     }
