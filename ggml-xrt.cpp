@@ -49,6 +49,7 @@ static int g_device_count = -1;
 static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
+static const int iterations = 0;
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
@@ -378,6 +379,11 @@ void ggml_xrt_mul_mat(
                 //std::cout << as.V << " ";
                 //bs[elem] = x[elem];
                 bo_b_map[elem] = x[elem];
+                if (x[elem] == NULL) {
+                    // Handle allocation failure
+                    perror("Array failed at: %d", iterations);
+                    exit(EXIT_FAILURE);
+                }
             }
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
@@ -405,9 +411,7 @@ void ggml_xrt_mul_mat(
             }
         }
     }
-    //delete[] as;
-    //delete[] bs;
-    //delete[] cs;
+    iterations++;
 }
 
 static void ggml_xrt_unary(
