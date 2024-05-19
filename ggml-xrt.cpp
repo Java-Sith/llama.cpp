@@ -249,12 +249,27 @@ void ggml_xrt_mul_mat(
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
 
+    if (ne00 < 64)
+    {
+        ne00 = 64;
+    }
+    
+    if (ne01 < 64)
+    {
+        ne01 = 64;
+    }
+
+    if (ne10 < 64)
+    {
+        ne10 = 64;
+    }
+
     const int x_ne = ne01 * ne00;
     const int y_ne = ne11 * ne10;
     const int d_ne = ne11 * ne01;
 
     if (params->type == GGML_TASK_INIT) {
-      const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
+      const size_t desired_wsize = ne13*ne12*ne_x*sizeof(float);
       UNUSED(desired_wsize);
       if (type != GGML_TYPE_F32) {
           assert(params->wsize >= desired_wsize);
@@ -266,7 +281,7 @@ void ggml_xrt_mul_mat(
                   const int64_t i02 = i12/r2;
 
                   const float * x = (float *)((char *) src0->data + i02*nb02 + i03*nb03);
-                  float * const wdata = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
+                  float * const wdata = (float *) params->wdata + i13*ne12*ne_x + i12*ne_x;
 
                   for (int64_t i01 = ith; i01 < ne01; i01 += nth) {
                       switch (type)
