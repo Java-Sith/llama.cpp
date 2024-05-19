@@ -51,7 +51,7 @@ static int g_main_device = 0;
 static int g_main_device_index = 0;
 
 static xrt::device myDevice;
-static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
+static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
 static xrt::kernel matmul;
 //static std::string configFile = "./blas/L3/examples/memKernel/gemm/build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/config_info.dat";
 //static int numKernel = 1;

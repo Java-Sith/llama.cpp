@@ -73,36 +73,36 @@ int main(int argc, char** argv) {
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, size_a * sizeof(uint16_t), krnl.group_id(0));
-    auto bo_b = xrt::bo(device, size_b * sizeof(uint16_t), krnl.group_id(1));
-    auto bo_c = xrt::bo(device, size_c * sizeof(uint16_t), krnl.group_id(2));
+    auto bo_a = xrt::bo(device, size_a * sizeof(float), krnl.group_id(0));
+    auto bo_b = xrt::bo(device, size_b * sizeof(float), krnl.group_id(1));
+    auto bo_c = xrt::bo(device, size_c * sizeof(float), krnl.group_id(2));
 
     // Map the contents of the buffer object into host memory
-    auto bo_a_map = bo_a.map<uint16_t*>();
-    auto bo_b_map = bo_b.map<uint16_t*>();
-    auto bo_c_map = bo_c.map<uint16_t*>();
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_b_map = bo_b.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
     
     // Filling data
     std::cout << "Filling Buffers\n";
-    DataT as = 0.002, bs = 0.003;
+    float as = 0.002, bs = 0.003;
     //std::cout << "A: " << std::endl;
     for (int elem = 0; elem < size_a; ++elem) {
         //std::cout << as << " ";
-        bo_a_map[elem] = as.V;
-        as += DataT{0.003};
+        bo_a_map[elem] = as;
+        as += 0.03;
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
-            as = 0.0025;
+            as = 0.025;
         }
     }
     //std::cout << "B: " << std::endl;
     for (int elem = 0; elem < size_b; ++elem) {
         //std::cout << bs << " ";
-        bo_b_map[elem] = bs.V;
-        bs += DataT{0.007};
+        bo_b_map[elem] = bs;
+        bs += 0.07;
         if ((elem + 1) % b_cols == 0) {
             //std::cout << std::endl;
-            bs = 0.004;
+            bs = 0.04;
         }
     }
     std::fill(bo_c_map, bo_c_map + size_c, 0);
