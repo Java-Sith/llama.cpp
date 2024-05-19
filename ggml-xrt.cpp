@@ -379,11 +379,6 @@ void ggml_xrt_mul_mat(
                 //std::cout << as.V << " ";
                 //bs[elem] = x[elem];
                 bo_b_map[elem] = x[elem];
-                if (x[elem] == NULL) {
-                    // Handle allocation failure
-                    std::cerr << "Memory allocation for tensor x failed at iter: " << iterations << std::endl;
-                    exit(EXIT_FAILURE);
-                }
             }
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
