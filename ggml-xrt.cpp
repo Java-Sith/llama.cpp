@@ -208,6 +208,8 @@ void ggml_xrt_mul_mat(
     const int ith = params->ith;
     const int nth = params->nth;
 
+    clock_t start, end;
+
     const enum ggml_type type = src0->type;
 
     int64_t ne00 = src0->ne[0];
@@ -425,6 +427,9 @@ void ggml_xrt_mul_mat(
 
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
+
+            start = clock();
+
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -434,6 +439,8 @@ void ggml_xrt_mul_mat(
 
             //std::cout << "Get the output data from the device\n" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+            end = clock();
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
@@ -449,6 +456,8 @@ void ggml_xrt_mul_mat(
             }
         }
     }
+    double time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+    printf("MatMul Time: %f", time_used);
     iterations++;
     delete[] xs;
 }

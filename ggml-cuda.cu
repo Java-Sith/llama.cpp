@@ -10814,11 +10814,14 @@ GGML_CALL static void ggml_cuda_set_main_device(const int main_device) {
     }
 }
 
+#ifdef CUDA_CLOCK
+int operationCounters[GGML_OP_COUNT] = {0};
+clock_t start, end;
+double gpu_time_used;
+#endif
+
 GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     if (!g_cublas_loaded) return false;
-    int operationCounters[GGML_OP_COUNT] = {0};
-    clock_t start, end;
-    double cpu_time_used;
     ggml_cuda_func_t func;
     const bool any_on_device = tensor->backend == GGML_BACKEND_GPU
         || (tensor->src[0] != nullptr && (tensor->src[0]->backend == GGML_BACKEND_GPU || tensor->src[0]->backend == GGML_BACKEND_GPU_SPLIT))
@@ -10971,12 +10974,6 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
         default:
             return false;
     }
-    #ifdef CUDA_CLOCK
-        end = clock();
-        cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
-        operationCounters[tensor->op]++;
-        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
-    #endif
 
     if (tensor->src[0] != nullptr && tensor->src[0]->backend == GGML_BACKEND_GPU_SPLIT) {
         ggml_cuda_set_peer_access(tensor->src[1]->ne[1]);
@@ -10989,6 +10986,12 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
         return true;
     }
     func(tensor->src[0], tensor->src[1], tensor);
+    #ifdef CUDA_CLOCK
+        end = clock();
+        gpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+        operationCounters[tensor->op]++;
+        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, gpu_time_used, operationCounters[tensor->op]);
+    #endif
     return true;
 }
 
