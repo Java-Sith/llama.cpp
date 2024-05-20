@@ -474,6 +474,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        }
    }
 #ifdef XRT_CLOCK
+    double time_used;
     start = clock();
 #endif
    switch (tensor->op) {
