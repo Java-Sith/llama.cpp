@@ -91,22 +91,6 @@ int get_device_index_by_id(int id){
     return res;
 }
 
-// Function to get the number of elements in the buffer
-void get_num_elements(const xrt::bo &buffer, size_t element_size, size_t expected_size, const std::string& filename) {
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        std::cout << "No se pudo abrir el archivo " << filename << std::endl;
-        return;
-    }
-    size_t num_elements = buffer.size() / element_size;
-    if (num_elements == expected_size) {
-        std::cout << "Buffer size matches the expected number of elements: " << num_elements << std::endl;
-    } else {
-        std::cout << "Buffer size does NOT match the expected number of elements." << std::endl;
-        std::cout << "Expected: " << expected_size << ", Actual: " << num_elements << std::endl;
-    }
-}
-
 GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     if (main_device >= g_device_count) {
         fprintf(stderr, "warning: cannot set main_device=%d because there are only %d devices. Using device %d instead.\n",
