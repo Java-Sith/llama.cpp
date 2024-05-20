@@ -460,9 +460,6 @@ static void ggml_xrt_unary(
     ggml_compute_forward_unary(params, dst);
 }
 
-int operationCounters[GGML_OP_COUNT] = {0};
-clock_t start, end;
-
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     ggml_xrt_func_t func;
     if (tensor->op == GGML_OP_MUL_MAT) {
