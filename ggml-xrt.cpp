@@ -460,7 +460,7 @@ static void ggml_xrt_unary(
     ggml_compute_forward_unary(params, dst);
 }
 
-#ifdef CLOCK
+#ifdef XRT_CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
 clock_t start, end;
 #endif
