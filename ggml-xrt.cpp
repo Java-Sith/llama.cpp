@@ -25,11 +25,9 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
-
-#include <fstream>
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
@@ -378,12 +376,12 @@ void ggml_xrt_mul_mat(
             auto bo_a_map = bo_a.map<float*>();
             auto bo_b_map = bo_b.map<float*>();
             auto bo_c_map = bo_c.map<float*>();
-            printf("BufferA: %ld\n", bo_a.size() / 4);
-            printf("BufferB: %ld\n", bo_b.size() / 4);
-            printf("BufferC: %ld\n", bo_c.size() / 4);
-            printf("SizeX: %ld\n", x_ne);
-            printf("SizeY: %ld\n", y_ne);
-            printf("SizeD: %ld\n", d_ne);
+            // printf("BufferA: %ld\n", bo_a.size() / 4);
+            // printf("BufferB: %ld\n", bo_b.size() / 4);
+            // printf("BufferC: %ld\n", bo_c.size() / 4);
+            // printf("SizeX: %ld\n", x_ne);
+            // printf("SizeY: %ld\n", y_ne);
+            // printf("SizeD: %ld\n", d_ne);
 
             if (ne10 < 64)
             {
@@ -446,11 +444,11 @@ void ggml_xrt_mul_mat(
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-            std::cout << "Execution of the kernel\n";
+            //std::cout << "Execution of the kernel\n";
             auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne01_pad, ne01_pad);
             run_mm.wait();
 
-            std::cout << "Get the output data from the device\n" << std::endl;
+            //std::cout << "Get the output data from the device\n" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
@@ -488,6 +486,9 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
            return false;
        }
    }
+#ifdef XRT_CLOCK
+    start = clock();
+#endif
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
             func = ggml_xrt_get_rows;
@@ -597,6 +598,12 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     {
         func(params, tensor);
     }
+    #ifdef XRT_CLOCK
+        end = clock();
+        time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+        operationCounters[tensor->op]++;
+        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
+    #endif
     return true;
 }
 

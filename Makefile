@@ -188,6 +188,10 @@ ifdef LLAMA_CUDA_CLOCK
 	MK_CPPFLAGS  += -DCUDA_CLOCK
 endif
 
+ifdef LLAMA_XRT_CLOCK
+	MK_CPPFLAGS  += -DXRT_CLOCK
+endif
+
 ifdef LLAMA_SANITIZE_THREAD
 	MK_CFLAGS   += -fsanitize=thread -g
 	MK_CXXFLAGS += -fsanitize=thread -g
@@ -690,7 +694,6 @@ libllama.a: llama.o ggml.o $(OBJS) $(COMMON_DEPS)
 clean:
 	rm -vrf *.o tests/*.o *.so *.a *.dll benchmark-matmult common/build-info.cpp *.dot $(COV_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 	find examples pocs -type f -name "*.o" -delete *.xclbin/{*sw_emu*,*hw_emu*} src/*.ll *v++* .Xil emconfig.json dltmp* xmltmp* *.log *.jou *.wcfg *.wdb
-	build_dir* sd_card* package.* tmp.* _x* *xclbin.run_summary qemu-memory-_* emulation _vimage pl* start_simulation.sh *.xclbin
 #
 # Examples
 #
