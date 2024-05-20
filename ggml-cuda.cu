@@ -10817,7 +10817,6 @@ GGML_CALL static void ggml_cuda_set_main_device(const int main_device) {
 #ifdef CUDA_CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
 clock_t start, end;
-double gpu_time_used;
 #endif
 
 GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
@@ -10840,6 +10839,7 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
         }
     }
     #ifdef CUDA_CLOCK
+        double gpu_time_used;
         start = clock();
     #endif
 

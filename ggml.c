@@ -15371,6 +15371,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     }
 #endif // GGML_USE_XRT
 #ifdef CLOCK
+    double cpu_time_used;
     start = clock();
 #endif
     switch (tensor->op) {
