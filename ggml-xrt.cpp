@@ -210,7 +210,7 @@ void ggml_xrt_mul_mat(
     const int ith = params->ith;
     const int nth = params->nth;
 
-    clock_t start, end;
+    double time_used;
 
     const enum ggml_type type = src0->type;
 
