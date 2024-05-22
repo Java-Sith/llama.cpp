@@ -460,7 +460,7 @@ void ggml_xrt_mul_mat(
     }
     double time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
     operationCounters[tensor->op]++;
-    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
+    printf("Operation %d executed in %f microseconds. Count: %d\n", dst->op, time_used, operationCounters[tensor->op]);
     delete[] xs;
 }
 
