@@ -21,15 +21,21 @@ After this, we will proceed to make the project according to our specifications.
 
 ```
 LLAMA_CLOCK=1
+LLAMA_CUDA_CLOCK=1
+LLAMA_XRT_CLOCK=1
 ```
 
 - CPU
 ```
-make LLAMA_CLOCK=1
+make LLAMA_CLOCK=1 -j
 ```
 - GPU
 ```
 make LLAMA_HIPBLAS=1 LLAMA_CLOCK=1 -j
+```
+- FPGA
+```
+make LLAMA_XRT=1 LLAMA_XRT_CLOCK=1 -j
 ```
 ## :computer: Run the program
 
@@ -49,15 +55,19 @@ Now we execute the model inference with GGML, for that we have to execute this c
 ```
 ./main -m ./models/llama-2-7b.Q4_K_S.gguf -n 128 | tee output.txt
 ```
-For this command, -n is the number of tokens, -m is the path and tee saves the console output in a text file. If we want to use the GPU instead, we need to specify the previously defined env variable:
+For this command, -n is the number of tokens, -m is the path and tee saves the console output in a text file. The previous command works for CPU and FPGA implementations. If we want to use the GPU instead, we need to specify the previously defined env variable:
 ```
 HIP_VISIBLE_DEVICES=1 ./main -m ./models/llama-2-7b.Q4_K_S.gguf -n 128 | tee output.txt
 ```
-It is recommended that the output text files be moved to this folder for better execution of the plotter scripts, but it is not mandatory. 
+Alternatively, if CUBLAS is being used, then the GPU will be automatically detected, and the user must input the amount of GPU layers the inference will use:
+```
+./main -m ./models/llama-2-7b.Q4_K_S.gguf -n 128 -ngl 32 | tee output.txt
+```
+It is recommended that the output text files be moved to this folder for better execution of the plotter scripts, but it is not mandatory.
 
 ## :computer: Run the plotter scripts
 Open a terminal in this folder and the type the following command
 ```
 python3 FileParsing.py <output text file>
 ```
-This will apply the plotter generation to a text file passed as an argument. Once finished, there will be a histogram of the number of times each operation is executed, a boxplot of the execution times of said operations and a histogram of the execution times of the matrix multiplication, which is the most costly operation. 
+This will apply the plotter generation to a text file passed as an argument. Once finished, there will be a histogram of the number of times each operation is executed, a boxplot of the execution times of said operations and a histogram of the execution times of the matrix multiplication, which is the most costly operation.
