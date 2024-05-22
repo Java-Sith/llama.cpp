@@ -210,8 +210,6 @@ void ggml_xrt_mul_mat(
     const int ith = params->ith;
     const int nth = params->nth;
 
-    double time_used;
-
     const enum ggml_type type = src0->type;
 
     int64_t ne00 = src0->ne[0];
@@ -482,9 +480,9 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        }
    }
 #ifdef XRT_CLOCK
+    double time_used;
     if (tensor->op != 23)
     {
-        double time_used;
         start = clock();
     }
 #endif
