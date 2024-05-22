@@ -1,4 +1,4 @@
-#include "matmul_f4.h"
+#include "matmul.h"
 #include "hls_math.h"
 
 #ifdef USE_FLOAT32
@@ -23,7 +23,7 @@ static constexpr int kBColsPacketised = kBCols / kPackets;
 static constexpr int kCColsPacketised = kCCols / kPackets;
 static constexpr int kCElemsPacketised = (kCCols * kARows) / kPackets;
 
-static void matmul_f4_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
+static void matmul_gemm(StreamT &a, StreamT &b, StreamT &c, const int a_rows,
                         const int b_cols, const int c_cols) {
 #pragma HLS INLINE off
 
@@ -78,7 +78,7 @@ gemm_b_cols:
   }
 }
 
-static void matmul_f4_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
+static void matmul_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
                              const int cols, const int rep_rows,
                              const int rep_mats) {
 #pragma HLS INLINE off
@@ -108,7 +108,7 @@ static void matmul_f4_to_stream_a(RawDataT *a, StreamT &sa, const int rows,
   }
 }
 
-static void matmul_f4_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
+static void matmul_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
                              const int cols, const int rep_rows,
                              const int rep_mats) {
 #pragma HLS INLINE off
@@ -138,7 +138,7 @@ static void matmul_f4_to_stream_b(RawDataT *a, StreamT &sa, const int rows,
   }
 }
 
-static void matmul_f4_from_stream(RawDataT *a, StreamT &sa, const int length) {
+static void matmul_from_stream(RawDataT *a, StreamT &sa, const int length) {
 #pragma HLS INLINE off
   const int tlength = length / kPackets;
   for (int i = 0; i < tlength; ++i) {
@@ -156,7 +156,7 @@ extern "C" {
  * b: weights (outputs, inputs) assumed transposed
  * c: output (samples, outputs)
  */
-void matmul_f4(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
+void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
             int c_cols) {
 #pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0
 #pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1
@@ -174,9 +174,9 @@ void matmul_f4(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
 #pragma HLS stream variable = stream_c depth = 16
 
 #pragma HLS dataflow
-  matmul_f4_to_stream_a(a, stream_a, a_rows, b_cols, c_cols, 1);
-  matmul_f4_to_stream_b(b, stream_b, b_cols, c_cols, 1, a_rows);
-  matmul_f4_gemm(stream_a, stream_b, stream_c, a_rows, b_cols, c_cols);
-  matmul_f4_from_stream(c, stream_c, c_cols * a_rows);
+  matmul_to_stream_a(a, stream_a, a_rows, b_cols, c_cols, 1);
+  matmul_to_stream_b(b, stream_b, b_cols, c_cols, 1, a_rows);
+  matmul_gemm(stream_a, stream_b, stream_c, a_rows, b_cols, c_cols);
+  matmul_from_stream(c, stream_c, c_cols * a_rows);
 }
 }

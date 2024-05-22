@@ -47,7 +47,6 @@ static int g_device_count = -1;
 static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
-static int iterations = 0;
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
@@ -198,6 +197,9 @@ void ggml_xrt_soft_max(
 
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
+
+int operationCounters[GGML_OP_COUNT] = {0};
+clock_t start, end;
 
 void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
@@ -457,8 +459,8 @@ void ggml_xrt_mul_mat(
         }
     }
     double time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
-    printf("MatMul Time: %f", time_used);
-    iterations++;
+    operationCounters[tensor->op]++;
+    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
     delete[] xs;
 }
 
@@ -468,11 +470,6 @@ static void ggml_xrt_unary(
 
     ggml_compute_forward_unary(params, dst);
 }
-
-#ifdef XRT_CLOCK
-int operationCounters[GGML_OP_COUNT] = {0};
-clock_t start, end;
-#endif
 
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     ggml_xrt_func_t func;

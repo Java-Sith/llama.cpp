@@ -6,8 +6,6 @@
 #include <ap_fixed.h>
 #include <hls_stream.h>
 
-#define USE_FLOAT8
-
 // FIXME: Modify to adjust
 static constexpr int kARows = 2;
 #ifndef B_COLS
@@ -53,7 +51,7 @@ using RawDataT = ap_uint<kBusWidth>;
 using StreamT = hls::stream<RawDataT>;
 
 extern "C" {
-void matmul_f8(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols);
+void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols);
 }
 
 #endif // __MATMUL_H__
