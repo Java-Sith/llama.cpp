@@ -482,8 +482,11 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        }
    }
 #ifdef XRT_CLOCK
-    double time_used;
-    start = clock();
+    if (tensor->op != 23)
+    {
+        double time_used;
+        start = clock();
+    }
 #endif
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
@@ -595,10 +598,13 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         func(params, tensor);
     }
     #ifdef XRT_CLOCK
-        end = clock();
-        time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
-        operationCounters[tensor->op]++;
-        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
+        if (tensor->op != 23)
+        {
+            end = clock();
+            time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+            operationCounters[tensor->op]++;
+            printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
+        }
     #endif
     return true;
 }
