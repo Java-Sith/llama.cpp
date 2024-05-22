@@ -37,6 +37,14 @@ make LLAMA_HIPBLAS=1 LLAMA_CLOCK=1 -j
 ```
 make LLAMA_XRT=1 LLAMA_XRT_CLOCK=1 -j
 ```
+Before executing the FPGA implementation though, it is first necessary to synthetize the kernels used for the Xilinx Runtime Library implementation. First navigate to the folder where the XRT scripts are located:
+```
+cd ecas-scripts/HW
+```
+Once you're at this directory, execute the following command to build the Xclbin file. Compilation and synthesis can take up to a few hours, so please be patient.
+```
+make all TARGET=hw PLATFORM=xilinx_u250_gen3x16_xdma_4_1_202210_1
+```
 ## :computer: Run the program
 
 Now we need to acquire a model, for testing purposes and in order to save time, we use any of the pre-quantized Llama models found at [TheBloke](https://huggingface.co/TheBloke). The model used in this project's initial tests was [LLaMA 2 7B base](https://huggingface.co/TheBloke/Llama-2-7B-GGUF). Execute the following commands to acquire the model:
