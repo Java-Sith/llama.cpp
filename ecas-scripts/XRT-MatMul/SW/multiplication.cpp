@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
+    START_PROFILE(kernel_execution, cynq_profiler, 30)
 
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
