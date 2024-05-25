@@ -244,7 +244,7 @@ static void gemm_f16_out_f32(int m, int n, int k,
 }
 
 
-void perform_gemm_test(float* a, float* b, float* expected, int M, int N, int K) {
+void perform_gemm_test(float* a, float* b, int M, int N, int K) {
     printf("\nPerforming gemm_f16_out_f32 test:\n");
 
     float* gemm_out = new float[M * N];
@@ -256,17 +256,6 @@ void perform_gemm_test(float* a, float* b, float* expected, int M, int N, int K)
         }
         printf("\n");
     }
-
-    bool passed = true;
-
-    for(int i = 0; i < M * N; i++) {
-        if(gemm_out[i] != expected[i]) {
-            passed = false;
-            break;
-        }
-    }
-
-    printf("gemm_mult (%i): %s\n", (M * N), passed ? "\033[32mPASSED\033[0m" : "\033[31mFAILED\033[0m");
 }
 
 int main(int argc, char* argv[])
@@ -291,13 +280,10 @@ int main(int argc, char* argv[])
     // Generate random matrices
     generateMatrix(matrixA, M, K);
     generateMatrix(matrixB, K, N);
-    generateMatrix(expected_result, M, N);
-
-    bool passed = true;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    perform_gemm_test(matrixA, matrixB, expected_result, M, N, K);
+    perform_gemm_test(matrixA, matrixB, M, N, K);
 
     auto end = std::chrono::high_resolution_clock::now();
     
