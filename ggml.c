@@ -10287,6 +10287,11 @@ static bool ggml_compute_forward_mul_mat_use_blas(struct ggml_tensor * dst) {
 }
 #endif
 
+#ifdef LLAMA_PROFILER
+int iterations = 0;
+#endif
+
+
 void ggml_compute_forward_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
@@ -10301,6 +10306,10 @@ void ggml_compute_forward_mul_mat(
 
     const int ith = params->ith;
     const int nth = params->nth;
+
+    #ifdef LLAMA_PROFILER
+    clock_t start, end;
+    #endif
 
     const enum ggml_type type = src0->type;
 
@@ -10490,6 +10499,9 @@ void ggml_compute_forward_mul_mat(
     // attempt to reduce false-sharing (does not seem to make a difference)
     // 16 * 2, accounting for mmla kernels
     float tmp[32];
+    #ifdef LLAMA_PROFILER
+    start = clock();
+    #endif
 
     for (int64_t iir1 = ir110; iir1 < ir111; iir1 += blck_1) {
         for (int64_t iir0 = ir010; iir0 < ir011; iir0 += blck_0) {
@@ -10532,6 +10544,13 @@ void ggml_compute_forward_mul_mat(
             }
         }
     }
+    #ifdef LLAMA_PROFILER
+    end = clock();
+    double time_in_seconds = (double)(end - start) / CLOCKS_PER_SEC;
+    double time_in_milliseconds = time_in_seconds * 1000;
+    iterations++;
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
 }
 
 // ggml_compute_forward_mul_mat_id

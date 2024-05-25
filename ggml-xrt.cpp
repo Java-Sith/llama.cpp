@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <chrono>
 
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
@@ -38,6 +39,7 @@
 #include "experimental/xrt_bo.h"
 #include "experimental/xrt_device.h"
 #include "experimental/xrt_kernel.h"
+#include "ecas-scripts/SW/timer.hpp"
 //#include "xf_blas.hpp"
 
 #define MATRIX_ROW_PADDING 512
@@ -198,8 +200,14 @@ void ggml_xrt_soft_max(
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
+#ifdef LLAMA_XRT_CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
 clock_t start, end;
+#endif
+
+#ifdef LLAMA_XRT_PROFILER
+int iterations = 0;
+#endif
 
 void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
@@ -211,6 +219,11 @@ void ggml_xrt_mul_mat(
     const int nth = params->nth;
 
     const enum ggml_type type = src0->type;
+
+    #ifdef LLAMA_XRT_PROFILER
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> end;
+    #endif
 
     int64_t ne00 = src0->ne[0];
     int64_t ne01 = src0->ne[1];
@@ -428,7 +441,9 @@ void ggml_xrt_mul_mat(
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
 
-            start = clock();
+#ifdef LLAMA_XRT_PROFILER
+            start = std::chrono::high_resolution_clock::now();
+#endif
 
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -440,7 +455,9 @@ void ggml_xrt_mul_mat(
             //std::cout << "Get the output data from the device\n" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-            end = clock();
+#ifdef LLAMA_XRT_PROFILER
+            end = std::chrono::high_resolution_clock::now();
+#endif
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
@@ -456,9 +473,11 @@ void ggml_xrt_mul_mat(
             }
         }
     }
-    double time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
-    operationCounters[dst->op]++;
-    printf("Operation %d executed in %f microseconds. Count: %d\n", dst->op, time_used, operationCounters[dst->op]);
+    #ifdef LLAMA_XRT_PROFILER
+    auto time_used = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    iterarions++;
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
     delete[] xs;
 }
 
@@ -481,10 +500,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
    }
 #ifdef XRT_CLOCK
     double time_used;
-    if (tensor->op != 23)
-    {
-        start = clock();
-    }
+    start = clock();
 #endif
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
@@ -596,13 +612,10 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         func(params, tensor);
     }
     #ifdef XRT_CLOCK
-        if (tensor->op != 23)
-        {
-            end = clock();
-            time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
-            operationCounters[tensor->op]++;
-            printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
-        }
+    end = clock();
+    time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+    operationCounters[tensor->op]++;
+    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
     #endif
     return true;
 }

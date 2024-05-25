@@ -1992,6 +1992,11 @@ inline bool ggml_cuda_supports_mmq(enum ggml_type type) {
     }
 }
 
+#ifdef LLAMA_CUDA_PROFILER
+int iterations = 0;
+cudaEvent_t start, stop;
+#endif
+
 template<typename dst_t>
 static __global__ void dequantize_block_iq2_xxs(const void * __restrict__ vx, dst_t * __restrict__ yy) {
 
@@ -8774,6 +8779,16 @@ static void ggml_cuda_op_mul_mat_q(
     // nrows_dst == nrows of the matrix that the kernel writes into
     const int64_t nrows_dst = dst->backend == GGML_BACKEND_GPU && id == g_main_device ? ne0 : row_diff;
 
+    #ifdef LLAMA_CUDA_PROFILER
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    // Ensure all previous CUDA calls have completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Record the start event
+    CUDA_CHECK(cudaEventRecord(start, main_stream));
+    #endif
+
     switch (src0->type) {
         case GGML_TYPE_Q4_0:
             ggml_mul_mat_q4_0_q8_1_cuda(src0_dd_i, src1_ddq_i, dst_dd_i, ne00, row_diff, src1_ncols, src1_padded_row_size, nrows_dst, stream);
@@ -8809,6 +8824,21 @@ static void ggml_cuda_op_mul_mat_q(
             GGML_ASSERT(false);
             break;
     }
+
+    #ifdef LLAMA_CUDA_PROFILER
+    // Record the stop event
+    CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+    // Ensure all operations in the stream are completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Calculate the elapsed time
+    float milliseconds = 0;
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    iterations++;
+
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
 
     (void) src1;
     (void) dst;
@@ -8923,6 +8953,16 @@ static void ggml_cuda_op_mul_mat_vec_q(
     // nrows_dst == nrows of the matrix that the kernel writes into
     const int64_t nrows_dst = dst->backend == GGML_BACKEND_GPU && id == g_main_device ? ne0 : row_diff;
 
+    #ifdef LLAMA_CUDA_PROFILER
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    // Ensure all previous CUDA calls have completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Record the start event
+    CUDA_CHECK(cudaEventRecord(start, main_stream));
+    #endif
+
     switch (src0->type) {
         case GGML_TYPE_Q4_0:
             mul_mat_vec_q_cuda<QK4_0, QI4_0, block_q4_0, VDR_Q4_0_Q8_1_MMVQ, vec_dot_q4_0_q8_1>
@@ -8993,6 +9033,21 @@ static void ggml_cuda_op_mul_mat_vec_q(
             break;
     }
 
+    #ifdef LLAMA_CUDA_PROFILER
+    // Record the stop event
+    CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+    // Ensure all operations in the stream are completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Calculate the elapsed time
+    float milliseconds = 0;
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    iterations++;
+
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
+
     (void) src1;
     (void) dst;
     (void) src1_ddf_i;
@@ -9029,7 +9084,15 @@ static void ggml_cuda_op_dequantize_mul_mat_vec(
 #else
     const dfloat * src1_dfloat = (const dfloat *) src1_ddf_i; // dfloat == float, no conversion
 #endif // GGML_CUDA_F16
+    #ifdef LLAMA_CUDA_PROFILER
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    // Ensure all previous CUDA calls have completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
 
+    // Record the start event
+    CUDA_CHECK(cudaEventRecord(start, main_stream));
+    #endif
     switch (src0->type) {
         case GGML_TYPE_Q4_0:
             dequantize_mul_mat_vec_q4_0_cuda(src0_dd_i, src1_dfloat, dst_dd_i, ne00, row_diff, stream);
@@ -9068,6 +9131,21 @@ static void ggml_cuda_op_dequantize_mul_mat_vec(
             GGML_ASSERT(false);
             break;
     }
+
+    #ifdef LLAMA_CUDA_PROFILER
+    // Record the stop event
+    CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+    // Ensure all operations in the stream are completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Calculate the elapsed time
+    float milliseconds = 0;
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    iterations++;
+
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
 
     (void) src1;
     (void) dst;
@@ -10044,7 +10122,32 @@ static void ggml_cuda_mul_mat_vec_p021(const ggml_tensor * src0, const ggml_tens
     ggml_tensor_extra_gpu * dst_extra = (ggml_tensor_extra_gpu *) dst->extra;
     float * dst_ddf = (float *) dst_extra->data_device[g_main_device];
 
+    #ifdef LLAMA_CUDA_PROFILER
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    // Ensure all previous CUDA calls have completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Record the start event
+    CUDA_CHECK(cudaEventRecord(start, main_stream));
+    #endif
+
     ggml_mul_mat_p021_f16_f32_cuda(src0_ddq, src1_ddf, dst_ddf, ne00, ne01, ne02, ne12, main_stream);
+
+    #ifdef LLAMA_CUDA_PROFILER
+    // Record the stop event
+    CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+    // Ensure all operations in the stream are completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Calculate the elapsed time
+    float milliseconds = 0;
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    iterations++;
+
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
 }
 
 static void ggml_cuda_mul_mat_vec_nc(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst){
@@ -10079,7 +10182,32 @@ static void ggml_cuda_mul_mat_vec_nc(const ggml_tensor * src0, const ggml_tensor
     const int64_t row_stride_x = nb01 / sizeof(half);
     const int64_t channel_stride_x = nb02 / sizeof(half);
 
+    #ifdef LLAMA_CUDA_PROFILER
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    // Ensure all previous CUDA calls have completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Record the start event
+    CUDA_CHECK(cudaEventRecord(start, main_stream));
+    #endif
+
     ggml_mul_mat_vec_nc_f16_f32_cuda(src0_ddq, src1_ddf, dst_ddf, ne00, ne01, row_stride_x, ne02, ne12, channel_stride_x, main_stream);
+
+    #ifdef LLAMA_CUDA_PROFILER
+    // Record the stop event
+    CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+    // Ensure all operations in the stream are completed
+    CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+    // Calculate the elapsed time
+    float milliseconds = 0;
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+    iterations++;
+
+    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+    #endif
 }
 
 static __global__ void k_compute_batched_ptrs(
@@ -10224,6 +10352,16 @@ static void ggml_cuda_mul_mat_batched_cublas(const ggml_tensor * src0, const ggm
         cuda_pool_alloc<      void *> ptrs_dst(1*ne23);
 
         dim3 block_dims(ne13, ne12);
+
+        #ifdef LLAMA_CUDA_PROFILER
+        CUDA_CHECK(cudaEventCreate(&start));
+        CUDA_CHECK(cudaEventCreate(&stop));
+        // Ensure all previous CUDA calls have completed
+        CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+        // Record the start event
+        CUDA_CHECK(cudaEventRecord(start, main_stream));
+        #endif
         k_compute_batched_ptrs<<<1, block_dims, 0, main_stream>>>(
                 src0_f16, src1_f16, dst_t,
                 ptrs_src.get(), ptrs_dst.get(),
@@ -10245,6 +10383,21 @@ static void ggml_cuda_mul_mat_batched_cublas(const ggml_tensor * src0, const ggm
                 ne23,
                 cu_compute_type,
                 CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+        #ifdef LLAMA_CUDA_PROFILER
+        // Record the stop event
+        CUDA_CHECK(cudaEventRecord(stop, main_stream));
+
+        // Ensure all operations in the stream are completed
+        CUDA_CHECK(cudaStreamSynchronize(main_stream));
+
+        // Calculate the elapsed time
+        float milliseconds = 0;
+        CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
+        iterations++;
+
+        printf("Matmul %d executed in %f milliseconds", iterations, time_used);
+        #endif
+        
     }
 #endif
 
