@@ -226,21 +226,9 @@ static void gemm(int m, int n, int k,
         n1 = std::min(n0 + dp, np);
     }
 
-    // block-tiling attempt
-    int64_t blck_n = 16;
-    int64_t blck_m = 16;
-
-    for (int j = n0; j < n1; j+=blck_n) {
-        for (int i = m0; i < m1; i+=blck_m) {
-            // printf("i j k => %d %d %d\n", i, j, K);
-            for (int ii = i; ii < i + blck_m && ii < m1; ii++) {
-                for (int jj = j; jj < j + blck_n && jj < n1; jj++) {
-                    ggml_vec_dot(k,
-                                    C + ii*n + jj,
-                                    A + ii * k,
-                                    B + jj * k);
-                }
-            }
+    for (int i = m0; i < m1; i++) {
+        for (int j = n0; j < n1; j++) {
+            ggml_vec_dot(k, C + i * n + j, A + i * k, B + j * k);
         }
     }
 }
