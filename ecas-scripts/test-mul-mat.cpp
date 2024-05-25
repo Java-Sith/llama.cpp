@@ -23,6 +23,7 @@
 #include <iostream>
 #include <chrono>
 
+#if false
 struct test_model {
     struct ggml_tensor * a;
     struct ggml_tensor * b;
@@ -169,6 +170,7 @@ struct ggml_tensor* compute(const test_model & model, ggml_gallocr_t allocr) {
     // in this case, the output tensor is the last one in the graph
     return gf->nodes[gf->n_nodes - 1];
 }
+#endif
 
 // Function to generate a matrix with given rows and columns
 void generateMatrix(float* matrix, int rows, int cols) {
@@ -180,7 +182,7 @@ void generateMatrix(float* matrix, int rows, int cols) {
 }
 
 
-static void ggml_vec_dot_f16(const int n, float * s, float * x, float * y) {
+static void ggml_vec_dot(const int n, float * s, float * x, float * y) {
     float sumf = 0.0;
     for (int i = 0; i < n; ++i) {
         sumf += x[i] * y[i];
@@ -188,7 +190,7 @@ static void ggml_vec_dot_f16(const int n, float * s, float * x, float * y) {
     *s = sumf;
 }
 
-static void gemm_f16_out_f32(int m, int n, int k,
+static void gemm(int m, int n, int k,
                              float * A,
                              float * B,
                              float * C,
@@ -233,7 +235,7 @@ static void gemm_f16_out_f32(int m, int n, int k,
             // printf("i j k => %d %d %d\n", i, j, K);
             for (int ii = i; ii < i + blck_m && ii < m1; ii++) {
                 for (int jj = j; jj < j + blck_n && jj < n1; jj++) {
-                    ggml_vec_dot_f16(k,
+                    ggml_vec_dot(k,
                                     C + ii*n + jj,
                                     A + ii * k,
                                     B + jj * k);
@@ -247,15 +249,17 @@ static void gemm_f16_out_f32(int m, int n, int k,
 void perform_gemm_test(float* a, float* b, int M, int N, int K) {
     printf("\nPerforming gemm_f16_out_f32 test:\n");
 
-    float* gemm_out = new float[M * N];
-    gemm_f16_out_f32(M, N, K, a, b, gemm_out, 0, 1);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < M; i++) {
-        for (int j = 0; j < N; j++) {
-            printf("%.1ff,", gemm_out[i * N + j]);
-        }
-        printf("\n");
-    }
+    float* gemm_out = new float[M * N];
+    gemm(M, N, K, a, b, gemm_out, 0, 1);
+    auto end = std::chrono::high_resolution_clock::now();
+    
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    
+    std::cout << "Time in seconds: " << elapsed_seconds.count() << " s\n";
+    std::cout << "Time in milliseconds: " << elapsed_milliseconds.count() << " ms\n";
 }
 
 int main(int argc, char* argv[])
@@ -281,17 +285,7 @@ int main(int argc, char* argv[])
     generateMatrix(matrixA, M, K);
     generateMatrix(matrixB, K, N);
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     perform_gemm_test(matrixA, matrixB, M, N, K);
-
-    auto end = std::chrono::high_resolution_clock::now();
-    
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    
-    std::cout << "Time in seconds: " << elapsed_seconds.count() << " s\n";
-    std::cout << "Time in milliseconds: " << elapsed_milliseconds.count() << " ms\n";
 
 #if false
     test_model model;
