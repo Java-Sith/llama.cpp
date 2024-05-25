@@ -6,10 +6,6 @@
 #include <cblas.h>
 #endif
 
-const int M = 1280;
-const int N = 1536;
-const int K = 1280;
-
 #ifdef GGML_USE_OPENBLAS
 void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, int n, int k) {
     assert(k % QK == 0);
@@ -17,24 +13,45 @@ void mul_mat_blas(const float * src0, const float * src1, float * dst, int m, in
 }
 #endif
 
+// Function to generate a matrix with given rows and columns
+void generateMatrix(float* matrix, int rows, int cols) {
+    srand(static_cast<unsigned>(time(0))); // Seed for random number generation
+
+    for (int i = 0; i < rows * cols; ++i) {
+        matrix[i] = static_cast<float>(rand() % 1000) / 100.0f; // Generate random float values between 0.0 and 9.99
+    }
+}
+
 int main(int argc, char* argv[]) {
     assert(sizeof(gq_quant_t)*8 == gq_t_bits);
-    int m = M, n = N, k = K;
 
     ggml_time_init();
 
-    float * src0  = loadMatrixFromFile(m, k, "ecas-scripts/tensor1.txt");
-    float * src1  = loadMatrixFromFile(k, n, "ecas-scripts/tensor2.txt");
-    float * dst  = loadMatrix(m, n);
+    // Check for the correct number of arguments
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " <M> <N> <K>" << std::endl;
+        return 1;
+    }
+
+    // Parse command line arguments
+    int M = atoi(argv[1]); // Number of rows for matrixA and expected_result
+    int N = atoi(argv[2]); // Number of columns for matrixB and expected_result
+    int K = atoi(argv[3]); // Number of columns for matrixA and rows for matrixB
+
+    // Allocate memory for the matrices
+    float* src0 = new float[M * K];
+    float* src1 = new float[K * N];
+    float* dst = new float[M * N];
+
+    generateMatrix(src0, M, K);
+    generateMatrix(src1, K, N);
+
+    int m = M, n = N, k = K;
 
     double iM = 1.0/m;
     double sum = 0.0f;
 
     int method = 0;
-    if (argc > 1) {
-        method = std::stoi(argv[1]);
-    }
-
     const int64_t start = ggml_cycles();
     const int64_t start_us = ggml_time_us();
 
@@ -74,9 +91,9 @@ int main(int argc, char* argv[]) {
     printf("%s: elapsed us:    %d / %f ms\n",  __func__, (int)(end_us - start_us), (end_us - start_us) / 1000.0);
     printf("%f\n", sum);
 
-    free(src0);
-    free(src1);
-    free(dst);
+    delete[] src0;
+    delete[] src1;
+    delete[] dst;
 
     return 0;
 }
