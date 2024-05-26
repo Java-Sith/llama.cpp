@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
     int method = 0;
     const int64_t start = ggml_cycles();
-    const int64_t start_us = ggml_time_us();
+    const int64_t start_ms = ggml_time_ms();
 
     if (method == 0) {
         #ifdef GGML_USE_OPENBLAS
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat(src0, src1, dst, m, n, k);
-            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            //saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
 
@@ -71,11 +71,11 @@ int main(int argc, char* argv[]) {
             saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #else
             mul_mat_gq_4(src0, src1, dst, m, n, k);
-            saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
+            //saveMatrixToFile((gq_scale_t *) dst, m, n, "ecas-scripts/result.txt");
         #endif
     }
     
-    const int64_t end_us = ggml_time_us();
+    const int64_t end_ms = ggml_time_ms();
     
     for (int i = 0; i < n; i++) {
         sum += dst[i]*iM;
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     }
 
     printf("%s: elapsed ticks: %" PRIu64 "\n",  __func__, end - start);
-    printf("%s: elapsed us:    %d / %f ms\n",  __func__, (int)(end_us - start_us), (end_us - start_us) / 1000.0);
+    printf("%s: elapsed ms:    %d\n",  __func__, (int)(end_ms - start_ms));
     printf("%f\n", sum);
 
     delete[] src0;
