@@ -15343,7 +15343,6 @@ clock_t start, end;
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     GGML_ASSERT(params);
-    double cpu_time_used;
     if (tensor->op == GGML_OP_NONE) {
         return;
     }
