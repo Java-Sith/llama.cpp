@@ -3,12 +3,19 @@
  * Author: Luis G. Leon-Vega <luis.leon@ieee.org>
  */
 
-#ifndef __MATMUL_H__
-#define __MATMUL_H__
+#ifndef __MATVECMUL_H__
+#define __MATVECMUL_H__
+
+#define AP_INT_MAX_W 32768
 
 #include "../common/config.h"
 
+#ifndef A_ROWS
 static constexpr int kARows = 2;
+#else
+static constexpr int kARows = A_ROWS;
+#pragma message "Refef"
+#endif
 #ifndef B_COLS
 static constexpr int kBCols = 32768;
 #else
@@ -21,7 +28,7 @@ static constexpr int kCCols = C_COLS;
 #endif
 
 extern "C" {
-void matmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols);
+void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols);
 }
 
-#endif // __MATMUL_H__
+#endif // __MATVECMUL_H__

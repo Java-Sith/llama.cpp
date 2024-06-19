@@ -1,23 +1,10 @@
+/*
+ * Copyright 2022-2024
+ * Author: Luis G. Leon-Vega <luis.leon@ieee.org>
+ */
+
 #include "matmul.h"
 #include "hls_math.h"
-
-#ifdef USE_FLOAT32
-#define USE_UNION
-typedef union {
-  uint32_t i;
-  float f;
-} d32;
-using AccT = d32;
-#elif defined(USE_FLOAT16) || defined(USE_FLOAT8) || defined(USE_FLOAT4)
-#define USE_UNION
-typedef union {
-  uint16_t i;
-  half f;
-} d16;
-using AccT = d16;
-#else
-using AccT = DataT;
-#endif
 
 static constexpr int kBColsPacketised = kBCols / kPackets;
 static constexpr int kCColsPacketised = kCCols / kPackets;
