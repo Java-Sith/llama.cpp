@@ -6,7 +6,7 @@
 #ifndef __RMSNORM_H__
 #define __RMSNORM_H__
 
-#include "../common/config.h"
+#include "./common/config.h"
 
 // Adjustable for Element Wise
 #ifndef M_COLS

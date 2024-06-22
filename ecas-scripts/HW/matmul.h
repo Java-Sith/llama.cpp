@@ -6,7 +6,7 @@
 #ifndef __MATMUL_H__
 #define __MATMUL_H__
 
-#include "../common/config.h"
+#include "./common/config.h"
 
 static constexpr int kARows = 2;
 #ifndef B_COLS
