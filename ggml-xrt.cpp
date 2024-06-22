@@ -52,7 +52,11 @@ static int g_main_device_index = 0;
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/XRT-MatMul/HW/package.hw/kernels.xclbin";
-static xrt::kernel matmul;
+static xrt::kernel matvecmul;
+static xrt::kernel elementwise;
+static xrt::kernel softmax;
+static xrt::kernel rmsnorm;
+static xrt::kernel unary;
 //static std::string configFile = "./blas/L3/examples/memKernel/gemm/build_dir.hw.xilinx_u250_gen3x16_xdma_4_1_202210_1/config_info.dat";
 //static int numKernel = 1;
 //static xfblasStatus_t status;
@@ -110,7 +114,11 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     myDevice = xrt::device(g_main_device);
     std::cout << "Load the xclbin: " << binaryFile << std::endl;
     auto uuid = myDevice.load_xclbin(binaryFile);
-    matmul = xrt::kernel(myDevice, uuid, "matmul");
+    matvecmul = xrt::kernel(myDevice, uuid, "matvecmul");
+    elementwise = xrt::kernel(myDevice, uuid, "elementwise");
+    softmax = xrt::kernel(myDevice, uuid, "softmax");
+    rmsnorm = xrt::kernel(myDevice, uuid, "rmsnorm");
+    unary = xrt::kernel(myDevice, uuid, "unary");
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 
@@ -200,52 +208,33 @@ void ggml_xrt_soft_max(
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-#ifdef LLAMA_XRT_CLOCK
-int operationCounters[GGML_OP_COUNT] = {0};
-clock_t start, end;
-#endif
-
-#ifdef LLAMA_XRT_PROFILER
-int iterations = 0;
-#endif
-
-void ggml_xrt_mul_mat(
-        const struct ggml_compute_params * params,
+void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
-    const int ith = params->ith;
-    const int nth = params->nth;
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+    const int64_t ne02 = src0->ne[2];
+    const int64_t ne03 = src0->ne[3];
 
-    const enum ggml_type type = src0->type;
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+    const int64_t ne12 = src1->ne[2];
+    const int64_t ne13 = src1->ne[3];
+    const int64_t nrows1 = ggml_nrows(src1);
 
-    #ifdef LLAMA_XRT_PROFILER
-    std::chrono::time_point<std::chrono::high_resolution_clock> start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> end;
-    #endif
+    GGML_ASSERT(ne03 == ne13);
 
-    int64_t ne00 = src0->ne[0];
-    int64_t ne01 = src0->ne[1];
-    int64_t ne02 = src0->ne[2];
-    int64_t ne03 = src0->ne[3];
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
 
-    int64_t ne10 = src1->ne[0];
-    int64_t ne11 = src1->ne[1];
-    int64_t ne12 = src1->ne[2];
-    int64_t ne13 = src1->ne[3];
-
-    const int64_t nb01 = src0->nb[1];
-    const int64_t nb02 = src0->nb[2];
-    const int64_t nb03 = src0->nb[3];
-    const int64_t nb12 = src1->nb[2];
-    const int64_t nb13 = src1->nb[3];
-
-    const int nb2  = dst->nb[2];
-    const int nb3  = dst->nb[3];
+    const int nb2 = dst->nb[2];
+    const int nb3 = dst->nb[3];
 
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
+
+    const bool src0_is_contiguous = ggml_is_contiguous(src0);
+    const bool src1_is_contiguous = ggml_is_contiguous(src1);
 
     int64_t ne00_pad, ne01_pad, ne10_pad;
     ne00_pad = ne00;
@@ -269,72 +258,7 @@ void ggml_xrt_mul_mat(
     const int64_t y_ne = ne11 * ne10_pad;
     const int64_t d_ne = ne11 * ne01_pad;
 
-    if (params->type == GGML_TASK_INIT) {
-      const size_t desired_wsize = ne13*ne12*x_ne*sizeof(float);
-      UNUSED(desired_wsize);
-      if (type != GGML_TYPE_F32) {
-          assert(params->wsize >= desired_wsize);
-          // parallelize by src0 rows
-          for (int64_t i13 = 0; i13 < ne13; i13++) {
-              for (int64_t i12 = 0; i12 < ne12; i12++) {
-                  // broadcast src0 into src1 across 2nd,3rd dimension
-                  const int64_t i03 = i13/r3;
-                  const int64_t i02 = i12/r2;
-
-                  const float * x = (float *)((char *) src0->data + i02*nb02 + i03*nb03);
-                  float * const wdata = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
-
-                  for (int64_t i01 = ith; i01 < ne01; i01 += nth) {
-                      switch (type)
-                      {
-                      case GGML_TYPE_F16:
-                          ggml_fp16_to_fp32_row((const ggml_fp16_t *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q4_0:
-                          dequantize_row_q4_0((const block_q4_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q4_1:
-                          dequantize_row_q4_1((const block_q4_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q5_0:
-                          dequantize_row_q5_0((const block_q5_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q5_1:
-                          dequantize_row_q5_1((const block_q5_1 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q8_0:
-                          dequantize_row_q8_0((const block_q8_0 *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q2_K:
-                          dequantize_row_q2_K((const block_q2_K *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q3_K:
-                          dequantize_row_q3_K((const block_q3_K *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q4_K:
-                          dequantize_row_q4_K((const block_q4_K *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q5_K:
-                          dequantize_row_q5_K((const block_q5_K *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      case GGML_TYPE_Q6_K:
-                          dequantize_row_q6_K((const block_q6_K *) x + i01*nb01, wdata + i01*ne00, ne00);
-                          break;
-                      default:
-                          break;
-                      }
-                  }
-              }
-          }
-       }
-    }
-
     if (params->type == GGML_TASK_FINALIZE) {
-        return;
-    }
-
-    // perform sgemm, parallelization controlled by blas lib
-    if (ith != 0) {
         return;
     }
 
@@ -343,7 +267,7 @@ void ggml_xrt_mul_mat(
     //float *bs = new float[x_ne];
     //float *cs = new float[d_ne];
     //const int64_t tgemm0 = ggml_perf_time_us();
-    float *xs = new float[x_ne];
+    //float *xs = new float[x_ne];
     for (int64_t i13 = 0; i13 < ne13; i13++) {
         for (int64_t i12 = 0; i12 < ne12; i12++) {
 
@@ -358,19 +282,19 @@ void ggml_xrt_mul_mat(
                 x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
             }*/
 
-            for (int i = 0; i < ne01; ++i) {
+            /*for (int i = 0; i < ne01; ++i) {
                 for (int j = 0; j < ne00; ++j) {
                     if (i * ne00 + j >= 44573776)
                     {
                         xs[j * ne01 + i] = 0;
                     } else {
                         xs[j * ne01 + i] = x[i * ne00 + j];
-                    }           
+                    }
                 }
-            }
+            }*/
 
-            auto bo_a = xrt::bo(myDevice, y_ne * sizeof(float), matmul.group_id(0));
-            auto bo_b = xrt::bo(myDevice, x_ne * sizeof(float), matmul.group_id(1));
+            auto bo_a = xrt::bo(myDevice, x_ne * sizeof(float), matmul.group_id(0));
+            auto bo_b = xrt::bo(myDevice, y_ne * sizeof(float), matmul.group_id(1));
             auto bo_c = xrt::bo(myDevice, d_ne * sizeof(float), matmul.group_id(2));
             auto bo_a_map = bo_a.map<float*>();
             auto bo_b_map = bo_b.map<float*>();
@@ -387,19 +311,19 @@ void ggml_xrt_mul_mat(
                 for (int elem = 0; elem < y_ne / 2; ++elem) {
                     //std::cout << as.V << " ";
                     //as[elem] = y[elem];
-                    bo_a_map[elem] = y[elem];
+                    bo_b_map[elem] = y[elem];
                 }
                 for (int elem = y_ne / 2; elem < y_ne; ++elem) {
                     //std::cout << as.V << " ";
                     //as[elem] = y[elem];
-                    bo_a_map[elem] = 0;
+                    bo_b_map[elem] = 0;
                 }
-                
+
             } else {
                 for (int elem = 0; elem < y_ne; ++elem) {
                     //std::cout << as.V << " ";
                     //as[elem] = y[elem];
-                    bo_a_map[elem] = y[elem];
+                    bo_b_map[elem] = y[elem];
                 }
             }
 
@@ -410,7 +334,7 @@ void ggml_xrt_mul_mat(
                     for (int elem = 0; elem < x_ne / 4; ++elem) {
                         //std::cout << as.V << " ";
                         //bs[elem] = x[elem];
-                        bo_b_map[elem] = xs[elem];
+                        bo_a_map[elem] = xs[elem];
                     }
                     for (int elem = x_ne / 4; elem < x_ne; ++elem) {
                         //std::cout << as.V << " ";
@@ -429,7 +353,7 @@ void ggml_xrt_mul_mat(
                         bo_b_map[elem] = xs[elem];
                     }
                 }
-                
+
             } else {
                 for (int elem = 0; elem < x_ne; ++elem) {
                     //std::cout << as.V << " ";
@@ -441,10 +365,6 @@ void ggml_xrt_mul_mat(
             //std::cout << "Synchronize input buffer data to device global memory\n";
             std::fill(bo_c_map, bo_c_map + d_ne, 0);
 
-#ifdef LLAMA_XRT_PROFILER
-            start = std::chrono::high_resolution_clock::now();
-#endif
-
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -454,10 +374,6 @@ void ggml_xrt_mul_mat(
 
             //std::cout << "Get the output data from the device\n" << std::endl;
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-
-#ifdef LLAMA_XRT_PROFILER
-            end = std::chrono::high_resolution_clock::now();
-#endif
 
             /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                         ne1, ne01, ne10,
@@ -473,12 +389,28 @@ void ggml_xrt_mul_mat(
             }
         }
     }
-    #ifdef LLAMA_XRT_PROFILER
-    auto time_used = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    iterarions++;
-    printf("Matmul %d executed in %f milliseconds", iterations, time_used);
-    #endif
     delete[] xs;
+}
+
+static void ggml_xrt_mul_mat(
+        const struct ggml_compute_params * params,
+        struct ggml_tensor * dst) {
+
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_mul_mat_f32(src0, src1, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_mul_mat(params, dst);
+            } break;
+    }
 }
 
 static void ggml_xrt_unary(
