@@ -29,6 +29,27 @@ VPP_PFLAGS :=
 VPP_LDFLAGS :=
 VPP_FLAGS += --save-temps --jobs 6
 
+
+ifdef USE_FP32
+	VPP_FLAGS += -DUSE_FLOAT32
+endif
+
+ifdef USE_FP16
+	VPP_FLAGS += -DUSE_FLOAT16
+endif
+
+ifdef USE_FP8
+	VPP_FLAGS += -DUSE_FLOAT8
+endif
+
+ifdef USE_FP4
+	VPP_FLAGS += -DUSE_FLOAT4
+endif
+
+ifdef USE_FX16
+	VPP_FLAGS += -DUSE_FIXED16
+endif
+
 RMDIR = rm -rf
 
 .PHONY: all clean cleanall hls-build
