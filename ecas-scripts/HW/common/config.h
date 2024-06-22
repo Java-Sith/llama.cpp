@@ -16,7 +16,7 @@ static constexpr int kBusWidth = 512;
 #else
 static constexpr int kBusWidth = BUS;
 #endif
-//#define USE_FLOAT8
+#define USE_FLOAT32
 
 #ifdef USE_FLOAT32
 static constexpr int kDataWidth = 32;
