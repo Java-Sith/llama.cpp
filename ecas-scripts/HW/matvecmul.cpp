@@ -71,7 +71,7 @@ a_streams:
 #pragma HLS UNROLL
         const int row_shift = (row + s) * tcols;
         const int cols_shift = col;
-        const int shift = cols_shift + row_shift;          
+        const int shift = cols_shift + row_shift;
         RawDataT packet = a[shift];
         sa[s].write(packet);
       }
@@ -88,14 +88,14 @@ b_mat_reps:
   for (int rep_row = 0; rep_row < rep_rows; rep_row += kPackets) {
 #pragma HLS LOOP_TRIPCOUNT min=kARowsPacketised max=kARowsPacketised avg=kARowsPacketised
     // Transmit columns
-b_mat_cols:    
+b_mat_cols:
     for (int col = 0; col < tcols; ++col) {
 #pragma HLS LOOP_TRIPCOUNT min=kBColsPacketised max=kBColsPacketised avg=kBColsPacketised
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
       const int row_shift = 0;
       const int cols_shift = col;
-      const int shift = cols_shift + row_shift;          
+      const int shift = cols_shift + row_shift;
       RawDataT packet = a[shift];
 b_mat_streams:
       for (int s = 0; s < kPackets; ++s) {

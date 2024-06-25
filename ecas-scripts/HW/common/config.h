@@ -16,7 +16,6 @@ static constexpr int kBusWidth = 512;
 #else
 static constexpr int kBusWidth = BUS;
 #endif
-#define USE_FLOAT32
 
 #ifdef USE_FLOAT32
 static constexpr int kDataWidth = 32;
@@ -41,7 +40,9 @@ using DataT = ap_fixed<kFxPDataWidth, kFxPDataInt>;
 static constexpr int kPackets = kBusWidth / kDataWidth;
 
 using RawDataT = ap_uint<kBusWidth>;
+using RawSingleDataT = ap_uint<kDataWidth>;
 using StreamT = hls::stream<RawDataT>;
+using StreamSingleT = hls::stream<RawSingleDataT>;
 
 #ifdef USE_FLOAT32
 #define USE_UNION

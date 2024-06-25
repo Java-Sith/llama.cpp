@@ -8,7 +8,7 @@
 
 #define AP_INT_MAX_W 32768
 
-#include "./common/config.h"
+#include "../common/config.h"
 
 #ifndef A_ROWS
 static constexpr int kARows = 2;
