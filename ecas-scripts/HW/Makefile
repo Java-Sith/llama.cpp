@@ -29,6 +29,8 @@ VPP_PFLAGS :=
 VPP_LDFLAGS :=
 VPP_FLAGS += --save-temps --jobs 6
 
+# Set the desired clock frequency (e.g., 200 MHz)
+KERNEL_FREQ := 250
 
 ifdef USE_FP32
 	VPP_FLAGS += -DUSE_FLOAT32
@@ -67,11 +69,11 @@ endif
 
 $(TEMP_DIR)/%.xo: %.cpp
 	mkdir -p $(TEMP_DIR)
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(<:.cpp=) --temp_dir $(TEMP_DIR)  -I'$(<D)' -o '$@' '$<'
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(<:.cpp=) --temp_dir $(TEMP_DIR) --kernel_frequency $(KERNEL_FREQ) -I'$(<D)' -o '$@' '$<'
 
 $(LINK_OUTPUT): $(HLS_KERNEL_FILES)
 	mkdir -p $(BUILD_DIR)
-	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --temp_dir $(TEMP_DIR) -o'$(LINK_OUTPUT)' $^
+	v++ -l $(VPP_FLAGS) $(VPP_LDFLAGS) -t $(TARGET) --platform $(PLATFORM) --temp_dir $(TEMP_DIR) --kernel_frequency $(KERNEL_FREQ) -o'$(LINK_OUTPUT)' $^
 
 hls-build: check_platform emconfig $(HLS_KERNEL_FILES)
 
@@ -92,7 +94,7 @@ $(EMCONFIG_DIR)/emconfig.json:
 
 $(XCL_BIN): $(LINK_OUTPUT)
 	mkdir -p $(PACKAGE_OUT)
-	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --package.out_dir $(PACKAGE_OUT) -o $(XCL_BIN)
+	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --package.out_dir $(PACKAGE_OUT) --kernel_frequency $(KERNEL_FREQ) -o $(XCL_BIN)
 
 # $(SHELL_JSON): $(ROOT_DIR)/../shell.json
 # 	mkdir -p $(PACKAGE_OUT)
