@@ -3,7 +3,7 @@ BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
 	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
-	test-mat-mul test-mat-mul-cu test-mul-mat
+	#test-mat-mul test-mat-mul-cu test-mul-mat
 
 # Binaries only useful for tests
 TEST_TARGETS = \
@@ -659,10 +659,10 @@ ggml-backend.o: ggml-backend.c ggml.h ggml-backend.h
 ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h
 	$(CC) $(CFLAGS)    -c $< -o $@
 
-mat-mul.o: ecas-scripts/mat-mul.c ggml.h ecas-scripts/mat-mul.h
-	$(CC) $(CFLAGS)    -c $< -o $@
+# mat-mul.o: ecas-scripts/mat-mul.c ggml.h ecas-scripts/mat-mul.h
+# 	$(CC) $(CFLAGS)    -c $< -o $@
 
-OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o mat-mul.o
+OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o
 
 llama.o: llama.cpp ggml.h ggml-alloc.h ggml-backend.h ggml-cuda.h ggml-metal.h llama.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -916,25 +916,25 @@ tests/test-rope: tests/test-rope.cpp ggml.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-test-mat-mul: ecas-scripts/test-mat-mul.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+# test-mat-mul: ecas-scripts/test-mat-mul.cpp ggml.o $(OBJS)
+# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
-test-mul-mat: ecas-scripts/test-mul-mat.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+# test-mul-mat: ecas-scripts/test-mul-mat.cpp ggml.o $(OBJS)
+# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
-ifdef LLAMA_HIPBLAS
-GPUFLAGS := -I$(ROCM_PATH)/include -I$(ROCM_PATH)/hipblas/include
-GPUFLAGS += -D__HIP_PLATFORM_AMD__
-test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(GPUFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(GPUFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-else
-test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-endif #LLAMA_HIPBLAS
+# ifdef LLAMA_HIPBLAS
+# GPUFLAGS := -I$(ROCM_PATH)/include -I$(ROCM_PATH)/hipblas/include
+# GPUFLAGS += -D__HIP_PLATFORM_AMD__
+# test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
+# 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+# 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+# else
+# test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
+# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
+# endif #LLAMA_HIPBLAS
 
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
