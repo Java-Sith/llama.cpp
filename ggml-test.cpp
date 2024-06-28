@@ -252,37 +252,37 @@ static void ggml_test_unary(
 bool ggml_test_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
     ggml_test_func_t func;
     if (tensor->op == GGML_OP_MUL_MAT) {
-       if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
+        if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
 #ifndef NDEBUG
            fprintf(stderr, "%s: cannot compute %s: src0->ne[3] = %" PRId64 ", src1->ne[3] = %" PRId64 " - fallback to CPU\n", __func__, tensor->name, tensor->src[0]->ne[3], tensor->src[1]->ne[3]);
 #endif
            return false;
-       }
-   }
-   const struct ggml_tensor * src0 = tensor->src[0];
-   const struct ggml_tensor * src1 = tensor->src[1];
+        }
+    }
+    const struct ggml_tensor * src0 = tensor->src[0];
+    const struct ggml_tensor * src1 = tensor->src[1];
 
-   const int64_t ne00 = src0->ne[0];
-   const int64_t ne01 = src0->ne[1];
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
 
-   const int64_t ne10 = src1->ne[0];
-   const int64_t ne11 = src1->ne[1];
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
 
-   const int64_t ne0 = tensor->ne[0];
-   const int64_t ne1 = tensor->ne[1];
+    const int64_t ne0 = tensor->ne[0];
+    const int64_t ne1 = tensor->ne[1];
 
-   const int nb2  = tensor->nb[2];
-   const int nb3  = tensor->nb[3];
+    const int nb2  = tensor->nb[2];
+    const int nb3  = tensor->nb[3];
 
-   printf("NE00: %ld\n", ne00);
-   printf("NE01: %ld\n", ne01);
-   printf("NE10: %ld\n", ne10);
-   printf("NE11: %ld\n", ne11);
-   printf("NE0: %ld\n", ne0);
-   printf("NE1: %ld\n", ne1);
-   printf("NB2: %d\n", nb2);
-   printf("NB3: %d\n", nb3);
-   switch (tensor->op) {
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
+    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
             func = ggml_test_get_rows;
             break;
@@ -386,11 +386,7 @@ bool ggml_test_compute_forward(struct ggml_compute_params * params, struct ggml_
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
         return true;
     }
-    if (tensor->op != GGML_OP_NONE && tensor->op != GGML_OP_RESHAPE && tensor->op != GGML_OP_VIEW &&
-    tensor->op != GGML_OP_TRANSPOSE && tensor->op != GGML_OP_PERMUTE)
-    {
-        func(params, tensor);
-    }
+    func(params, tensor);
     return true;
 }
 
