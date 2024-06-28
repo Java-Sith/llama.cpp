@@ -131,12 +131,49 @@ void ggml_xrt_dup(
 
 // ggml_compute_forward_add
 
+void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+              struct ggml_tensor * dst) {
+
+    GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
+
+    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    const int ith = params->ith;
+    const int nth = params->nth;
+    const int64_t nr = ggml_nrows(src0);
+
+    GGML_TENSOR_BINARY_OP_LOCALS
+
+    GGML_ASSERT(nb0 == sizeof(float));
+    GGML_ASSERT(nb00 == sizeof(float));
+
+    const int dr = (nr + nth - 1) / nth;
+    const int ir0 = dr * ith;
+    const int ir1 = MIN(ir0 + dr, nr);
+}
+
 void ggml_xrt_add(
     const struct ggml_compute_params *params,
     struct ggml_tensor *dst)
 {
 
-    ggml_compute_forward_add(params, dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_add_f32(src0, src1, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_add(params, dst);
+            } break;
+    }
 }
 
 void ggml_xrt_mul(

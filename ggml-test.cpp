@@ -268,11 +268,11 @@ bool ggml_test_compute_forward(struct ggml_compute_params * params, struct ggml_
    const int64_t ne10 = src1->ne[0];
    const int64_t ne11 = src1->ne[1];
 
-   const int64_t ne0 = dst->ne[0];
-   const int64_t ne1 = dst->ne[1];
+   const int64_t ne0 = tensor->ne[0];
+   const int64_t ne1 = tensor->ne[1];
 
-   const int nb2  = dst->nb[2];
-   const int nb3  = dst->nb[3];
+   const int nb2  = tensor->nb[2];
+   const int nb3  = tensor->nb[3];
 
    printf("NE00: %ld\n", ne00);
    printf("NE01: %ld\n", ne01);
