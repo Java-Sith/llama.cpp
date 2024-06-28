@@ -235,30 +235,6 @@ static void ggml_test_mul_mat(
         const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
-
-    const int64_t ne00 = src0->ne[0];
-    const int64_t ne01 = src0->ne[1];
-
-    const int64_t ne10 = src1->ne[0];
-    const int64_t ne11 = src1->ne[1];
-
-    const int64_t ne0 = dst->ne[0];
-    const int64_t ne1 = dst->ne[1];
-
-    const int nb2  = dst->nb[2];
-    const int nb3  = dst->nb[3];
-
-    printf("NE00: %ld\n", ne00);
-    printf("NE01: %ld\n", ne01);
-    printf("NE10: %ld\n", ne10);
-    printf("NE11: %ld\n", ne11);
-    printf("NE0: %ld\n", ne0);
-    printf("NE1: %ld\n", ne1);
-    printf("NB2: %d\n", nb2);
-    printf("NB3: %d\n", nb3);
-
     //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
     //save_tensor_info("Matmul2.txt", src1);
@@ -283,6 +259,29 @@ bool ggml_test_compute_forward(struct ggml_compute_params * params, struct ggml_
            return false;
        }
    }
+   const struct ggml_tensor * src0 = tensor->src[0];
+   const struct ggml_tensor * src1 = tensor->src[1];
+
+   const int64_t ne00 = src0->ne[0];
+   const int64_t ne01 = src0->ne[1];
+
+   const int64_t ne10 = src1->ne[0];
+   const int64_t ne11 = src1->ne[1];
+
+   const int64_t ne0 = dst->ne[0];
+   const int64_t ne1 = dst->ne[1];
+
+   const int nb2  = dst->nb[2];
+   const int nb3  = dst->nb[3];
+
+   printf("NE00: %ld\n", ne00);
+   printf("NE01: %ld\n", ne01);
+   printf("NE10: %ld\n", ne10);
+   printf("NE11: %ld\n", ne11);
+   printf("NE0: %ld\n", ne0);
+   printf("NE1: %ld\n", ne1);
+   printf("NB2: %d\n", nb2);
+   printf("NB3: %d\n", nb3);
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
             func = ggml_test_get_rows;
