@@ -157,6 +157,29 @@ static void ggml_test_add(
     struct ggml_tensor *dst)
 {
     //save_tensor_info("Add.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_add(params, dst);
 }
 
@@ -165,6 +188,29 @@ static void ggml_test_mul(
         struct ggml_tensor * dst) {
 
     //save_tensor_info("Mul.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_mul(params, dst);
 }
 
@@ -174,8 +220,29 @@ static void ggml_test_nop(
         const struct ggml_compute_params * params,
         const struct ggml_tensor * dst) {
     // NOP
-    UNUSED(params);
-    UNUSED(dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
 }
 
 // ggml_compute_forward_get_rows
@@ -185,6 +252,29 @@ static void ggml_test_get_rows(
         struct ggml_tensor * dst) {
 
     //save_tensor_info("Get Rows.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_get_rows(params, dst);
 
     //static bool first = true;
@@ -211,7 +301,29 @@ static void ggml_test_rms_norm(
         struct ggml_tensor * dst) {
 
     //save_tensor_info("RMS Norm.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
 
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_rms_norm(params, dst);
 }
 
@@ -220,6 +332,29 @@ static void ggml_test_rope(
         struct ggml_tensor * dst) {
 
     //save_tensor_info("Rope.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_rope(params, dst);
 }
 
@@ -228,6 +363,29 @@ static void ggml_test_soft_max(
               struct ggml_tensor * dst) {
 
     //save_tensor_info("Softmax.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_soft_max(params, dst);
 }
 
@@ -238,6 +396,29 @@ static void ggml_test_mul_mat(
     //save_tensor_info("Matmul.txt", dst);
     //save_tensor_info("Matmul1.txt", src0);
     //save_tensor_info("Matmul2.txt", src1);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_mul_mat(params, dst);
 }
 
@@ -246,6 +427,29 @@ static void ggml_test_unary(
               struct ggml_tensor * dst) {
 
     //save_tensor_info("Unary.txt", dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    const int64_t ne00 = src0->ne[0];
+    const int64_t ne01 = src0->ne[1];
+
+    const int64_t ne10 = src1->ne[0];
+    const int64_t ne11 = src1->ne[1];
+
+    const int64_t ne0 = dst->ne[0];
+    const int64_t ne1 = dst->ne[1];
+
+    const int nb2  = dst->nb[2];
+    const int nb3  = dst->nb[3];
+
+    printf("NE00: %ld\n", ne00);
+    printf("NE01: %ld\n", ne01);
+    printf("NE10: %ld\n", ne10);
+    printf("NE11: %ld\n", ne11);
+    printf("NE0: %ld\n", ne0);
+    printf("NE1: %ld\n", ne1);
+    printf("NB2: %d\n", nb2);
+    printf("NB3: %d\n", nb3);
     ggml_compute_forward_unary(params, dst);
 }
 
@@ -259,29 +463,6 @@ bool ggml_test_compute_forward(struct ggml_compute_params * params, struct ggml_
            return false;
         }
     }
-    const struct ggml_tensor * src0 = tensor->src[0];
-    const struct ggml_tensor * src1 = tensor->src[1];
-
-    const int64_t ne00 = src0->ne[0];
-    const int64_t ne01 = src0->ne[1];
-
-    const int64_t ne10 = src1->ne[0];
-    const int64_t ne11 = src1->ne[1];
-
-    const int64_t ne0 = tensor->ne[0];
-    const int64_t ne1 = tensor->ne[1];
-
-    const int nb2  = tensor->nb[2];
-    const int nb3  = tensor->nb[3];
-
-    printf("NE00: %ld\n", ne00);
-    printf("NE01: %ld\n", ne01);
-    printf("NE10: %ld\n", ne10);
-    printf("NE11: %ld\n", ne11);
-    printf("NE0: %ld\n", ne0);
-    printf("NE1: %ld\n", ne1);
-    printf("NB2: %d\n", nb2);
-    printf("NB3: %d\n", nb3);
     switch (tensor->op) {
         case GGML_OP_GET_ROWS:
             func = ggml_test_get_rows;
