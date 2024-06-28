@@ -220,29 +220,8 @@ static void ggml_test_nop(
         const struct ggml_compute_params * params,
         const struct ggml_tensor * dst) {
     // NOP
-    const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
-
-    const int64_t ne00 = src0->ne[0];
-    const int64_t ne01 = src0->ne[1];
-
-    const int64_t ne10 = src1->ne[0];
-    const int64_t ne11 = src1->ne[1];
-
-    const int64_t ne0 = dst->ne[0];
-    const int64_t ne1 = dst->ne[1];
-
-    const int nb2  = dst->nb[2];
-    const int nb3  = dst->nb[3];
-
-    printf("NE00: %ld\n", ne00);
-    printf("NE01: %ld\n", ne01);
-    printf("NE10: %ld\n", ne10);
-    printf("NE11: %ld\n", ne11);
-    printf("NE0: %ld\n", ne0);
-    printf("NE1: %ld\n", ne1);
-    printf("NB2: %d\n", nb2);
-    printf("NB3: %d\n", nb3);
+    UNUSED(params);
+    UNUSED(dst);
 }
 
 // ggml_compute_forward_get_rows
