@@ -122,6 +122,13 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 
+int number_elements_padding(int n) {
+    if (n < 64) {
+        return 64;
+    }
+    return n;
+}
+
 void ggml_xrt_dup(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
@@ -130,6 +137,9 @@ void ggml_xrt_dup(
 }
 
 // ggml_compute_forward_add
+
+extern "C" void ggml_xrt_add(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
 
 void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
@@ -146,12 +156,93 @@ void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-    GGML_ASSERT(nb0 == sizeof(float));
     GGML_ASSERT(nb00 == sizeof(float));
+    GGML_ASSERT(nb0 == sizeof(float));
 
+    // Determine padded sizes
+    int padded_ne00 = number_elements_padding((int)ne00);
+    int padded_ne01 = number_elements_padding((int)ne01);
+    int padded_ne10 = number_elements_padding((int)ne10);
+
+    // Allocate buffers
+    auto bo_a = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(2));
+    GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_b_map = bo_b.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
+
+    // Temporary buffer for non-contiguous src1 data
+    float* temp_src1 = NULL;
+
+    if (nb10 != sizeof(float)) {
+        temp_src1 = (float*)malloc(ne10 * sizeof(float));
+        GGML_ASSERT(temp_src1 != NULL);
+    }
+
+    // rows per thread
     const int dr = (nr + nth - 1) / nth;
+
+    // row range for this thread
     const int ir0 = dr * ith;
     const int ir1 = MIN(ir0 + dr, nr);
+
+    if (nb10 == sizeof(float)) {
+        for (int ir = ir0; ir < ir1; ++ir) {
+            const int64_t i03 = ir / (ne02 * ne01);
+            const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+            const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+            const int64_t nr0 = padded_ne00 / padded_ne10;
+
+            float * dst_ptr = (float *)((char *)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+            float * src0_ptr = (float *)((char *)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+            float * src1_ptr = (float *)((char *)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11);
+
+            for (int64_t r = 0; r < nr0; ++r) {
+                bo_a_map = src0_ptr + r * padded_ne10;
+                bo_b_map = src1_ptr;
+                std::fill(bo_c_map, bo_c_map + padded_ne10, 0);
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                auto run = elementwise(bo_a, bo_b, bo_c, padded_ne10, 0); // 0: add, 1: addrelu, 2: mult
+                run.wait();
+                dst_ptr + r * padded_ne10 = bo_c_map;
+            }
+        }
+    }
+    else {
+        for (int ir = ir0; ir < ir1; ++ir) {
+            const int64_t i03 = ir / (ne02 * ne01);
+            const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+            const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+
+            float * dst_ptr = (float *)((char *)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+            float * src0_ptr = (float *)((char *)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+
+            for (int64_t i0 = 0; i0 < ne00; ++i0) {
+                const int64_t i10 = i0 % ne10;
+                float * src1_ptr = (float *)((char *)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11 + i10 * nb10);
+
+                bo_a_map[i0] = src0_ptr[i0];
+                bo_b_map[i0] = *src1_ptr;
+                std::fill(bo_c_map, bo_c_map + i0, 0);
+            }
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            auto run = elementwise(bo_a, bo_b, bo_c, padded_ne00, 0); // 0: add, 1: addrelu, 2: mult
+            run.wait();
+            dst_ptr = bo_c_map;
+        }
+    }
 }
 
 void ggml_xrt_add(
@@ -176,11 +267,135 @@ void ggml_xrt_add(
     }
 }
 
+// ggml_compute_forward_mul
+
+extern "C" void ggml_xrt_mul(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
+void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+              struct ggml_tensor * dst) {
+
+    GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
+
+    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    const int ith = params->ith;
+    const int nth = params->nth;
+    const int64_t nr = ggml_nrows(src0);
+
+    GGML_TENSOR_BINARY_OP_LOCALS
+
+    GGML_ASSERT(nb00 == sizeof(float));
+    GGML_ASSERT(nb0 == sizeof(float));
+
+    // Determine padded sizes
+    int padded_ne00 = number_elements_padding((int)ne00);
+    int padded_ne01 = number_elements_padding((int)ne01);
+    int padded_ne10 = number_elements_padding((int)ne10);
+
+    // Allocate buffers
+    auto bo_a = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(2));
+    GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_b_map = bo_b.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
+
+    // Temporary buffer for non-contiguous src1 data
+    float* temp_src1 = NULL;
+
+    if (nb10 != sizeof(float)) {
+        temp_src1 = (float*)malloc(ne10 * sizeof(float));
+        GGML_ASSERT(temp_src1 != NULL);
+    }
+
+    // rows per thread
+    const int dr = (nr + nth - 1) / nth;
+
+    // row range for this thread
+    const int ir0 = dr * ith;
+    const int ir1 = MIN(ir0 + dr, nr);
+
+    if (nb10 == sizeof(float)) {
+        for (int ir = ir0; ir < ir1; ++ir) {
+            const int64_t i03 = ir / (ne02 * ne01);
+            const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+            const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+            const int64_t nr0 = padded_ne00 / padded_ne10;
+
+            float * dst_ptr = (float *)((char *)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+            float * src0_ptr = (float *)((char *)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+            float * src1_ptr = (float *)((char *)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11);
+
+            for (int64_t r = 0; r < nr0; ++r) {
+                bo_a_map = src0_ptr + r * padded_ne10;
+                bo_b_map = src1_ptr;
+                std::fill(bo_c_map, bo_c_map + padded_ne10, 0);
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                auto run = elementwise(bo_a, bo_b, bo_c, padded_ne10, 2); // 0: add, 1: addrelu, 2: mult
+                run.wait();
+                bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+                dst_ptr + r * padded_ne10 = bo_c_map;
+            }
+        }
+    }
+    else {
+        for (int ir = ir0; ir < ir1; ++ir) {
+            const int64_t i03 = ir / (ne02 * ne01);
+            const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+            const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+
+            float * dst_ptr = (float *)((char *)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+            float * src0_ptr = (float *)((char *)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+
+            for (int64_t i0 = 0; i0 < ne00; ++i0) {
+                const int64_t i10 = i0 % ne10;
+                float * src1_ptr = (float *)((char *)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11 + i10 * nb10);
+                bo_a_map[i0] = src0_ptr[i0];
+                bo_b_map[i0] = *src1_ptr;
+                std::fill(bo_c_map, bo_c_map + i0, 0);
+            }
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+            auto run = elementwise(bo_a, bo_b, bo_c, padded_ne00, 2); // 0: add, 1: addrelu, 2: mult
+            run.wait();
+            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+            dst_ptr = bo_c_map;
+        }
+    }
+}
+
 void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    ggml_compute_forward_mul(params, dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_mul_f32(src0, src1, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_mul(params, dst);
+            } break;
+    }
 }
 
 // ggml_compute_forward_transpose
@@ -248,186 +463,124 @@ extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
-    const int64_t ne00 = src0->ne[0];
-    const int64_t ne01 = src0->ne[1];
-    const int64_t ne02 = src0->ne[2];
-    const int64_t ne03 = src0->ne[3];
+    // Local variables from GGML_TENSOR_BINARY_OP_LOCALS
+    GGML_TENSOR_BINARY_OP_LOCALS
 
-    const int64_t ne10 = src1->ne[0];
-    const int64_t ne11 = src1->ne[1];
-    const int64_t ne12 = src1->ne[2];
-    const int64_t ne13 = src1->ne[3];
-    const int64_t nrows1 = ggml_nrows(src1);
+    const int ith = params->ith;
+    const int nth = params->nth;
+    const enum ggml_type type = src0->type;
 
-    GGML_ASSERT(ne03 == ne13);
+    // Ensure src1 is a vector (i.e., ne10 is 1 or 2 rows)
+    GGML_ASSERT(ne10 == 1 || ne10 == 2);
 
-    const int64_t ne0 = dst->ne[0];
-    const int64_t ne1 = dst->ne[1];
+    // Ensure the dimensions are compatible for GEMV
+    GGML_ASSERT(ne00 == dst->ne[0]);
+    GGML_ASSERT(ne01 == dst->ne[1]);
+    GGML_ASSERT(ne0 == ne10);
 
-    const int nb2 = dst->nb[2];
-    const int nb3 = dst->nb[3];
+    // We don't support permuted src0 or src1
+    GGML_ASSERT(nb00 == ggml_type_size(type));
+    GGML_ASSERT(nb10 == ggml_type_size(src1->type));
 
-    const int64_t r2 = ne12 / ne02;
-    const int64_t r3 = ne13 / ne03;
+    // dst cannot be transposed or permuted
+    GGML_ASSERT(nb0 == sizeof(float));
+    GGML_ASSERT(nb0 <= nb1);
+    GGML_ASSERT(nb1 <= nb2);
+    GGML_ASSERT(nb2 <= nb3);
 
-    const bool src0_is_contiguous = ggml_is_contiguous(src0);
-    const bool src1_is_contiguous = ggml_is_contiguous(src1);
+    // Broadcast factors
+    const int64_t r2 = ne12/ne02;
+    const int64_t r3 = ne13/ne03;
 
-    int64_t ne00_pad, ne01_pad, ne10_pad;
-    ne00_pad = ne00;
-    ne01_pad = ne01;
-    ne10_pad = ne10;
-
-    if (ne00 < 64)
-    {
-        ne00_pad = 64;
+    if (params->type == GGML_TASK_INIT) {
+        return;
     }
-    else if (ne01 < 64)
-    {
-        ne01_pad = 64;
-    }
-    else if (ne10 < 64)
-    {
-        ne10_pad = 64;
-    }
-
-    const int64_t x_ne = ne01_pad * ne00_pad;
-    const int64_t y_ne = ne11 * ne10_pad;
-    const int64_t d_ne = ne11 * ne01_pad;
 
     if (params->type == GGML_TASK_FINALIZE) {
         return;
     }
 
-    //const int64_t tgemm0 = ggml_perf_time_us();
-    //float *as = new float[y_ne];
-    //float *bs = new float[x_ne];
-    //float *cs = new float[d_ne];
-    //const int64_t tgemm0 = ggml_perf_time_us();
-    //float *xs = new float[x_ne];
-    for (int64_t i13 = 0; i13 < ne13; i13++) {
-        for (int64_t i12 = 0; i12 < ne12; i12++) {
+    const int64_t nr0 = ne01;          // src0 rows
+    const int64_t nr1 = ne1*ne12*ne13; // src1 rows
 
-            const int64_t i03 = i13/r3;
-            const int64_t i02 = i12/r2;
+    // Determine padded sizes
+    int padded_ne00 = number_elements_padding((int)ne00);
+    int padded_ne01 = number_elements_padding((int)ne01);
+    int padded_ne10 = number_elements_padding((int)ne10);
 
-            const float * x = (float *)((char *) src0->data + i02*nb02 + i03*nb03);
-            const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
-            float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
+    // Allocate buffers
+    auto bo_a = xrt::bo(myDevice, padded_ne00 * padded_ne01 * sizeof(float), matmul.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_ne10 * sizeof(float), matmul.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_ne00 * ne11 * sizeof(float), matmul.group_id(2));
+    GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_b_map = bo_b.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
 
-            /*if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i13*ne12*x_ne + i12*x_ne;
-            }*/
 
-            /*for (int i = 0; i < ne01; ++i) {
-                for (int j = 0; j < ne00; ++j) {
-                    if (i * ne00 + j >= 44573776)
-                    {
-                        xs[j * ne01 + i] = 0;
-                    } else {
-                        xs[j * ne01 + i] = x[i * ne00 + j];
-                    }
-                }
-            }*/
+    // Iterate through the batches of src1 vectors and perform GEMV
+    for (int64_t i03 = 0; i03 < ne03; i03++) {
+        for (int6464_t i02 = 0; i02 < ne02; i02++) {
+            // Broadcast src1 into src0
+            const int64_t i13 = i03 % ne13;
+            const int6464_t i12 = i02 % ne12;
+            const int64_t i11 = (i12 * ne1 + i13 * ne12 * ne1) % ne1;
 
-            auto bo_a = xrt::bo(myDevice, x_ne * sizeof(float), matmul.group_id(0));
-            auto bo_b = xrt::bo(myDevice, y_ne * sizeof(float), matmul.group_id(1));
-            auto bo_c = xrt::bo(myDevice, d_ne * sizeof(float), matmul.group_id(2));
-            auto bo_a_map = bo_a.map<float*>();
-            auto bo_b_map = bo_b.map<float*>();
-            auto bo_c_map = bo_c.map<float*>();
-            // printf("BufferA: %ld\n", bo_a.size() / 4);
-            // printf("BufferB: %ld\n", bo_b.size() / 4);
-            // printf("BufferC: %ld\n", bo_c.size() / 4);
-            // printf("SizeX: %ld\n", x_ne);
-            // printf("SizeY: %ld\n", y_ne);
-            // printf("SizeD: %ld\n", d_ne);
+            const int64_t a_rows = ne01;
+            const int6464_t b_cols = ne10;
+            const int6464_t c_cols = ne01;
 
-            if (ne10 < 64)
-            {
-                for (int elem = 0; elem < y_ne / 2; ++elem) {
-                    //std::cout << as.V << " ";
-                    //as[elem] = y[elem];
-                    bo_b_map[elem] = y[elem];
-                }
-                for (int elem = y_ne / 2; elem < y_ne; ++elem) {
-                    //std::cout << as.V << " ";
-                    //as[elem] = y[elem];
-                    bo_b_map[elem] = 0;
-                }
+            // Copy src0 to buffer_A
+            float *src0_ptr = (float *) src0->data + i02 * ne01 * ne00 + i03 * ne02 * ne01 * ne00;
+            bo_a_map = src0_ptr;
 
-            } else {
-                for (int elem = 0; elem < y_ne; ++elem) {
-                    //std::cout << as.V << " ";
-                    //as[elem] = y[elem];
-                    bo_b_map[elem] = y[elem];
-                }
-            }
+            // Initialize buffer_C to zero
+            std::fill(bo_c_map, bo_c_map + padded_ne00 * ne11, 0);
 
-            if (ne00 < 64 || ne01 < 64)
-            {
-                if (ne00 < 64 && ne01 < 64)
-                {
-                    for (int elem = 0; elem < x_ne / 4; ++elem) {
-                        //std::cout << as.V << " ";
-                        //bs[elem] = x[elem];
-                        bo_a_map[elem] = xs[elem];
-                    }
-                    for (int elem = x_ne / 4; elem < x_ne; ++elem) {
-                        //std::cout << as.V << " ";
-                        //bs[elem] = x[elem];
-                        bo_b_map[elem] = xs[elem];
-                    }
-                } else {
-                    for (int elem = 0; elem < x_ne / 2; ++elem) {
-                        //std::cout << as.V << " ";
-                        //bs[elem] = x[elem];
-                        bo_b_map[elem] = xs[elem];
-                    }
-                    for (int elem = x_ne / 2; elem < x_ne; ++elem) {
-                        //std::cout << as.V << " ";
-                        //bs[elem] = x[elem];
-                        bo_b_map[elem] = xs[elem];
-                    }
-                }
+            // Handle the case where B has 2 rows
+            if (ne11 == 2) {
+                // Split B into two separate vectors
+                float * src1_ptr_1 = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10;
+                float * src1_ptr_2 = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10 + padded_ne10;
+                bo_b_map = src1_ptr_1;
+
+                // Copy src1 to buffer_B1 and buffer_B2
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+                // Call the custom accelerator function for the first row
+                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
+                run.wait();
+
+                // Call the custom accelerator function for the second row
+                bo_b_map = src1_ptr_2;
+
+                // Copy src1 to buffer_B1 and buffer_B2
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
+                run.wait();
 
             } else {
-                for (int elem = 0; elem < x_ne; ++elem) {
-                    //std::cout << as.V << " ";
-                    //bs[elem] = x[elem];
-                    bo_b_map[elem] = xs[elem];
-                }
+                // Copy src1 to buffer_B
+                float *src1_ptr = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10;
+
+                // Copy src1 to buffer_B1 and buffer_B2
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+                // Call the custom accelerator function for the first row
+                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
+                run.wait();
             }
 
-            //std::cout << "Synchronize input buffer data to device global memory\n";
-            std::fill(bo_c_map, bo_c_map + d_ne, 0);
-
-            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-            bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-            //std::cout << "Execution of the kernel\n";
-            auto run_mm = matmul(bo_a, bo_b, bo_c, ne11, ne01_pad, ne01_pad);
-            run_mm.wait();
-
-            //std::cout << "Get the output data from the device\n" << std::endl;
+            // Copy result from buffer_C to dst
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-
-            /*cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                        ne1, ne01, ne10,
-                        1.0f,    y, ne10,
-                                x, ne00,
-                        0.0f,    d, ne01);*/
-            for (int elem = 0; elem < d_ne; ++elem) {
-                //cs[elem] = bo_c_map[elem];
-                d[elem] = bo_c_map[elem];
-                //std::cout << cs << " ";
-                //std::cout << std::hex << cs.V << " ";
-                //if ((elem + 1) % c_cols == 0) std::cout << std::endl;
-            }
+            (float *) dst->data + i02 * ne01 * ne00 + i03 * ne02 * ne01 * ne00 = bo_c_map;
         }
     }
-    delete[] xs;
-}
+} 
 
 static void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
