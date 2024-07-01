@@ -141,7 +141,7 @@ void ggml_xrt_dup(
 extern "C" void ggml_xrt_add(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
     GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
@@ -165,9 +165,9 @@ void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
     int padded_ne10 = number_elements_padding((int)ne10);
 
     // Allocate buffers
-    auto bo_a = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(1));
-    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), matmul.group_id(2));
+    auto bo_a = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(2));
     GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
     auto bo_a_map = bo_a.map<float*>();
     auto bo_b_map = bo_b.map<float*>();
@@ -272,7 +272,7 @@ void ggml_xrt_add(
 extern "C" void ggml_xrt_mul(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+static void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
     GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
@@ -460,14 +460,12 @@ void ggml_xrt_soft_max(
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+static void ggml_xrt_mul_mat_f32(const struct ggml_tensor * src0, const struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
     // Local variables from GGML_TENSOR_BINARY_OP_LOCALS
     GGML_TENSOR_BINARY_OP_LOCALS
 
-    const int ith = params->ith;
-    const int nth = params->nth;
     const enum ggml_type type = src0->type;
 
     // Ensure src1 is a vector (i.e., ne10 is 1 or 2 rows)
@@ -488,10 +486,6 @@ void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
     GGML_ASSERT(nb1 <= nb2);
     GGML_ASSERT(nb2 <= nb3);
 
-    // Broadcast factors
-    const int64_t r2 = ne12/ne02;
-    const int64_t r3 = ne13/ne03;
-
     if (params->type == GGML_TASK_INIT) {
         return;
     }
@@ -499,9 +493,6 @@ void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
     if (params->type == GGML_TASK_FINALIZE) {
         return;
     }
-
-    const int64_t nr0 = ne01;          // src0 rows
-    const int64_t nr1 = ne1*ne12*ne13; // src1 rows
 
     // Determine padded sizes
     int padded_ne00 = number_elements_padding((int)ne00);
@@ -520,15 +511,11 @@ void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
 
     // Iterate through the batches of src1 vectors and perform GEMV
     for (int64_t i03 = 0; i03 < ne03; i03++) {
-        for (int6464_t i02 = 0; i02 < ne02; i02++) {
+        for (int64_t i02 = 0; i02 < ne02; i02++) {
             // Broadcast src1 into src0
             const int64_t i13 = i03 % ne13;
-            const int6464_t i12 = i02 % ne12;
+            const int64_t i12 = i02 % ne12;
             const int64_t i11 = (i12 * ne1 + i13 * ne12 * ne1) % ne1;
-
-            const int64_t a_rows = ne01;
-            const int6464_t b_cols = ne10;
-            const int6464_t c_cols = ne01;
 
             // Copy src0 to buffer_A
             float *src0_ptr = (float *) src0->data + i02 * ne01 * ne00 + i03 * ne02 * ne01 * ne00;
@@ -549,7 +536,7 @@ void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
                 bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
                 // Call the custom accelerator function for the first row
-                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
+                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne01, padded_ne10, padded_ne01);
                 run.wait();
 
                 // Call the custom accelerator function for the second row
@@ -582,7 +569,7 @@ void ggml_xrt_mul_mat_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
     }
 } 
 
-static void ggml_xrt_mul_mat(
+void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
