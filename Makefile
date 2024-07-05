@@ -588,15 +588,15 @@ ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h ggml.h
 
 endif #LLAMA_XRT
 
-ifdef LLAMA_TESTS
-	MK_CPPFLAGS  += -DGGML_USE_TEST
-	OBJS += ggml-test.o
-endif
+# ifdef LLAMA_TESTS
+# 	MK_CPPFLAGS  += -DGGML_USE_TEST
+# 	OBJS += ggml-test.o
+# endif
 
-ifdef LLAMA_TESTS
-ggml-test.o: ggml-test.cpp ggml-test.h ggml.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-endif
+# ifdef LLAMA_TESTS
+# ggml-test.o: ggml-test.cpp ggml-test.h ggml.h
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+# endif
 
 GF_CC := $(CC)
 include scripts/get-flags.mk

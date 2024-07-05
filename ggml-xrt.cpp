@@ -126,7 +126,7 @@ int number_elements_padding(int n) {
     if (n < 64) {
         return 64;
     }
-    return n;
+    return pow(2, ceil(log2(n)));
 }
 
 void ggml_xrt_dup(
@@ -166,7 +166,7 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
 
     // Allocate buffers
     auto bo_a = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(1));
+    auto bo_b = xrt::bo(myDevice, padded_ne10 * sizeof(float), elementwise.group_id(1));
     auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(2));
     GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
     auto bo_a_map = bo_a.map<float*>();
@@ -188,6 +188,10 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
     const int ir0 = dr * ith;
     const int ir1 = MIN(ir0 + dr, nr);
 
+    std::fill(bo_a_map, bo_a_map + padded_ne00 * padded_ne01, 0);
+    std::fill(bo_b_map, bo_b_map + padded_ne10, 0);
+    std::fill(bo_c_map, bo_c_map + padded_ne01, 0);
+
     if (nb10 == sizeof(float)) {
         for (int ir = ir0; ir < ir1; ++ir) {
             const int64_t i03 = ir / (ne02 * ne01);
@@ -206,7 +210,6 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
             for (int64_t r = 0; r < nr0; ++r) {
                 bo_a_map = src0_ptr + r * padded_ne10;
                 bo_b_map = src1_ptr;
-                std::fill(bo_c_map, bo_c_map + padded_ne10, 0);
                 bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
                 bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
                 auto run = elementwise(bo_a, bo_b, bo_c, padded_ne10, 0); // 0: add, 1: addrelu, 2: mult
@@ -500,9 +503,9 @@ static void ggml_xrt_mul_mat_f32(const struct ggml_tensor * src0, const struct g
     int padded_ne10 = number_elements_padding((int)ne10);
 
     // Allocate buffers
-    auto bo_a = xrt::bo(myDevice, padded_ne00 * padded_ne01 * sizeof(float), matmul.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_ne10 * sizeof(float), matmul.group_id(1));
-    auto bo_c = xrt::bo(myDevice, padded_ne00 * ne11 * sizeof(float), matmul.group_id(2));
+    auto bo_a = xrt::bo(myDevice, padded_ne00 * padded_ne01 * sizeof(float), elementwise.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_ne10 * sizeof(float), elementwise.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(2));
     GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
     auto bo_a_map = bo_a.map<float*>();
     auto bo_b_map = bo_b.map<float*>();
