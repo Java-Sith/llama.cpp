@@ -188,9 +188,9 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
     const int ir0 = dr * ith;
     const int ir1 = MIN(ir0 + dr, nr);
 
-    std::fill(bo_a_map, bo_a_map + padded_ne00 * padded_ne01, 0);
+    std::fill(bo_a_map, bo_a_map + padded_ne00, 0);
     std::fill(bo_b_map, bo_b_map + padded_ne10, 0);
-    std::fill(bo_c_map, bo_c_map + padded_ne01, 0);
+    std::fill(bo_c_map, bo_c_map + padded_ne00, 0);
 
     if (nb10 == sizeof(float)) {
         for (int ir = ir0; ir < ir1; ++ir) {
@@ -208,13 +208,23 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
             float * src1_ptr = (float *)((char *)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11);
 
             for (int64_t r = 0; r < nr0; ++r) {
-                bo_a_map = src0_ptr + r * padded_ne10;
-                bo_b_map = src1_ptr;
+                for (int elem = 0; elem < ne00; ++elem)
+                {
+                    bo_a_map[elem] = (src0_ptr + r * padded_ne10)[elem];
+                }
+                for (int elem = 0; elem < ne10; ++elem)
+                {
+                    bo_b_map[elem] = src1_ptr[elem];
+                }
                 bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
                 bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
                 auto run = elementwise(bo_a, bo_b, bo_c, padded_ne10, 0); // 0: add, 1: addrelu, 2: mult
                 run.wait();
-                dst_ptr + r * padded_ne10 = bo_c_map;
+                bo_c.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                for (int elem = 0; elem < count; ++elem)
+                {
+                    (dst_ptr + r * padded_ne10)[elem] = bo_c_map[elem];
+                }
             }
         }
     }
