@@ -126,7 +126,7 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
 int next_power_of_two(int n) {
     if (n <= 64) {
     	return 64;
-    } else { 
+    } else {
     	return pow(2, ceil(log2(n)));
     }
 }
@@ -144,8 +144,11 @@ void ggml_xrt_dup(
 extern "C" void ggml_xrt_add(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+static void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
+
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
 
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
         return;
@@ -202,8 +205,10 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
         bo_a_map[i] = ((float*)src0->data)[i];
     }
 
-    for (int i = 0; i < src1_size; ++i) {
-        bo_b_map[i] = ((float*)src1->data)[i % (ne10 * ne11 * ne12 * ne13)];
+    for (int i = 0; i < padded_size1; ++i) {
+        int src1_i = (ne11 == 1) ? 0 : (i / padded_ne10 % ne11);
+        int src1_j = (ne10 == 1) ? 0 : (i % padded_ne10);
+        bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
     }
 
     // Synchronize buffers with device
@@ -217,7 +222,7 @@ static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src
     // Synchronize results back to host
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    // Copy tensor data to buffers with broadcasting
+    // Copy results to dst
     for (int i = 0; i < dst_size; ++i) {
         ((float*)dst->data)[i] = bo_c_map[i];
     }
@@ -236,7 +241,7 @@ void ggml_xrt_add(
     switch (src0->type) {
         case GGML_TYPE_F32:
             {
-                ggml_xrt_add_f32(src0, src1, dst);
+                ggml_xrt_add_f32(params, dst);
             } break;
         default:
             {
@@ -250,8 +255,11 @@ void ggml_xrt_add(
 extern "C" void ggml_xrt_mul(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
+static void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
+
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
 
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
         return;
@@ -308,8 +316,10 @@ static void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src
         bo_a_map[i] = ((float*)src0->data)[i];
     }
 
-    for (int i = 0; i < src1_size; ++i) {
-        bo_b_map[i] = ((float*)src1->data)[i % (ne10 * ne11 * ne12 * ne13)];
+    for (int i = 0; i < padded_size1; ++i) {
+        int src1_i = (ne11 == 1) ? 0 : (i / padded_ne10 % ne11);
+        int src1_j = (ne10 == 1) ? 0 : (i % padded_ne10);
+        bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
     }
 
     // Synchronize buffers with device
@@ -317,13 +327,13 @@ static void ggml_xrt_mul_f32(struct ggml_tensor * src0, struct ggml_tensor * src
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Execute the elementwise kernel
-    auto run = elementwise(bo_a, bo_b, bo_c, padded_dst_size, 2);
+    auto run = elementwise(bo_a, bo_b, bo_c, padded_dst_size, 2);  // 2 indicates multiplication
     run.wait();
 
     // Synchronize results back to host
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    // Copy tensor data to buffers with broadcasting
+    // Copy results to dst
     for (int i = 0; i < dst_size; ++i) {
         ((float*)dst->data)[i] = bo_c_map[i];
     }
@@ -341,7 +351,7 @@ void ggml_xrt_mul(
     switch (src0->type) {
         case GGML_TYPE_F32:
             {
-                ggml_xrt_mul_f32(src0, src1, dst);
+                ggml_xrt_mul_f32(params, dst);
             } break;
         default:
             {
@@ -387,12 +397,28 @@ void ggml_xrt_get_rows(
     //}
 }
 
+extern "C" void ggml_xrt_rms_norm(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
 void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
 
-    ggml_compute_forward_rms_norm(params, dst);
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_rms_norm_f32(params, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_rms_norm(params, dst);
+            } break;
+    }
 }
 
 void ggml_xrt_rope(
@@ -402,124 +428,119 @@ void ggml_xrt_rope(
     ggml_compute_forward_rope(params, dst);
 }
 
+extern "C" void ggml_xrt_soft_max(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
+
 void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
-              struct ggml_tensor * dst) {
+        struct ggml_tensor * dst) {
 
-    ggml_compute_forward_soft_max(params, dst);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_soft_max_f32(params, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_soft_max(params, dst);
+            } break;
+    }
 }
 
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_mul_mat_f32(const struct ggml_tensor * src0, const struct ggml_tensor * src1,
+static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-    // Local variables from GGML_TENSOR_BINARY_OP_LOCALS
-    GGML_TENSOR_BINARY_OP_LOCALS
+  const struct ggml_tensor * src0 = dst->src[0]; // Matrix
+  const struct ggml_tensor * src1 = dst->src[1]; // Vector
 
-    const enum ggml_type type = src0->type;
+  if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+      return;
+  }
 
-    // Ensure src1 is a vector (i.e., ne10 is 1 or 2 rows)
-    GGML_ASSERT(ne10 == 1 || ne10 == 2);
+  const int ith = params->ith;
+  const int nth = params->nth;
 
-    // Ensure the dimensions are compatible for GEMV
-    GGML_ASSERT(ne00 == dst->ne[0]);
-    GGML_ASSERT(ne01 == dst->ne[1]);
-    GGML_ASSERT(ne0 == ne10);
+  const int nr = ggml_nrows(src0);
 
-    // We don't support permuted src0 or src1
-    GGML_ASSERT(nb00 == ggml_type_size(type));
-    GGML_ASSERT(nb10 == ggml_type_size(src1->type));
+  GGML_TENSOR_BINARY_OP_LOCALS
 
-    // dst cannot be transposed or permuted
-    GGML_ASSERT(nb0 == sizeof(float));
-    GGML_ASSERT(nb0 <= nb1);
-    GGML_ASSERT(nb1 <= nb2);
-    GGML_ASSERT(nb2 <= nb3);
+  GGML_ASSERT(nb0 == sizeof(float));
+  GGML_ASSERT(nb00 == sizeof(float));
 
-    if (params->type == GGML_TASK_INIT) {
-        return;
-    }
+  // Rows per thread
+  const int dr = (nr + nth - 1) / nth;
 
-    if (params->type == GGML_TASK_FINALIZE) {
-        return;
-    }
+  // Row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
 
-    // Determine padded sizes
-    int padded_ne00 = number_elements_padding((int)ne00);
-    int padded_ne01 = number_elements_padding((int)ne01);
-    int padded_ne10 = number_elements_padding((int)ne10);
+  // Determine next power of two sizes
+  int padded_ne00 = next_power_of_two(ne00); // Columns of src0
+  int padded_ne01 = next_power_of_two(ne01); // Rows of src0
+  int padded_ne10 = next_power_of_two(ne10); // Columns of src1 (which should be equal to ne00)
+  int padded_ne11 = ne11;                    // Rows of src1 (1 or 2 rows)
 
-    // Allocate buffers
-    auto bo_a = xrt::bo(myDevice, padded_ne00 * padded_ne01 * sizeof(float), elementwise.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_ne10 * sizeof(float), elementwise.group_id(1));
-    auto bo_c = xrt::bo(myDevice, padded_ne00 * sizeof(float), elementwise.group_id(2));
-    GGML_ASSERT(bo_a != NULL && bo_b != NULL && bo_c != NULL);
-    auto bo_a_map = bo_a.map<float*>();
-    auto bo_b_map = bo_b.map<float*>();
-    auto bo_c_map = bo_c.map<float*>();
+  int src0_size = ne00 * ne01;
+  int src1_size = ne10;
+  int dst_size = ne01 * ne11;
 
+  int padded_size0 = padded_ne00 * padded_ne01;
+  int padded_size1 = padded_ne10;  // Single row vector size
+  int padded_dst_size = padded_ne00 * padded_ne11; // Accommodate results for all rows of src1
 
-    // Iterate through the batches of src1 vectors and perform GEMV
-    for (int64_t i03 = 0; i03 < ne03; i03++) {
-        for (int64_t i02 = 0; i02 < ne02; i02++) {
-            // Broadcast src1 into src0
-            const int64_t i13 = i03 % ne13;
-            const int64_t i12 = i02 % ne12;
-            const int64_t i11 = (i12 * ne1 + i13 * ne12 * ne1) % ne1;
+  // Allocate XRT buffers
+  auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), gemv.group_id(0));
+  auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), gemv.group_id(1)); // Single row vector size
+  auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), gemv.group_id(2));
 
-            // Copy src0 to buffer_A
-            float *src0_ptr = (float *) src0->data + i02 * ne01 * ne00 + i03 * ne02 * ne01 * ne00;
-            bo_a_map = src0_ptr;
+  // Map buffers to host memory
+  auto bo_a_map = bo_a.map<float*>();
+  auto bo_b_map = bo_b.map<float*>();
+  auto bo_c_map = bo_c.map<float*>();
 
-            // Initialize buffer_C to zero
-            std::fill(bo_c_map, bo_c_map + padded_ne00 * ne11, 0);
+  // Fill the buffers with zeroes
+  std::fill(bo_a_map, bo_a_map + padded_size0, 0.0f);
+  std::fill(bo_b_map, bo_b_map + padded_size1, 0.0f);
+  std::fill(bo_c_map, bo_c_map + padded_dst_size, 0.0f);
 
-            // Handle the case where B has 2 rows
-            if (ne11 == 2) {
-                // Split B into two separate vectors
-                float * src1_ptr_1 = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10;
-                float * src1_ptr_2 = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10 + padded_ne10;
-                bo_b_map = src1_ptr_1;
+  // Copy src0 data to A buffer
+  for (int64_t i = 0; i < ne01; ++i) {
+      for (int64_t j = 0; j < ne00; ++j) {
+          bo_a_map[i * padded_ne10 + j] = ((float*)src0->data)[i * ne00 + j];
+      }
+  }
 
-                // Copy src1 to buffer_B1 and buffer_B2
-                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+  // Handle case where src1 has 1 or 2 rows
+  for (int64_t row = 0; row < ne11; ++row) {
+      for (int64_t j = 0; j < ne10; ++j) {
+          bo_b_map[j] = ((float*)((char*)src1->data + row * nb11))[j];
+      }
 
-                // Call the custom accelerator function for the first row
-                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne01, padded_ne10, padded_ne01);
-                run.wait();
+      // Synchronize buffers with device
+      bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+      bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-                // Call the custom accelerator function for the second row
-                bo_b_map = src1_ptr_2;
+      // Execute the GEMV kernel
+      auto run = gemv(bo_a, bo_b, bo_c, padded_ne01, padded_ne10, 1);
+      run.wait();
 
-                // Copy src1 to buffer_B1 and buffer_B2
-                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+      // Synchronize results back to host
+      bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
-                run.wait();
-
-            } else {
-                // Copy src1 to buffer_B
-                float *src1_ptr = (float *) src1->data + i12 * ne11 * ne10 + i13 * ne12 * ne11 * ne10;
-
-                // Copy src1 to buffer_B1 and buffer_B2
-                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-                // Call the custom accelerator function for the first row
-                auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne00, padded_ne10, padded_ne00);
-                run.wait();
-            }
-
-            // Copy result from buffer_C to dst
-            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-            (float *) dst->data + i02 * ne01 * ne00 + i03 * ne02 * ne01 * ne00 = bo_c_map;
-        }
-    }
-} 
+      // Copy result to dst, assuming dst shape matches the shape of src0
+      for (int64_t i = 0; i < ne01; ++i) {
+          ((float*)((char*)dst->data + row * nb1))[i] = bo_c_map[i];
+      }
+  }
+}
 
 void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
@@ -533,7 +554,7 @@ void ggml_xrt_mul_mat(
     switch (src0->type) {
         case GGML_TYPE_F32:
             {
-                ggml_xrt_mul_mat_f32(src0, src1, dst);
+                ggml_xrt_mul_mat_f32(params, dst);
             } break;
         default:
             {
@@ -542,11 +563,28 @@ void ggml_xrt_mul_mat(
     }
 }
 
-static void ggml_xrt_unary(
-        const struct ggml_compute_params * params,
-              struct ggml_tensor * dst) {
+extern "C" void ggml_xrt_unary(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst);
 
-    ggml_compute_forward_unary(params, dst);
+void ggml_xrt_unary(
+        const struct ggml_compute_params * params,
+        struct ggml_tensor * dst) {
+
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+
+    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_unary_f32(src0, src1, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_unary(params, dst);
+            } break;
+    }
 }
 
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
