@@ -89,7 +89,7 @@ def create_plots(operation_details, output_filename):
     plt.title('Histogram of Highest Counts')
     plt.xticks(rotation=45, ha="right")  # Rota el eje X por legibilidad
     plt.tight_layout()
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.savefig(output_filename + '_histogram.png') 
 
     # Crea el diagrama de bigotes del tiempo de ejecución
