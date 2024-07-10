@@ -122,12 +122,15 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     fprintf(stderr, "Using device %d as main device\n", g_main_device);
 }
 
-int number_elements_padding(int n) {
-    if (n < 64) {
-        return 64;
+// Function to find the next power of two greater than or equal to n
+int next_power_of_two(int n) {
+    if (n <= 64) {
+    	return 64;
+    } else { 
+    	return pow(2, ceil(log2(n)));
     }
-    return pow(2, ceil(log2(n)));
 }
+
 
 void ggml_xrt_dup(
         const struct ggml_compute_params * params,
@@ -144,20 +147,26 @@ extern "C" void ggml_xrt_add(const struct ggml_compute_params * params,
 static void ggml_xrt_add_f32(struct ggml_tensor * src0, struct ggml_tensor * src1,
               struct ggml_tensor * dst) {
 
-    GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
-
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
         return;
     }
 
     const int ith = params->ith;
     const int nth = params->nth;
-    const int64_t nr = ggml_nrows(src0);
+
+    const int nr = ggml_nrows(src0);
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-    GGML_ASSERT(nb00 == sizeof(float));
     GGML_ASSERT(nb0 == sizeof(float));
+    GGML_ASSERT(nb00 == sizeof(float));
+
+    // Rows per thread
+    const int dr = (nr + nth - 1) / nth;
+
+    // Row range for this thread
+    const int ir0 = dr * ith;
+    const int ir1 = MIN(ir0 + dr, nr);
 
     // Determine padded sizes
     int padded_ne00 = number_elements_padding((int)ne00);
