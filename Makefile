@@ -98,10 +98,17 @@ endif
 #
 
 # keep standard at C11 and C++11
+ifdef LLAMA_XRT
 MK_CPPFLAGS  = -I. -Icommon
 MK_CFLAGS    = -std=c17   -fPIC
 MK_CXXFLAGS  = -std=c++17 -fPIC
 MK_NVCCFLAGS = -std=c++17
+else
+MK_CPPFLAGS  = -I. -Icommon
+MK_CFLAGS    = -std=c11   -fPIC
+MK_CXXFLAGS  = -std=c++11 -fPIC
+MK_NVCCFLAGS = -std=c++11
+endif
 
 # -Ofast tends to produce faster code, but may not be available for some compilers.
 ifdef LLAMA_FAST
@@ -110,8 +117,8 @@ HOST_CXXFLAGS += -O3
 MK_NVCCFLAGS  += -O3
 else
 MK_CFLAGS     += -O3
-MK_CXXFLAGS   += -O3 -g
-MK_NVCCFLAGS  += -O3 -g
+MK_CXXFLAGS   += -O3
+MK_NVCCFLAGS  += -O3
 endif
 
 ifndef LLAMA_NO_CCACHE
