@@ -21,32 +21,27 @@ operation_mapping = {
 }
 
 def process_file(file_path):
-    # Diccionario para las operaciones de GGML
     operation_details = {}
-
-    # Obtiene las expresiones regulares del 
     regex = re.compile(r'Operation (\d+) executed in (\d+\.\d+) microseconds\. Count: (\d+)')
-
-    # Lee el archivo y toma las operaciones
     with open(file_path, 'r') as file:
         for line in file:
             match = regex.search(line)
-            #Agrupa las coincidencias del archivo en grupos
             if match:
                 operation_number, execution_time, count = map(float, match.groups())
                 operation_number = int(operation_number)
                 if operation_number in operation_mapping:
                     count = int(count)
                     function_name = operation_mapping[operation_number]
-                    # Genera nuevas entradas del diccionario o actualiza las ya creadas
+                    # Convert microseconds to nanoseconds
+                    execution_time_ns = execution_time * 1000
                     if operation_number not in operation_details:
                         operation_details[operation_number] = {
-                            'execution_times': [execution_time],
+                            'execution_times': [execution_time_ns],
                             'count': count,
                             'operation_name': function_name,
                         }
                     else:
-                        operation_details[operation_number]['execution_times'].append(execution_time)
+                        operation_details[operation_number]['execution_times'].append(execution_time_ns)
                         operation_details[operation_number]['count'] = max(operation_details[operation_number]['count'], count)
                         operation_details[operation_number]['operation_name'] = function_name
                 else:
@@ -54,7 +49,7 @@ def process_file(file_path):
             else:
                 print("Match not found: ", line)
 
-    # Procesa e imprime los resultados para mejor legibilidad
+    # Calculate statistics using nanoseconds for execution times
     for operation_number, details in sorted(operation_details.items()):
         mean_execution_time = sum(details['execution_times']) / len(details['execution_times'])
         lowest_execution_time = min(details['execution_times'])
@@ -62,7 +57,7 @@ def process_file(file_path):
         highest_count = details['count']
         operation_name = details['operation_name']
         median_execution_time = np.median(details['execution_times'])
-        print(f"Operation {operation_number}, named {operation_name} has a microseconds mean of {mean_execution_time:.6f}, "
+        print(f"Operation {operation_number}, named {operation_name} has a nanoseconds mean of {mean_execution_time:.6f}, "
               f"its lowest execution time is {lowest_execution_time:.6f}, "
               f"its medium execution time is {median_execution_time:.6f}, "
               f"its highest execution time is {highest_execution_time:.6f} "
@@ -70,7 +65,7 @@ def process_file(file_path):
 
     return operation_details
 
-def create_plots(operation_details, output_filename):
+""" def create_plots(operation_details, output_filename):
     # Ordena el diccionario por número de operación
     sorted_operation_details = dict(sorted(operation_details.items()))
 
@@ -96,7 +91,7 @@ def create_plots(operation_details, output_filename):
     plt.figure(figsize=(10, 5))
     plt.boxplot(execution_times_data, labels=operation_names)
     plt.xlabel('Operation Name')
-    plt.ylabel('Execution Times (µs)')
+    plt.ylabel('Execution Times (ns)')
     plt.title('Boxplot of Execution Times')
     plt.xticks(rotation=45, ha="right")  # Rota el eje X por legibilidad
     plt.tight_layout()
@@ -118,7 +113,31 @@ def create_plots(operation_details, output_filename):
     plt.yscale('log')
     plt.savefig(output_filename + '_specific_histogram.png') 
 
-    plt.show()
+    plt.show() """
+
+def create_plots(operation_details, output_filename):
+    sorted_operation_details = dict(sorted(operation_details.items()))
+    operation_names = [details["operation_name"] for details in sorted_operation_details.values()]
+    highest_counts = [details["count"] for details in sorted_operation_details.values()]
+    execution_times_data = [details["execution_times"] for details in sorted_operation_details.values()]
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(operation_names, highest_counts, color='skyblue')
+    plt.xlabel('Operation Name')
+    plt.ylabel('Highest Count')
+    plt.title('Histogram of Highest Counts')
+    plt.xticks(rotation=45, ha="right") 
+    plt.tight_layout()
+    plt.savefig(output_filename + '_histogram.png') 
+
+    plt.figure(figsize=(10, 5))
+    plt.boxplot(execution_times_data, labels=operation_names)
+    plt.xlabel('Operation Name')
+    plt.ylabel('Execution Times (ns)')  # Adjusted to display nanoseconds
+    plt.title('Boxplot of Execution Times')
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.savefig(output_filename + '_boxplot.png')  
     
 if __name__ == "__main__":
 
