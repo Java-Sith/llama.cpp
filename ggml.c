@@ -15811,9 +15811,9 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     }
     #ifdef CLOCK
         end = clock();
-        cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+        cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000000.0; // Convert to nanoseconds
         operationCounters[tensor->op]++;
-        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
+        printf("Operation %d executed in %f nanoseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
     #endif
 }
 
