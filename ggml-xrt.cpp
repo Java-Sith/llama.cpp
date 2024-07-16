@@ -495,6 +495,109 @@ void ggml_xrt_rope(
 extern "C" void ggml_xrt_soft_max(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
+static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
+        struct ggml_tensor * dst) {
+
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+    const struct ggml_tensor * src2 = dst->src[2];
+
+    assert(ggml_is_contiguous(dst));
+    assert(ggml_are_same_shape(src0, dst));
+
+    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    float scale    = 1.0f;
+    float max_bias = 0.0f;
+
+    memcpy(&scale,    (float *) dst->op_params + 0, sizeof(float));
+    memcpy(&max_bias, (float *) dst->op_params + 1, sizeof(float));
+
+    const int ith = params->ith;
+    const int nth = params->nth;
+
+    GGML_TENSOR_UNARY_OP_LOCALS
+
+    const int64_t ne11 = src1 ? src1->ne[1] : 1;
+    const uint32_t n_head_kv   = ne02;
+    const uint32_t n_head_log2 = 1u << (uint32_t) floor(log2(n_head_kv));
+
+    const float m0 = powf(2.0f, -(max_bias       ) / n_head_log2);
+    const float m1 = powf(2.0f, -(max_bias / 2.0f) / n_head_log2);
+
+    const int nc = src0->ne[0];
+    const int nr = ggml_nrows(src0);
+
+    const int dr = (nr + nth - 1)/nth;
+
+    const int ir0 = dr*ith;
+    const int ir1 = MIN(ir0 + dr, nr);
+
+    float * wp = (float *) params->wdata + (nc + CACHE_LINE_SIZE_F32) * ith;
+
+    float * pos = src2 ? (float *) src2->data : src0->data;
+
+    for (int i1 = ir0; i1 < ir1; i1++) {
+        float * sp = (float *)((char *) src0->data + i1*src0->nb[1]);
+        float * dp = (float *)((char *)  dst->data +  i1*dst->nb[1]);
+
+        float * mp = src1 ? (float *)((char *) src1->data + (i1%ne11)*src1->nb[1]) : NULL;
+
+        // Copy src0 data to working buffer wp
+        ggml_vec_cpy_f32(nc, wp, sp);
+        
+        // Scale wp by scale factor
+        ggml_vec_scale_f32(nc, wp, scale);
+
+        // Add src1 data to wp if present
+        if (mp) {
+            ggml_vec_acc_f32(nc, wp, mp);
+        }
+
+        // Apply ALiBi bias if max_bias > 0
+        if (max_bias > 0.0f) {
+            const uint32_t h  = (i1/ne01)%ne02;
+            const float slope = h < n_head_log2 ? powf(m0, h + 1) : powf(m1, 2*(h - n_head_log2) + 1);
+
+            for (int i = 0; i < nc; i++) {
+                wp[i] = wp[i] + slope*pos[i];
+            }
+        }
+
+        // Initialize XRT device and buffers
+        auto myDevice = xrt::device(0);
+        auto bo_a = xrt::bo(myDevice, nc * sizeof(float), softmax.group_id(0));
+        auto bo_c = xrt::bo(myDevice, nc * sizeof(float), softmax.group_id(1));
+
+        auto bo_a_map = bo_a.map<float*>();
+        auto bo_c_map = bo_c.map<float*>();
+
+        // Copy input data to device buffer
+        for (int i = 0; i < nc; i++) {
+            bo_a_map[i] = wp[i];
+        }
+
+        // Synchronize buffers to device
+        bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+        // Launch the softmax kernel
+        auto run = softmax(bo_a, bo_c, nc);
+        run.wait();
+
+        // Synchronize buffers from device
+        bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+        // Copy output data to destination tensor
+        for (int i = 0; i < nc; i++) {
+            dp[i] = bo_c_map[i];
+        }
+    }
+
+    params->barrier.wait();
+}
+
 void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
@@ -519,7 +622,7 @@ void ggml_xrt_soft_max(
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_gemv_f32(const struct ggml_compute_params * params,
+static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0]; // Matrix
