@@ -199,6 +199,14 @@ ifdef LLAMA_XRT_CLOCK
 	MK_CPPFLAGS  += -DXRT_CLOCK
 endif
 
+ifdef LLAMA_EXTRACT_TENSOR
+	MK_CPPFLAGS  += -DEXTRACT_TENSOR
+endif
+
+ifdef LLAMA_EXPORT_GRAPH
+	MK_CPPFLAGS  += -DEXPORT_GRAPH
+endif
+
 ifdef LLAMA_SANITIZE_THREAD
 	MK_CFLAGS   += -fsanitize=thread -g
 	MK_CXXFLAGS += -fsanitize=thread -g

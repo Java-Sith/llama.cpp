@@ -539,6 +539,12 @@ static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
 
     float * pos = src2 ? (float *) src2->data : src0->data;
 
+    int padded_nc = next_power_of_two(nc);
+
+    // Initialize XRT device and buffers
+    auto bo_a = xrt::bo(myDevice, padded_nc * sizeof(float), softmax.group_id(0));
+    auto bo_c = xrt::bo(myDevice, padded_nc * sizeof(float), softmax.group_id(1));
+
     for (int i1 = ir0; i1 < ir1; i1++) {
         float * sp = (float *)((char *) src0->data + i1*src0->nb[1]);
         float * dp = (float *)((char *)  dst->data +  i1*dst->nb[1]);
@@ -566,13 +572,12 @@ static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
             }
         }
 
-        // Initialize XRT device and buffers
-        auto myDevice = xrt::device(0);
-        auto bo_a = xrt::bo(myDevice, nc * sizeof(float), softmax.group_id(0));
-        auto bo_c = xrt::bo(myDevice, nc * sizeof(float), softmax.group_id(1));
-
         auto bo_a_map = bo_a.map<float*>();
         auto bo_c_map = bo_c.map<float*>();
+
+        // Fill the buffers with zeroes
+        std::fill(bo_a_map, bo_a_map + padded_nc, 0.0f);
+        std::fill(bo_c_map, bo_c_map + padded_nc, 0.0f);
 
         // Copy input data to device buffer
         for (int i = 0; i < nc; i++) {
@@ -733,19 +738,33 @@ void ggml_xrt_mul_mat(
 extern "C" void ggml_xrt_unary(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
+static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
+              struct ggml_tensor * dst) {
+        
+    const struct ggml_tensor * src0 = dst->src[0];
+
+    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    GGML_ASSERT(src0->nb[0] == sizeof(float));
+
+
+}
+
 void ggml_xrt_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
+    const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
 
     switch (src0->type) {
         case GGML_TYPE_F32:
             {
-                ggml_xrt_unary_f32(src0, src1, dst);
+                ggml_xrt_unary_f32(params, dst);
             } break;
         default:
             {

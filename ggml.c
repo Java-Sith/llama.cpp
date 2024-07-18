@@ -31,6 +31,10 @@
 #include <unistd.h>
 #endif
 
+#define _XOPEN_SOURCE 500
+#define BILLION 1000000000L
+#include <sys/time.h>
+
 #if defined(_MSC_VER)
 // disable "possible loss of data" to avoid hundreds of casts
 // we should just be careful :)
@@ -290,8 +294,6 @@ inline static void * ggml_calloc(size_t num, size_t size) {
 #include "ggml-vulkan.h"
 #elif defined(GGML_USE_SYCL)
 #include "ggml-sycl.h"
-#elif defined(GGML_USE_TEST)
-#include "ggml-test.h"
 #elif defined(GGML_USE_XRT)
 #include "ggml-xrt.h"
 #endif
@@ -15435,7 +15437,8 @@ static void ggml_compute_forward_cross_entropy_loss_back(
 /////////////////////////////////
 #ifdef CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
-clock_t start, end;
+struct timespec start, end;
+int64_t elapsed_ns;
 #endif
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
@@ -15472,23 +15475,28 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     }
 #endif // GGML_USE_SYCL
 
-#ifdef GGML_USE_TEST
-    bool do_test = ggml_test_compute_forward(params, tensor);
-    if (do_test) {
-        return;
-    }
-#endif // GGML_USE_TEST
-
 #ifdef GGML_USE_XRT
     bool skip_cpu = ggml_xrt_compute_forward(params, tensor);
     if (skip_cpu) {
         return;
     }
 #endif // GGML_USE_XRT
+
 #ifdef CLOCK
-    double cpu_time_used;
-    start = clock();
-#endif
+    // Get the starting time
+    clock_gettime(CLOCK_MONOTONIC, &start);
+#endif //CLOCK
+
+#ifdef EXTRACT_TENSOR
+        if (tensor->src1 != NULL)
+        {
+            struct ggml_tensor * src0 = tensor->src[0];
+            struct ggml_tensor * src1 = tensor->src[1];
+        } else {
+            struct ggml_tensor * src0 = tensor->src[0];
+        }
+#endif //TENSORS
+
     switch (tensor->op) {
         case GGML_OP_DUP:
             {
@@ -15810,10 +15818,25 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
             } break;
     }
     #ifdef CLOCK
-        end = clock();
-        cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000000.0; // Convert to nanoseconds
+        // Get the ending time
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        // Calculate the elapsed time in nanoseconds
+        elapsed_ns = (end.tv_sec - start.tv_sec) * BILLION + (end.tv_nsec - start.tv_nsec);
         operationCounters[tensor->op]++;
-        printf("Operation %d executed in %f nanoseconds. Count: %d\n", tensor->op, cpu_time_used, operationCounters[tensor->op]);
+        printf("Operation %d executed in %llu nanoseconds. Count: %d\n", tensor->op, elapsed_ns, operationCounters[tensor->op]);
+    #endif
+    #ifdef EXTRACT_TENSOR
+        if (tensor->src1 != NULL)
+        {
+            printf("DName: %c, SName: %c, S2Name: %c, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d, 
+            ss1: %d, ss2: %d, ss3: %d, ss4: %d", tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
+            tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3], 
+            tensor->src1->ne[0], tensor->src1->ne[1], tensor->src1->ne[2], tensor->src1->ne[3]);
+        } else {
+            printf("DName: %c, SName: %c, S2Name: %c, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d", 
+            tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
+            tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3]);
+        }
     #endif
 }
 
@@ -17959,6 +17982,11 @@ int ggml_graph_compute(struct ggml_cgraph * cgraph, struct ggml_cplan * cplan) {
 
     const int64_t perf_start_cycles  = ggml_perf_cycles();
     const int64_t perf_start_time_us = ggml_perf_time_us();
+
+    // Conditional compilation for graph export
+    #ifdef EXPORT_GRAPH
+    ggml_graph_export(cgraph, "graph.dot");
+    #endif
 
     // this is a work thread too
     int compute_status = (size_t) ggml_graph_compute_thread(&workers[0]);
