@@ -2,8 +2,7 @@
 BUILD_TARGETS = \
 	main quantize quantize-stats perplexity imatrix embedding vdot q8dot train-text-from-scratch convert-llama2c-to-ggml \
 	simple batched batched-bench save-load-state server gguf llama-bench libllava.a llava-cli baby-llama beam-search  \
-	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o \
-	#test-mat-mul test-mat-mul-cu test-mul-mat
+	speculative infill tokenize benchmark-matmult parallel finetune export-lora lookahead lookup passkey tests/test-c.o
 
 # Binaries only useful for tests
 TEST_TARGETS = \
@@ -98,22 +97,15 @@ endif
 #
 
 # keep standard at C11 and C++11
-ifdef LLAMA_XRT
-MK_CPPFLAGS  = -I. -Icommon
-MK_CFLAGS    = -std=c17   -fPIC
-MK_CXXFLAGS  = -std=c++17 -fPIC
-MK_NVCCFLAGS = -std=c++17
-else
 MK_CPPFLAGS  = -I. -Icommon
 MK_CFLAGS    = -std=c11   -fPIC
 MK_CXXFLAGS  = -std=c++11 -fPIC
 MK_NVCCFLAGS = -std=c++11
-endif
 
 # -Ofast tends to produce faster code, but may not be available for some compilers.
 ifdef LLAMA_FAST
 MK_CFLAGS     += -Ofast
-HOST_CXXFLAGS += -O3
+HOST_CXXFLAGS += -Ofast
 MK_NVCCFLAGS  += -O3
 else
 MK_CFLAGS     += -O3
@@ -185,30 +177,6 @@ ifdef LLAMA_DEBUG
 	endif
 else
 	MK_CPPFLAGS += -DNDEBUG
-endif
-
-ifdef LLAMA_CLOCK
-	MK_CPPFLAGS  += -DCLOCK
-endif
-
-ifdef LLAMA_CUDA_CLOCK
-	MK_CPPFLAGS  += -DCUDA_CLOCK
-endif
-
-ifdef LLAMA_XRT_CLOCK
-	MK_CPPFLAGS  += -DXRT_CLOCK
-endif
-
-ifdef LLAMA_EXTRACT_TENSOR
-	MK_CPPFLAGS  += -DEXTRACT_TENSOR
-endif
-
-ifdef LLAMA_EXPORT_GRAPH
-	MK_CPPFLAGS  += -DEXPORT_GRAPH
-endif
-
-ifdef LLAMA_EXPORT_DOT
-	MK_CPPFLAGS  += -DEXPORT_DOT
 endif
 
 ifdef LLAMA_SANITIZE_THREAD
@@ -478,7 +446,7 @@ ifdef LLAMA_CUDA_CCBIN
 endif
 ggml-cuda.o: ggml-cuda.cu ggml-cuda.h
 ifdef JETSON_EOL_MODULE_DETECT
-	$(NVCC) -I. -Icommon -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -DNDEBUG -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I/usr/local/cuda/targets/aarch64-linux/include -std=c++11 -O0 $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
+	$(NVCC) -I. -Icommon -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -DNDEBUG -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I/usr/local/cuda/targets/aarch64-linux/include -std=c++11 -O3 $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
 else
 	$(NVCC) $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
 endif # JETSON_EOL_MODULE_DETECT
@@ -595,28 +563,6 @@ ggml-mpi.o: ggml-mpi.c ggml-mpi.h
 	$(CC) $(CFLAGS) -c $< -o $@
 endif # LLAMA_MPI
 
-ifdef LLAMA_XRT
-	MK_CPPFLAGS += -DGGML_USE_XRT -I${XILINX_XRT}/include -I./ecas-scripts/SW/hls-types/include
-	MK_LDFLAGS  += -L${XILINX_XRT}/lib -lxrt_core -lxrt_coreutil
-	OBJS        += ggml-xrt.o
-endif
-
-ifdef LLAMA_XRT
-ggml-xrt.o: ggml-xrt.cpp ggml-xrt.h ggml.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-endif #LLAMA_XRT
-
-# ifdef LLAMA_TESTS
-# 	MK_CPPFLAGS  += -DGGML_USE_TEST
-# 	OBJS += ggml-test.o
-# endif
-
-# ifdef LLAMA_TESTS
-# ggml-test.o: ggml-test.cpp ggml-test.h ggml.h
-# 	$(CXX) $(CXXFLAGS) -c $< -o $@
-# endif
-
 GF_CC := $(CC)
 include scripts/get-flags.mk
 
@@ -678,9 +624,6 @@ ggml-backend.o: ggml-backend.c ggml.h ggml-backend.h
 ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h
 	$(CC) $(CFLAGS)    -c $< -o $@
 
-# mat-mul.o: ecas-scripts/mat-mul.c ggml.h ecas-scripts/mat-mul.h
-# 	$(CC) $(CFLAGS)    -c $< -o $@
-
 OBJS += ggml-alloc.o ggml-backend.o ggml-quants.o
 
 llama.o: llama.cpp ggml.h ggml-alloc.h ggml-backend.h ggml-cuda.h ggml-metal.h llama.h
@@ -713,6 +656,7 @@ libllama.a: llama.o ggml.o $(OBJS) $(COMMON_DEPS)
 clean:
 	rm -vrf *.o tests/*.o *.so *.a *.dll benchmark-matmult common/build-info.cpp *.dot $(COV_TARGETS) $(BUILD_TARGETS) $(TEST_TARGETS)
 	find examples pocs -type f -name "*.o" -delete
+
 #
 # Examples
 #
@@ -935,29 +879,9 @@ tests/test-rope: tests/test-rope.cpp ggml.o $(OBJS)
 tests/test-c.o: tests/test-c.c llama.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
 
-# test-mat-mul: ecas-scripts/test-mat-mul.cpp ggml.o $(OBJS)
-# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-
-# test-mul-mat: ecas-scripts/test-mul-mat.cpp ggml.o $(OBJS)
-# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-
-# ifdef LLAMA_HIPBLAS
-# GPUFLAGS := -I$(ROCM_PATH)/include -I$(ROCM_PATH)/hipblas/include
-# GPUFLAGS += -D__HIP_PLATFORM_AMD__
-# test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
-# 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-# 	$(CXX) $(CXXFLAGS) $(GPUFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-# else
-# test-mat-mul-cu: ecas-scripts/test-mat-mul-cu.cpp ggml.o $(OBJS)
-# 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-# 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
-# endif #LLAMA_HIPBLAS
-
 tests/test-backend-ops: tests/test-backend-ops.cpp ggml.o $(OBJS)
-	$(CC) $(CFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CC) $(CFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) -lm
+	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
+	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 tests/test-model-load-cancel: tests/test-model-load-cancel.cpp ggml.o llama.o tests/get-model.cpp $(COMMON_DEPS) $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
