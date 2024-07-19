@@ -15826,12 +15826,14 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
     #ifdef EXTRACT_TENSOR
         if (tensor->src1 != NULL)
         {
-            printf("DName: %c, SName: %c, S2Name: %c, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d, 
-            ss1: %d, ss2: %d, ss3: %d, ss4: %d", tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
-            tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3], 
+            printf("DName: %s, SName: %s, S2Name: %s, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d, ss1: %d, ss2: %d, ss3: %d, ss4: %d\n",
+            tensor->name, tensor->src0->name, tensor->src1->name,
+            tensor->ne[0], tensor->ne[1], tensor->ne[2], tensor->ne[3],
+            tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3],
             tensor->src1->ne[0], tensor->src1->ne[1], tensor->src1->ne[2], tensor->src1->ne[3]);
+
         } else {
-            printf("DName: %c, SName: %c, S2Name: %c, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d", 
+            printf("DName: %c, SName: %c, S2Name: %c, d1: %d, d2: %d, d3: %d, d4: %d, sp1: %d, sp2: %d, sp3: %d, sp4: %d\n", 
             tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
             tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3]);
         }
@@ -17759,7 +17761,7 @@ static void ggml_graph_export_node(const struct ggml_tensor * tensor, const char
             tensor->name);
 }
 
-void ggml_graph_export_dot(const struct ggml_cgraph * cgraph, const char * fname) {
+static void ggml_graph_export_dot(const struct ggml_cgraph * cgraph, const char * fname) {
     FILE * fout = fopen(fname, "w");
 
     if (!fout) {
@@ -17830,7 +17832,7 @@ void ggml_graph_export_dot(const struct ggml_cgraph * cgraph, const char * fname
 void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
 
     #ifdef EXPORT_DOT
-    ggml_graph_export_dot(cgraph, fname);
+    ggml_graph_export_dot(cgraph, "graph_export.dot");
     #else
 
     uint64_t size_eval = 0;
@@ -17841,9 +17843,16 @@ void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
         size_eval += ggml_nbytes_pad(cgraph->nodes[i]);
     }
 
+    // Open file to write the human-readable part
+    FILE * txt_out = fopen("graph_export.txt", "w");
+    if (!txt_out) {
+        fprintf(stderr, "%s: failed to open graph_export.txt\n", __func__);
+        return;
+    }
+
     // print
     {
-        FILE * fout = stdout;
+        FILE * fout = txt_out;
 
         fprintf(fout, "\n");
         fprintf(fout, "%-16s %8x\n", "magic",        GGML_FILE_MAGIC);
@@ -17884,6 +17893,8 @@ void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
 
         fprintf(fout, "\n");
     }
+
+    fclose(txt_out); // Close the text file
 
     // write binary data
     {
@@ -18269,7 +18280,7 @@ int ggml_graph_compute(struct ggml_cgraph * cgraph, struct ggml_cplan * cplan) {
 
     // Conditional compilation for graph export
     #ifdef EXPORT_GRAPH
-    ggml_graph_export(cgraph, "graph.txt");
+    ggml_graph_export(cgraph, "graph_export.bin");
     #endif
 
     // this is a work thread too
