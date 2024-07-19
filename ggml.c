@@ -15435,8 +15435,7 @@ static void ggml_compute_forward_cross_entropy_loss_back(
 /////////////////////////////////
 #ifdef CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
-struct timespec start, end;
-int64_t elapsed_ns;
+struct timespec start_times, end_times;
 #endif
 
 static void ggml_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
@@ -15482,6 +15481,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
 
 #ifdef CLOCK
     // Get the starting time
+    int64_t elapsed_ns;
     clock_gettime(CLOCK_MONOTONIC, &start);
 #endif //CLOCK
 
@@ -15819,7 +15819,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
         // Get the ending time
         clock_gettime(CLOCK_MONOTONIC, &end);
         // Calculate the elapsed time in nanoseconds
-        elapsed_ns = (end.tv_sec - start.tv_sec) * BILLION + (end.tv_nsec - start.tv_nsec);
+        elapsed_ns = (end_times.tv_sec - start_times.tv_sec) * BILLION + (end.tv_nsec - start.tv_nsec);
         operationCounters[tensor->op]++;
         printf("Operation %d executed in %llu nanoseconds. Count: %d\n", tensor->op, elapsed_ns, operationCounters[tensor->op]);
     #endif
