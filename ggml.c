@@ -6718,7 +6718,7 @@ static void ggml_compute_forward_dup_f16(
 
     GGML_TENSOR_UNARY_OP_LOCALS
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -6997,7 +6997,7 @@ static void ggml_compute_forward_dup_f32(
 
     GGML_TENSOR_UNARY_OP_LOCALS
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -7261,7 +7261,7 @@ static void ggml_compute_forward_dup_bytes(
 
     GGML_TENSOR_UNARY_OP_LOCALS;
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -7458,7 +7458,7 @@ static void ggml_compute_forward_add_f32(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -7544,7 +7544,7 @@ static void ggml_compute_forward_add_f16_f32(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -7630,7 +7630,7 @@ static void ggml_compute_forward_add_f16_f16(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -7691,7 +7691,7 @@ static void ggml_compute_forward_add_q_f32(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -8333,7 +8333,7 @@ static void ggml_compute_forward_mul_f32(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -9986,7 +9986,7 @@ static void ggml_compute_forward_rms_norm_f32(
     GGML_TENSOR_UNARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -10363,7 +10363,7 @@ void ggml_compute_forward_mul_mat(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -11404,7 +11404,7 @@ static void ggml_compute_forward_get_rows_q(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -11452,7 +11452,7 @@ static void ggml_compute_forward_get_rows_f16(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -11497,7 +11497,7 @@ static void ggml_compute_forward_get_rows_f32(
     GGML_TENSOR_BINARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
@@ -11894,7 +11894,7 @@ static void ggml_compute_forward_soft_max_f32(
     const int64_t ne11 = src1 ? src1->ne[1] : 1;
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -12447,7 +12447,7 @@ static void ggml_compute_forward_rope_f32(
     GGML_TENSOR_UNARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
@@ -12625,7 +12625,7 @@ static void ggml_compute_forward_rope_f16(
     GGML_TENSOR_UNARY_OP_LOCALS
 
 
-#ifndef CLOCK
+#ifdef SHAPES
     printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
     printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
     printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
