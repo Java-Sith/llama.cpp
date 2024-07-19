@@ -31,9 +31,7 @@
 #include <unistd.h>
 #endif
 
-#define _XOPEN_SOURCE 500
 #define BILLION 1000000000L
-#include <sys/time.h>
 
 #if defined(_MSC_VER)
 // disable "possible loss of data" to avoid hundreds of casts
