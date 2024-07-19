@@ -749,6 +749,84 @@ static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
 
     GGML_ASSERT(src0->nb[0] == sizeof(float));
 
+    const int ith = params->ith;
+    const int nth = params->nth;
+
+    GGML_TENSOR_UNARY_OP_LOCALS
+
+    // Determine next power of two sizes
+    int padded_ne00 = next_power_of_two(ne00);
+    int padded_ne01 = next_power_of_two(ne01);
+
+    const enum ggml_unary_op op = ggml_get_unary_op(dst);
+
+    // If this is the first thread, prepare the input and output buffers
+    if (ith == 0) {
+        // Compute the total size of the tensor
+        int64_t size = ne00 * ne01;
+
+        // Compute the padded size
+        int64_t padded_size = padded_ne00 * padded_ne01;
+
+        // Declare Buffers
+        auto bo_a = xrt::bo(myDevice, padded_size * sizeof(float), unary.group_id(0));
+        auto bo_c = xrt::bo(myDevice, padded_size * sizeof(float), unary.group_id(1));
+
+        auto bo_a_map = bo_a.map<float*>();
+        auto bo_c_map = bo_c.map<float*>();
+
+        // Fill the buffers with zeroes
+        std::fill(bo_a_map, bo_a_map + padded_size, 0.0f);
+        std::fill(bo_c_map, bo_c_map + padded_size, 0.0f);
+
+        // Copy Data from Tensors to Buffers
+        for (int64_t i = 0; i < size; ++i) {
+            bo_a_map[i] = ((float*)src0->data)[i];
+        }
+
+        if (op == GGML_UNARY_OP_SILU)
+        {
+            // Synchronize input buffer with device
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+            // Execute the Unary kernel with the specified operation
+            auto run = unary(bo_a, bo_c, padded_size, 2);
+            run.wait();
+
+            // Synchronize output buffer with host
+            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+        }
+
+        else if (op == GGML_UNARY_OP_RELU) {
+            // Synchronize input buffer with device
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+            // Execute the Unary kernel with the specified operation
+            auto run = unary(bo_a, bo_c, padded_size, 1);
+            run.wait();
+
+            // Synchronize output buffer with host
+            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+        } else {
+            // Synchronize input buffer with device
+            bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+            // Execute the Unary kernel with the specified operation
+            auto run = unary(bo_a, bo_c, padded_size, 0);
+            run.wait();
+
+            // Synchronize output buffer with host
+            bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+        }
+
+        // Copy Data from Buffers to Tensors
+        for (int64_t i = 0; i < size; ++i) {
+            ((float*)dst->data)[i] = bo_c_map[i];
+        }
+    }
+
+    // Wait for all threads to finish (if necessary)
+    params->barrier.wait();
 
 }
 
@@ -759,17 +837,14 @@ void ggml_xrt_unary(
     const struct ggml_tensor * src0 = dst->src[0];
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
-    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+    GGML_ASSERT(src0->type == GGML_TYPE_F32);
 
-    switch (src0->type) {
-        case GGML_TYPE_F32:
-            {
-                ggml_xrt_unary_f32(params, dst);
-            } break;
-        default:
-            {
-                ggml_compute_forward_unary(params, dst);
-            } break;
+    const enum ggml_unary_op op = ggml_get_unary_op(dst);
+
+    if (src0->type == GGML_TYPE_F32 && (op == GGML_UNARY_OP_SILU || op == GGML_UNARY_OP_RELU)) {
+        ggml_xrt_unary_f32(params, dst);
+    } else {
+        ggml_compute_forward_unary(params, dst);
     }
 }
 
