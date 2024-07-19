@@ -17761,7 +17761,80 @@ static void ggml_graph_export_node(const struct ggml_tensor * tensor, const char
             tensor->name);
 }
 
+void ggml_graph_export_dot(const struct ggml_cgraph * cgraph, const char * fname) {
+    FILE * fout = fopen(fname, "w");
+
+    if (!fout) {
+        fprintf(stderr, "%s: failed to open %s\n", __func__, fname);
+        return;
+    }
+
+    fprintf(fout, "digraph GGMLGraph {\n");
+    fprintf(fout, "  rankdir=LR;\n");
+
+    // Export leaf nodes
+    for (int i = 0; i < cgraph->n_leafs; ++i) {
+        const struct ggml_tensor * tensor = cgraph->leafs[i];
+        fprintf(fout, "  leaf%d [label=\"%s\\nType: Leaf\\nDims: (%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ")\\nBytes: (%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ")\", shape=box, style=filled, fillcolor=lightgrey];\n", 
+                i, tensor->name, 
+                tensor->ne[0], tensor->ne[1], tensor->ne[2], tensor->ne[3],
+                tensor->nb[0], tensor->nb[1], tensor->nb[2], tensor->nb[3]);
+    }
+
+    // Export nodes and edges
+    for (int i = 0; i < cgraph->n_nodes; ++i) {
+        const struct ggml_tensor * tensor = cgraph->nodes[i];
+        fprintf(fout, "  node%d [label=\"%s\\nOp: %s\\nDims: (%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ")\\nBytes: (%" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ")\", shape=ellipse];\n", 
+                cgraph->n_leafs + i, tensor->name, 
+                ggml_op_name(tensor->op),
+                tensor->ne[0], tensor->ne[1], tensor->ne[2], tensor->ne[3],
+                tensor->nb[0], tensor->nb[1], tensor->nb[2], tensor->nb[3]);
+
+        for (int j = 0; j < GGML_MAX_SRC; ++j) {
+            if (tensor->src[j]) {
+                int32_t idx = -1;
+
+                // check if leaf
+                for (int k = 0; k < cgraph->n_leafs; ++k) {
+                    if (tensor->src[j] == cgraph->leafs[k]) {
+                        idx = k;
+                        break;
+                    }
+                }
+
+                // check if node
+                if (idx == -1) {
+                    for (int k = 0; k < cgraph->n_nodes; ++k) {
+                        if (tensor->src[j] == cgraph->nodes[k]) {
+                            idx = cgraph->n_leafs + k;
+                            break;
+                        }
+                    }
+                }
+
+                if (idx == -1) {
+                    fprintf(stderr, "%s: failed to find tensor, arg = %d, node = %d\n", __func__, j, i);
+                    fclose(fout);
+                    return;
+                }
+
+                fprintf(fout, "  node%d -> node%d;\n", idx, cgraph->n_leafs + i);
+            }
+        }
+    }
+
+    fprintf(fout, "}\n");
+
+    fclose(fout);
+}
+
+
 void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
+
+    #ifdef EXPORT_DOT
+    ggml_graph_export_dot(cgraph, fname);
+    #else
+
     uint64_t size_eval = 0;
 
     // compute size of intermediate results
@@ -17942,6 +18015,7 @@ void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
 
         fclose(fout);
     }
+    #endif
 }
 
 struct ggml_cplan ggml_graph_plan(const struct ggml_cgraph * cgraph, int n_threads) {
