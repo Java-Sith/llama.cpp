@@ -18321,6 +18321,15 @@ int ggml_graph_compute(struct ggml_cgraph * cgraph, struct ggml_cplan * cplan) {
     const int64_t perf_start_cycles  = ggml_perf_cycles();
     const int64_t perf_start_time_us = ggml_perf_time_us();
 
+    // Conditional compilation for graph export
+    #ifdef EXPORT_GRAPH
+    ggml_graph_export(cgraph, "graph_export.bin");
+    #endif
+
+    #ifdef PRINT_GRAPH
+    ggml_graph_print(cgraph);
+    #endif
+
     // this is a work thread too
     int compute_status = (size_t) ggml_graph_compute_thread(&workers[0]);
 
@@ -18367,15 +18376,6 @@ void ggml_graph_compute_with_ctx(struct ggml_context * ctx, struct ggml_cgraph *
     cplan.work_data = (uint8_t *)ctx->mem_buffer + obj->offs;
 
     ggml_graph_compute(cgraph, &cplan);
-
-    // Conditional compilation for graph export
-    #ifdef EXPORT_GRAPH
-    ggml_graph_export(cgraph, "graph_export.bin");
-    #endif
-
-    #ifdef PRINT_GRAPH
-    ggml_graph_print(cgraph);
-    #endif
 }
 
 struct ggml_tensor * ggml_graph_get_tensor(struct ggml_cgraph * cgraph, const char * name) {
