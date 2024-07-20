@@ -459,9 +459,6 @@ static void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
             ((float*)dst->data)[i] = bo_out_map[i];
         }
     }
-
-    // Wait for all threads to finish (if necessary)
-    params->barrier.wait();
 }
 
 void ggml_xrt_rms_norm(
@@ -599,8 +596,6 @@ static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
             dp[i] = bo_c_map[i];
         }
     }
-
-    params->barrier.wait();
 }
 
 void ggml_xrt_soft_max(
@@ -824,10 +819,6 @@ static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
             ((float*)dst->data)[i] = bo_c_map[i];
         }
     }
-
-    // Wait for all threads to finish (if necessary)
-    params->barrier.wait();
-
 }
 
 void ggml_xrt_unary(
