@@ -18027,6 +18027,49 @@ void ggml_graph_export(const struct ggml_cgraph * cgraph, const char * fname) {
     #endif
 }
 
+void ggml_graph_print(const struct ggml_cgraph * cgraph) {
+    int64_t perf_total_per_op_us[GGML_OP_COUNT] = {0};
+
+    GGML_PRINT("=== GRAPH ===\n");
+
+    GGML_PRINT("n_nodes = %d\n", cgraph->n_nodes);
+    for (int i = 0; i < cgraph->n_nodes; i++) {
+        struct ggml_tensor * node = cgraph->nodes[i];
+
+        perf_total_per_op_us[node->op] += MAX(1, node->perf_time_us);
+
+        GGML_PRINT(" - %3d: [ %5" PRId64 ", %5" PRId64 ", %5" PRId64 "] %16s %s (%3d) cpu = %7.3f / %7.3f ms, wall = %7.3f / %7.3f ms\n",
+                i,
+                node->ne[0], node->ne[1], node->ne[2],
+                ggml_op_name(node->op), (node->flags & GGML_TENSOR_FLAG_PARAM) ? "x" : node->grad ? "g" : " ", node->perf_runs,
+                (double) node->perf_cycles  / (double) ggml_cycles_per_ms(),
+                (double) node->perf_cycles  / (double) ggml_cycles_per_ms() / (double) node->perf_runs,
+                (double) node->perf_time_us / 1000.0,
+                (double) node->perf_time_us / 1000.0 / node->perf_runs);
+    }
+
+    GGML_PRINT("n_leafs = %d\n", cgraph->n_leafs);
+    for (int i = 0; i < cgraph->n_leafs; i++) {
+        struct ggml_tensor * node = cgraph->leafs[i];
+
+        GGML_PRINT(" - %3d: [ %5" PRId64 ", %5" PRId64 "] %8s %16s\n",
+                i,
+                node->ne[0], node->ne[1],
+                ggml_op_name(node->op),
+                ggml_get_name(node));
+    }
+
+    for (int i = 0; i < GGML_OP_COUNT; i++) {
+        if (perf_total_per_op_us[i] == 0) {
+            continue;
+        }
+
+        GGML_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", ggml_op_name(i), (double) perf_total_per_op_us[i] / 1000.0);
+    }
+
+    GGML_PRINT("========================================\n");
+}
+
 struct ggml_cplan ggml_graph_plan(const struct ggml_cgraph * cgraph, int n_threads) {
     if (n_threads <= 0) {
         n_threads = GGML_DEFAULT_N_THREADS;
@@ -18278,11 +18321,6 @@ int ggml_graph_compute(struct ggml_cgraph * cgraph, struct ggml_cplan * cplan) {
     const int64_t perf_start_cycles  = ggml_perf_cycles();
     const int64_t perf_start_time_us = ggml_perf_time_us();
 
-    // Conditional compilation for graph export
-    #ifdef EXPORT_GRAPH
-    ggml_graph_export(cgraph, "graph_export.bin");
-    #endif
-
     // this is a work thread too
     int compute_status = (size_t) ggml_graph_compute_thread(&workers[0]);
 
@@ -18329,6 +18367,15 @@ void ggml_graph_compute_with_ctx(struct ggml_context * ctx, struct ggml_cgraph *
     cplan.work_data = (uint8_t *)ctx->mem_buffer + obj->offs;
 
     ggml_graph_compute(cgraph, &cplan);
+
+    // Conditional compilation for graph export
+    #ifdef EXPORT_GRAPH
+    ggml_graph_export(cgraph, "graph_export.bin");
+    #endif
+
+    #ifdef PRINT_GRAPH
+    ggml_graph_export(cgraph, "graph_export.bin");
+    #endif
 }
 
 struct ggml_tensor * ggml_graph_get_tensor(struct ggml_cgraph * cgraph, const char * name) {
@@ -18602,49 +18649,6 @@ struct ggml_cgraph * ggml_graph_import(const char * fname, struct ggml_context *
     }
 
     return result;
-}
-
-void ggml_graph_print(const struct ggml_cgraph * cgraph) {
-    int64_t perf_total_per_op_us[GGML_OP_COUNT] = {0};
-
-    GGML_PRINT("=== GRAPH ===\n");
-
-    GGML_PRINT("n_nodes = %d\n", cgraph->n_nodes);
-    for (int i = 0; i < cgraph->n_nodes; i++) {
-        struct ggml_tensor * node = cgraph->nodes[i];
-
-        perf_total_per_op_us[node->op] += MAX(1, node->perf_time_us);
-
-        GGML_PRINT(" - %3d: [ %5" PRId64 ", %5" PRId64 ", %5" PRId64 "] %16s %s (%3d) cpu = %7.3f / %7.3f ms, wall = %7.3f / %7.3f ms\n",
-                i,
-                node->ne[0], node->ne[1], node->ne[2],
-                ggml_op_name(node->op), (node->flags & GGML_TENSOR_FLAG_PARAM) ? "x" : node->grad ? "g" : " ", node->perf_runs,
-                (double) node->perf_cycles  / (double) ggml_cycles_per_ms(),
-                (double) node->perf_cycles  / (double) ggml_cycles_per_ms() / (double) node->perf_runs,
-                (double) node->perf_time_us / 1000.0,
-                (double) node->perf_time_us / 1000.0 / node->perf_runs);
-    }
-
-    GGML_PRINT("n_leafs = %d\n", cgraph->n_leafs);
-    for (int i = 0; i < cgraph->n_leafs; i++) {
-        struct ggml_tensor * node = cgraph->leafs[i];
-
-        GGML_PRINT(" - %3d: [ %5" PRId64 ", %5" PRId64 "] %8s %16s\n",
-                i,
-                node->ne[0], node->ne[1],
-                ggml_op_name(node->op),
-                ggml_get_name(node));
-    }
-
-    for (int i = 0; i < GGML_OP_COUNT; i++) {
-        if (perf_total_per_op_us[i] == 0) {
-            continue;
-        }
-
-        GGML_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", ggml_op_name(i), (double) perf_total_per_op_us[i] / 1000.0);
-    }
-
-    GGML_PRINT("========================================\n");
 }
 
 // check if node is part of the graph
