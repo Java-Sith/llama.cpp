@@ -18374,7 +18374,7 @@ void ggml_graph_compute_with_ctx(struct ggml_context * ctx, struct ggml_cgraph *
     #endif
 
     #ifdef PRINT_GRAPH
-    ggml_graph_export(cgraph, "graph_export.bin");
+    ggml_graph_print(cgraph);
     #endif
 }
 
