@@ -18260,10 +18260,6 @@ int ggml_graph_compute(struct ggml_cgraph * cgraph, struct ggml_cplan * cplan) {
     ggml_graph_print(cgraph);
     #endif
 
-    #ifdef EXPORT_DOT
-    ggml_graph_dump_dot(cgraph, NULL, "graph_export.dot");
-    #endif
-
     // this is a work thread too
     int compute_status = (size_t) ggml_graph_compute_thread(&workers[0]);
 

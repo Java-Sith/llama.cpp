@@ -7982,11 +7982,13 @@ static int llama_decode_internal(
     ggml_graph_print(gf);
 #endif
 
+#ifdef EXPORT_DOT
     // plot the computation graph in dot format (for debugging purposes)
-    //if (n_past%100 == 0) {
-    //    ggml_graph_dump_dot(gf, NULL, "llama.dot");
-    //}
+    if (batch.all_pos_0 %100 == 0) {
+       ggml_graph_dump_dot(gf, NULL, "llama.dot");
+    }
 
+#endif
     // extract logits
     // TODO: do not compute and extract logits if only embeddings are needed
     //       need to update the graphs to skip "result_output"
