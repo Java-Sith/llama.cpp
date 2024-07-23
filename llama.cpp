@@ -4670,12 +4670,13 @@ static void llm_build_k_shift(
                   float     freq_base,
                   float     freq_scale,
        const llm_build_cb & cb) {
-    const int64_t n_layer       = hparams.n_layer;
+    
     const int64_t n_head_kv     = hparams.n_head_kv;
     const int64_t n_embd_head_k = hparams.n_embd_head_k;
     const int64_t n_embd_k_gqa  = hparams.n_embd_k_gqa();
     const int32_t n_rot         = hparams.n_rot;
     const int32_t n_orig_ctx    = cparams.n_yarn_orig_ctx;
+    const int64_t n_layer       = hparams.n_layer;
     const float   ext_factor    = cparams.yarn_ext_factor;
     const float   attn_factor   = cparams.yarn_attn_factor;
     const float   beta_fast     = cparams.yarn_beta_fast;
@@ -5110,6 +5111,8 @@ struct llm_build_context {
         struct ggml_tensor * cur;
         struct ggml_tensor * inpL;
 
+
+
         inpL = llm_build_inp_embd(ctx0, hparams, batch, model.tok_embd, lctx.inp_tokens, lctx.inp_embd, cb);
         cb(inpL, "inp_embd", -1);
 
@@ -5126,7 +5129,14 @@ struct llm_build_context {
             llm_build_k_shift(ctx0, hparams, cparams, kv_self, gf, lctx.inp_K_shift, LLM_ROPE, n_ctx, freq_base, freq_scale, cb);
         }
 
-        for (int il = 0; il < n_layer; ++il) {
+#ifdef EXPORT_DOT
+    // plot the computation graph in dot format (for debugging purposes)
+    const int64_t layer = 1;
+#else
+    const int64_t layer = n_layer;
+#endif
+
+        for (int il = 0; il < layer; ++il) {
             struct ggml_tensor * inpSA = inpL;
 
             // norm
