@@ -5131,7 +5131,7 @@ struct llm_build_context {
 
 #ifdef EXPORT_DOT
     // plot the computation graph in dot format (for debugging purposes)
-    const int64_t layer = 1;
+    const int64_t layer = 10;
 #else
     const int64_t layer = n_layer;
 #endif
