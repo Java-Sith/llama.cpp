@@ -471,9 +471,8 @@ static void ggml_xrt_rms_norm(
         struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
 
-    GGML_ASSERT(src1->type == GGML_TYPE_F32);
+    GGML_ASSERT(src0->type == GGML_TYPE_F32);
 
     switch (src0->type) {
         case GGML_TYPE_F32:
