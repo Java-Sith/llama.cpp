@@ -72,6 +72,10 @@ bool ggml_backend_is_xrt(ggml_backend_t backend);
 
 typedef void (*ggml_xrt_func_t)(const struct ggml_compute_params *params, struct ggml_tensor * dst);
 
+inline static void ggml_vec_cpy_f32 (const int n, float * y, const float * x) { for (int i = 0; i < n; ++i) y[i]  = x[i]; }
+inline static void ggml_vec_scale_f32(const int n, float * y, const float   v) { for (int i = 0; i < n; ++i) y[i] *= v; }
+inline static void ggml_vec_acc_f32 (const int n, float * y, const float * x) { for (int i = 0; i < n; ++i) y[i] += x[i]; }
+
 static size_t ggml_nbytes_split(const struct ggml_tensor * tensor, int nrows_split) {
     static_assert(GGML_MAX_DIMS == 4, "GGML_MAX_DIMS is not 4 - update this function");
 
@@ -664,9 +668,9 @@ static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     int padded_dst_size = padded_ne00 * padded_ne11; // Accommodate results for all rows of src1
 
     // Allocate XRT buffers
-    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), gemv.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), gemv.group_id(1)); // Single row vector size
-    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), gemv.group_id(2));
+    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), matvecmul.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), matvecmul.group_id(1)); // Single row vector size
+    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), matvecmul.group_id(2));
 
     // Map buffers to host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -696,7 +700,7 @@ static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
         bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
         // Execute the GEMV kernel
-        auto run = gemv(bo_a, bo_b, bo_c, padded_ne01, padded_ne10, 1);
+        auto run = matvecmul(bo_a, bo_b, bo_c, padded_ne01, padded_ne10, padded_ne01);
         run.wait();
 
         // Synchronize results back to host
@@ -721,7 +725,7 @@ void ggml_xrt_mul_mat(
     switch (src0->type) {
         case GGML_TYPE_F32:
             {
-                ggml_xrt_gemv_f32(params, dst);
+                ggml_xrt_mul_mat_f32(params, dst);
             } break;
         default:
             {

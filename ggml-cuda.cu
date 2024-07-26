@@ -137,6 +137,7 @@
 #define CC_RDNA3      (CC_OFFSET_AMD + 1100)
 
 #define GGML_CUDA_MAX_NODES 8192
+#define BILLION 1000000000L
 
 // define this if you want to always fallback to MMQ kernels and not use cuBLAS for matrix multiplication
 // on modern hardware, using cuBLAS is recommended as it utilizes F16 tensor cores which are very performant
@@ -10969,7 +10970,7 @@ GGML_CALL static void ggml_cuda_set_main_device(const int main_device) {
 
 #ifdef CUDA_CLOCK
 int operationCounters[GGML_OP_COUNT] = {0};
-clock_t start, end;
+struct timespec start_times, end_times;
 #endif
 
 GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
@@ -10992,8 +10993,9 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
         }
     }
     #ifdef CUDA_CLOCK
-        double gpu_time_used;
-        start = clock();
+        // Get the starting time
+        int64_t elapsed_ns;
+        clock_gettime(CLOCK_MONOTONIC, &start);
     #endif
 
     switch (tensor->op) {
@@ -11140,10 +11142,12 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
     }
     func(tensor->src[0], tensor->src[1], tensor);
     #ifdef CUDA_CLOCK
-        end = clock();
-        gpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+        // Get the ending time
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        // Calculate the elapsed time in nanoseconds
+        elapsed_ns = (end_times.tv_sec - start_times.tv_sec) * BILLION + (end.tv_nsec - start.tv_nsec);
         operationCounters[tensor->op]++;
-        printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, gpu_time_used, operationCounters[tensor->op]);
+        printf("Operation %d executed in %llu nanoseconds. Count: %d\n", tensor->op, elapsed_ns, operationCounters[tensor->op]);
     #endif
     return true;
 }
