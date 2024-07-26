@@ -145,7 +145,7 @@ void ggml_xrt_dup(
 
 // ggml_compute_forward_add
 
-extern "C" void ggml_xrt_add(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_add_f32(const struct ggml_compute_params * params,
@@ -256,7 +256,7 @@ void ggml_xrt_add(
 
 // ggml_compute_forward_mul
 
-extern "C" void ggml_xrt_mul(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
@@ -401,7 +401,7 @@ void ggml_xrt_get_rows(
     //}
 }
 
-extern "C" void ggml_xrt_rms_norm(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
@@ -493,7 +493,7 @@ void ggml_xrt_rope(
     ggml_compute_forward_rope(params, dst);
 }
 
-extern "C" void ggml_xrt_soft_max(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
@@ -623,7 +623,7 @@ void ggml_xrt_soft_max(
     }
 }
 
-extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
@@ -734,7 +734,7 @@ void ggml_xrt_mul_mat(
     }
 }
 
-extern "C" void ggml_xrt_unary(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,

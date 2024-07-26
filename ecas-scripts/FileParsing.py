@@ -25,7 +25,7 @@ def process_file(file_path):
     operation_details = {}
 
     # Obtiene las expresiones regulares del 
-    regex = re.compile(r'Operation (\d+) executed in (\d+\.\d+) nanoseconds\. Count: (\d+)')
+    regex = re.compile(r'Operation (\d+) executed in (\d+) nanoseconds\. Count: (\d+)')
 
     # Lee el archivo y toma las operaciones
     with open(file_path, 'r') as file:
