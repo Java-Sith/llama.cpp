@@ -457,11 +457,11 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
         run.wait();
 
         // Synchronize output buffer with host
-        bo_out.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+        bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
         // Copy Data from Buffers to Tensors
         for (int64_t i = 0; i < size; ++i) {
-            ((float*)dst->data)[i] = bo_out_map[i];
+            ((float*)dst->data)[i] = bo_c_map[i];
         }
     }
 }
@@ -539,7 +539,7 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
 
     float * wp = (float *) params->wdata + (nc + CACHE_LINE_SIZE_F32) * ith;
 
-    float * pos = src2 ? (float *) src2->data : src0->data;
+    float * pos = src2 ? (float *) src2->data : (float *) src0->data;
 
     int padded_nc = next_power_of_two(nc);
 
@@ -758,7 +758,7 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
     int padded_ne00 = next_power_of_two(ne00);
     int padded_ne01 = next_power_of_two(ne01);
 
-    const enum ggml_unary_op op = ggml_get_unary_op(dst);
+    const enum ggml_unary_op operation = ggml_get_unary_op(dst);
 
     // If this is the first thread, prepare the input and output buffers
     if (ith == 0) {
@@ -784,7 +784,7 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
             bo_a_map[i] = ((float*)src0->data)[i];
         }
 
-        if (op == GGML_UNARY_OP_SILU)
+        if (operation == GGML_UNARY_OP_SILU)
         {
             // Synchronize input buffer with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -797,7 +797,7 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
         }
 
-        else if (op == GGML_UNARY_OP_RELU) {
+        else if (operation == GGML_UNARY_OP_RELU) {
             // Synchronize input buffer with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -834,8 +834,6 @@ static void ggml_xrt_unary(
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
-
-    const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     if (src0->type == GGML_TYPE_F32 && (op == GGML_UNARY_OP_SILU || op == GGML_UNARY_OP_RELU)) {
         ggml_xrt_unary_f32(params, dst);
