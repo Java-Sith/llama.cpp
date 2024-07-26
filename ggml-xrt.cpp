@@ -49,6 +49,7 @@ static int g_device_count = -1;
 static int g_all_xrt_device_count = -1;
 static int g_main_device = 0;
 static int g_main_device_index = 0;
+static const size_t CACHE_LINE_SIZE_F32 = 64/sizeof(float);
 
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
@@ -148,7 +149,7 @@ void ggml_xrt_dup(
 extern "C" void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_add_f32(const struct ggml_compute_params * params,
+void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
@@ -232,7 +233,7 @@ static void ggml_xrt_add_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_add(
+static void ggml_xrt_add(
     const struct ggml_compute_params *params,
     struct ggml_tensor *dst)
 {
@@ -259,7 +260,7 @@ void ggml_xrt_add(
 extern "C" void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
+void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
@@ -343,7 +344,7 @@ static void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_mul(
+static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -366,7 +367,7 @@ void ggml_xrt_mul(
 
 // ggml_compute_forward_transpose
 
-void ggml_xrt_nop(
+static void ggml_xrt_nop(
         const struct ggml_compute_params * params,
         const struct ggml_tensor * dst) {
     // NOP
@@ -376,7 +377,7 @@ void ggml_xrt_nop(
 
 // ggml_compute_forward_get_rows
 
-void ggml_xrt_get_rows(
+static void ggml_xrt_get_rows(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -404,7 +405,7 @@ void ggml_xrt_get_rows(
 extern "C" void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
+void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
      const struct ggml_tensor * src0 = dst->src[0];
@@ -465,7 +466,7 @@ static void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_rms_norm(
+static void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -496,7 +497,7 @@ void ggml_xrt_rope(
 extern "C" void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
+void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
@@ -602,7 +603,7 @@ static void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_soft_max(
+static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -626,7 +627,7 @@ void ggml_xrt_soft_max(
 extern "C" void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
+void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0]; // Matrix
@@ -713,7 +714,7 @@ static void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_mul_mat(
+static void ggml_xrt_mul_mat(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -737,7 +738,7 @@ void ggml_xrt_mul_mat(
 extern "C" void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
+void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
         
     const struct ggml_tensor * src0 = dst->src[0];
@@ -825,7 +826,7 @@ static void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
     }
 }
 
-void ggml_xrt_unary(
+static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
