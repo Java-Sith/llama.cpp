@@ -10995,7 +10995,7 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
     #ifdef CUDA_CLOCK
         // Get the starting time
         int64_t elapsed_ns;
-        clock_gettime(CLOCK_MONOTONIC, &start);
+        clock_gettime(CLOCK_MONOTONIC, &start_times);
     #endif
 
     switch (tensor->op) {
@@ -11143,9 +11143,9 @@ GGML_CALL bool ggml_cuda_compute_forward(struct ggml_compute_params * params, st
     func(tensor->src[0], tensor->src[1], tensor);
     #ifdef CUDA_CLOCK
         // Get the ending time
-        clock_gettime(CLOCK_MONOTONIC, &end);
+        clock_gettime(CLOCK_MONOTONIC, &end_times);
         // Calculate the elapsed time in nanoseconds
-        elapsed_ns = (end_times.tv_sec - start_times.tv_sec) * BILLION + (end.tv_nsec - start.tv_nsec);
+        elapsed_ns = (end_times.tv_sec - start_times.tv_sec) * BILLION + (end_times.tv_nsec - start_times.tv_nsec);
         operationCounters[tensor->op]++;
         printf("Operation %d executed in %llu nanoseconds. Count: %d\n", tensor->op, elapsed_ns, operationCounters[tensor->op]);
     #endif
