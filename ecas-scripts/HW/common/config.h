@@ -16,6 +16,7 @@ static constexpr int kBusWidth = 512;
 #else
 static constexpr int kBusWidth = BUS;
 #endif
+//#define USE_FLOAT8
 
 #ifdef USE_FLOAT32
 static constexpr int kDataWidth = 32;
@@ -51,12 +52,14 @@ typedef union {
   float f;
 } d32;
 using AccT = d32;
+using DataT = float;
 #elif defined(USE_FLOAT16) || defined(USE_FLOAT8) || defined(USE_FLOAT4)
 #define USE_UNION
 typedef union {
   uint16_t i;
   half f;
 } d16;
+using DataT = half;
 using AccT = d16;
 #else
 using AccT = DataT;
