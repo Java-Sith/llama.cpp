@@ -213,8 +213,11 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
     }
 
     for (int i = 0; i < padded_size1; ++i) {
-        int src1_i = (ne11 == 1) ? 0 : (i / padded_ne10 % ne11);
-        int src1_j = (ne10 == 1) ? 0 : (i % padded_ne10);
+        int row = i / padded_ne10;
+        int col = i % padded_ne10;
+        int src1_i = (ne11 == 1) ? 0 : (row % ne11);
+        int src1_j = col % ne10;
+
         bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
     }
 
@@ -263,7 +266,7 @@ extern "C" void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
 void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
-              struct ggml_tensor * dst) {
+                      struct ggml_tensor * dst) {
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
@@ -324,8 +327,11 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     }
 
     for (int i = 0; i < padded_size1; ++i) {
-        int src1_i = (ne11 == 1) ? 0 : (i / padded_ne10 % ne11);
-        int src1_j = (ne10 == 1) ? 0 : (i % padded_ne10);
+        int row = i / padded_ne10;
+        int col = i % padded_ne10;
+        int src1_i = (ne11 == 1) ? 0 : (row % ne11);
+        int src1_j = col % ne10;
+
         bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
     }
 
@@ -345,6 +351,7 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
         ((float*)dst->data)[i] = bo_c_map[i];
     }
 }
+
 
 static void ggml_xrt_mul(
         const struct ggml_compute_params * params,

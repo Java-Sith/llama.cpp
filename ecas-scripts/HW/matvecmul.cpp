@@ -14,17 +14,17 @@ static constexpr int kCElemsPacketised = (kCCols * kARows) / kPackets;
 
 template <int NT, int N>
 struct AddPairs {
-  static DataT Execute(DataT vec[NT], int idx = 0) {
+  static AccT Execute(AccT vec[NT], int idx = 0) {
 #pragma HLS inline off
-    DataT lhs = AddPairs<NT, N / 2>::Execute(vec, idx);
-    DataT rhs = AddPairs<NT, N / 2>::Execute(vec, N / 2 + idx);
-    return lhs + rhs;
+    AccT lhs = AddPairs<NT, N / 2>::Execute(vec, idx);
+    AccT rhs = AddPairs<NT, N / 2>::Execute(vec, N / 2 + idx);
+    return GET_NUMBER(lhs) + GET_NUMBER(rhs);
   }
 };
 
 template <int NT>
 struct AddPairs<NT, 1> {
-  static DataT Execute(DataT vec[NT], int idx) {
+  static AccT Execute(AccT vec[NT], int idx) {
 #pragma HLS inline off
     return vec[idx];
   }
@@ -35,7 +35,7 @@ static void matvecmul_gemm_stream(StreamT &a, StreamT &b, StreamSingleT &c,
 #pragma HLS INLINE off
 #pragma HLS PIPELINE
 
-  DataT res[kPackets];
+  AccT res[kPackets];
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = res
 
   AccT tres{0};
@@ -61,7 +61,7 @@ gemv_reduce:
       AccT a_val, b_val;
       GET_RAW(a_val) = a_packet(high, low);
       GET_RAW(b_val) = b_packet(high, low);
-      res[p] = GET_NUMBER(a_val) * GET_NUMBER(b_val);
+      GET_NUMBER(res[p]) = GET_NUMBER(a_val) * GET_NUMBER(b_val);
     }
   }
 
