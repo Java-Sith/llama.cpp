@@ -11,7 +11,7 @@ int main(int, char **) {
   int rows = 16;
   int cols = 16;
 
-  int size_a = rows * cols / kPackets;
+  int size_a = rows * cols / kPackets; 
 
   RawDataT a[size_a];
   RawDataT c[size_a];

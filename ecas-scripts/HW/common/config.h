@@ -12,7 +12,7 @@
 #include <hls_stream.h>
 
 #ifndef BUS
-static constexpr int kBusWidth = 512;
+static constexpr int kBusWidth = 128;
 #else
 static constexpr int kBusWidth = BUS;
 #endif
