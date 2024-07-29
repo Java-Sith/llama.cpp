@@ -16,10 +16,7 @@ EMCONFIG_DIR = $(TEMP_DIR)
 HLS_BUILD = $(TEMP_DIR)/%.xo
 
 # Packaging
-#FPGA_BIN := $(PACKAGE_OUT)/$(HLS_FILE_NAME).bit.bin
 XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
-#SHELL_JSON := $(PACKAGE_OUT)/shell.json
-#DTB_FILE := $(PACKAGE_OUT)/$(HLS_FILE_NAME).dtbo
 
 # Output files
 HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(HLS_FILES:.cpp=.xo))
@@ -59,7 +56,7 @@ RMDIR = rm -rf
 all: build
 
 .PHONY: build
-build: check_platform emconfig $(LINK_OUTPUT) $(XCL_BIN) #$(FPGA_BIN)
+build: check_platform emconfig $(LINK_OUTPUT) $(XCL_BIN)
 
 # Rules for creating the HW
 check_platform:
@@ -81,28 +78,9 @@ emconfig:$(EMCONFIG_DIR)/emconfig.json
 $(EMCONFIG_DIR)/emconfig.json:
 	emconfigutil --platform $(PLATFORM) --od $(EMCONFIG_DIR)
 
-# system.bit: $(LINK_OUTPUT)
-# 	cp $(TEMP_DIR)/link/int/$@ .
-
-# bootgen.bif:
-# 	echo "all:{system.bit}" > bootgen.bif
-
-# $(FPGA_BIN): system.bit bootgen.bif $(SHELL_JSON) $(DTB_FILE)
-# 	mkdir -p $(PACKAGE_OUT)
-# 	bootgen -w -arch zynqmp -process_bitstream bin -image bootgen.bif
-# 	cp system.bit.bin $@
-
 $(XCL_BIN): $(LINK_OUTPUT)
 	mkdir -p $(PACKAGE_OUT)
 	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) --package.out_dir $(PACKAGE_OUT) --kernel_frequency $(KERNEL_FREQ) -o $(XCL_BIN)
-
-# $(SHELL_JSON): $(ROOT_DIR)/../shell.json
-# 	mkdir -p $(PACKAGE_OUT)
-# 	cp $< $@
-
-# $(DTB_FILE): $(ROOT_DIR)/../pl.dtbo
-# 	mkdir -p $(PACKAGE_OUT)
-# 	cp $< $@
 
 # Cleaning rules
 clean:
