@@ -10,12 +10,12 @@
 
 // Adjustable for Element Wise
 #ifndef M_COLS
-static constexpr int kCols = 32768;
+static constexpr int kCols = 16384;
 #else
 static constexpr int kCols = M_COLS;
 #endif
 #ifndef M_ROWS
-static constexpr int kRows = 32768;
+static constexpr int kRows = 16384;
 #else
 static constexpr int kRows = M_ROWS;
 #endif

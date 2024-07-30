@@ -3,6 +3,7 @@
  * Author: Luis G. Leon-Vega <luis.leon@ieee.org>
  */
 
+#include "hls_math.h"
 #include "mult.h"
 
 static void load_input(RawDataT *in, hls::stream<RawDataT> &inStream,

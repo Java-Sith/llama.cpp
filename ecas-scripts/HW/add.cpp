@@ -3,7 +3,8 @@
  * Author: Luis G. Leon-Vega <luis.leon@ieee.org>
  */
 
-#include "addition.h"
+#include "hls_math.h"
+#include "add.h"
 
 static void load_input(RawDataT *in, hls::stream<RawDataT> &inStream,
                        uint64_t size) {
@@ -88,7 +89,7 @@ extern "C" {
         op (input)    --> Operation: 0: add, 1: add+relu 2: mult
 */
 
-void addition(RawDataT *in1, RawDataT *in2, RawDataT *out, uint64_t size) {
+void add(RawDataT *in1, RawDataT *in2, RawDataT *out, uint64_t size) {
 #pragma HLS INTERFACE m_axi port = in1 bundle = gmem0
 #pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
 #pragma HLS INTERFACE m_axi port = out bundle = gmem2
