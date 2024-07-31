@@ -4,8 +4,8 @@ TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
 # Setting input file
-HLS_FILES := $(wildcard *.cpp)
-HLS_FILES_NAMES := $(HLS_FILES:.cpp=)
+HLS_FILE := matvecmul.cpp
+HLS_FILE_NAME := $(basename $(HLS_FILE))
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
@@ -19,7 +19,7 @@ HLS_BUILD = $(TEMP_DIR)/%.xo
 XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
 
 # Output files
-HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(HLS_FILES:.cpp=.xo))
+HLS_KERNEL_FILE := $(TEMP_DIR)/$(HLS_FILE_NAME).xo
 
 # Setting V++ Flags
 VPP_PFLAGS :=
