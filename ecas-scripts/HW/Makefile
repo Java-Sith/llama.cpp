@@ -4,14 +4,14 @@ TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
 # Setting input file
-HLS_FILE := matvecmul.cpp
-HLS_FILE_NAME := $(basename $(HLS_FILE))
+HLS_FILES := matvecmul.cpp
+HLS_FILES_NAME := $(basename $(HLS_FILES))
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
 BUILD_DIR := ./build.$(TARGET)
 PACKAGE_OUT = ./package.$(TARGET)
-LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILE_NAME).link.xclbin
+LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILES_NAME).link.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 HLS_BUILD = $(TEMP_DIR)/%.xo
 
@@ -19,7 +19,7 @@ HLS_BUILD = $(TEMP_DIR)/%.xo
 XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
 
 # Output files
-HLS_KERNEL_FILE := $(TEMP_DIR)/$(HLS_FILE_NAME).xo
+HLS_KERNEL_FILES := $(TEMP_DIR)/$(HLS_FILES_NAME).xo
 
 # Setting V++ Flags
 VPP_PFLAGS :=
