@@ -54,8 +54,7 @@ static const size_t CACHE_LINE_SIZE_F32 = 64/sizeof(float);
 static xrt::device myDevice;
 static std::string binaryFile = "./ecas-scripts/HW/package.hw/kernels.xclbin";
 static xrt::kernel matvecmul;
-static xrt::kernel add;
-static xrt::kernel mult;
+static xrt::kernel elementwise;
 static xrt::kernel softmax;
 static xrt::kernel rmsnorm;
 static xrt::kernel unary;
@@ -121,8 +120,7 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
     std::cout << "Load the xclbin: " << binaryFile << std::endl;
     auto uuid = myDevice.load_xclbin(binaryFile);
     matvecmul = xrt::kernel(myDevice, uuid, "matvecmul");
-    add = xrt::kernel(myDevice, uuid, "add");
-    mult = xrt::kernel(myDevice, uuid, "mult");
+    elementwise = xrt::kernel(myDevice, uuid, "elementwise");
     softmax = xrt::kernel(myDevice, uuid, "softmax");
     rmsnorm = xrt::kernel(myDevice, uuid, "rmsnorm");
     unary = xrt::kernel(myDevice, uuid, "unary");
@@ -193,9 +191,9 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
     int padded_dst_size = padded_ne00 * padded_ne01;
 
     // Allocate XRT buffers
-    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), add.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), add.group_id(1));
-    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), add.group_id(2));
+    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), elementwise.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), elementwise.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), elementwise.group_id(2));
 
     // Map buffers to host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -226,7 +224,7 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Execute the elementwise kernel
-    auto run = add(bo_a, bo_b, bo_c, padded_dst_size);
+    auto run = elementwise(bo_a, bo_b, bo_c, padded_dst_size, 0);
     run.wait();
 
     // Synchronize results back to host
@@ -307,9 +305,9 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     int padded_dst_size = padded_ne00 * padded_ne01;
 
     // Allocate XRT buffers
-    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), mult.group_id(0));
-    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), mult.group_id(1));
-    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), mult.group_id(2));
+    auto bo_a = xrt::bo(myDevice, padded_size0 * sizeof(float), elementwise.group_id(0));
+    auto bo_b = xrt::bo(myDevice, padded_size1 * sizeof(float), elementwise.group_id(1));
+    auto bo_c = xrt::bo(myDevice, padded_dst_size * sizeof(float), elementwise.group_id(2));
 
     // Map buffers to host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -340,7 +338,7 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Execute the elementwise kernel
-    auto run = mult(bo_a, bo_b, bo_c, padded_dst_size); 
+    auto run = elementwise(bo_a, bo_b, bo_c, padded_dst_size, 1);
     run.wait();
 
     // Synchronize results back to host

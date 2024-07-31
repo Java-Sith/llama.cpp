@@ -3,8 +3,9 @@
  * Author: Luis G. Leon-Vega <luis.leon@ieee.org>
  */
 
-#include "hls_math.h"
-#include "mult.h"
+#include "elementwise.h"
+
+enum { OP_ADD = 0, OP_MULT = 1 };
 
 static void load_input(RawDataT *in, hls::stream<RawDataT> &inStream,
                        uint64_t size) {
@@ -20,7 +21,7 @@ mem_rd:
 
 static void compute(hls::stream<RawDataT> &in1_stream,
                     hls::stream<RawDataT> &in2_stream,
-                    hls::stream<RawDataT> &out_stream, uint64_t size) {
+                    hls::stream<RawDataT> &out_stream, uint64_t size, int op) {
 // The kernel is operating with vector of NUM_WORDS integers. The + operator
 // performs an element-wise add, resulting in NUM_WORDS parallel additions.
 execute:
@@ -47,11 +48,25 @@ execute:
       in2.V = raw_in2(offhigh, offlow);
 #endif
       // Operation
+      switch (op) {
+      case OP_ADD:
+#ifdef USE_UNION
+        out.f = in1.f + in2.f;
+#else
+        out = in1 + in2;
+#endif
+        break;
+      case OP_MULT:
 #ifdef USE_UNION
         out.f = in1.f * in2.f;
 #else
         out = in1 * in2;
 #endif
+        break;
+      default:
+        out = in1;
+        break;
+      }
 
       // Write back
 #ifdef USE_UNION
@@ -89,7 +104,8 @@ extern "C" {
         op (input)    --> Operation: 0: add, 1: add+relu 2: mult
 */
 
-void mult(RawDataT *in1, RawDataT *in2, RawDataT *out, uint64_t size) {
+void elementwise(RawDataT *in1, RawDataT *in2, RawDataT *out, uint64_t size,
+                 int op) {
 #pragma HLS INTERFACE m_axi port = in1 bundle = gmem0
 #pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
 #pragma HLS INTERFACE m_axi port = out bundle = gmem2
@@ -105,7 +121,7 @@ void mult(RawDataT *in1, RawDataT *in2, RawDataT *out, uint64_t size) {
   // dataflow pragma instruct compiler to run following three APIs in parallel
   load_input(in1, in1_stream, size);
   load_input(in2, in2_stream, size);
-  compute(in1_stream, in2_stream, out_stream, size);
+  compute(in1_stream, in2_stream, out_stream, size, op);
   store_result(out, out_stream, size);
 }
 }
