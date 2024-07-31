@@ -178,35 +178,34 @@ c_rows:
   }
 }
 
-extern "C" {
-
 /**
  * matrix: (rows, cols)
  * a: input (samples, inputs)
  * b: weights (outputs, inputs) assumed transposed [1, inputs]
  * c: output (samples, outputs). Assumed [samples, 1]
  */
-void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
-               int c_cols) {
-#pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0
-#pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1
-#pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2
+extern "C" {
+
+void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
+#pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0 depth = 2 max_widen_bitwidth = 256
+#pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1 depth = 2 max_widen_bitwidth = 256
+#pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2 depth = 2 max_widen_bitwidth = 256
 #pragma HLS INTERFACE s_axilite register port = a_rows
 #pragma HLS INTERFACE s_axilite register port = b_cols
 #pragma HLS INTERFACE s_axilite register port = c_cols
 #pragma HLS INTERFACE s_axilite register port = return
 
-  // TODO: Make this dynamic through the directive file. Here, we assume two
-  // rows at a time
-  // TODO: A stream is in charge of a row, whereas B stream is redundant
   static StreamT stream_a[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_a
-  static StreamT stream_b[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_b
+#pragma HLS STREAM variable=stream_a depth=16
+#pragma HLS ARRAY_PARTITION dim=0 type=complete variable=stream_a
 
-  // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
+  static StreamT stream_b[kPackets];
+#pragma HLS STREAM variable=stream_b depth=16
+#pragma HLS ARRAY_PARTITION dim=0 type=complete variable=stream_b
+
   static StreamSingleT stream_out[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_out
+#pragma HLS STREAM variable=stream_out depth=32
+#pragma HLS ARRAY_PARTITION dim=0 type=complete variable=stream_out
 
 #pragma HLS dataflow
   matvecmul_to_stream_a(a, stream_a, a_rows, b_cols);
@@ -217,3 +216,4 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
   matvecmul_from_stream(c, stream_out, a_rows);
 }
 }
+
