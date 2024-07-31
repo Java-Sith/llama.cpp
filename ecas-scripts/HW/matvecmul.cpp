@@ -187,9 +187,9 @@ c_rows:
 extern "C" {
 
 void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols, int c_cols) {
-#pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0 depth = 2 max_widen_bitwidth = 256
-#pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1 depth = 2 max_widen_bitwidth = 256
-#pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2 depth = 2 max_widen_bitwidth = 256
+#pragma HLS INTERFACE m_axi offset = slave port = a bundle = gmem0 
+#pragma HLS INTERFACE m_axi offset = slave port = b bundle = gmem1 
+#pragma HLS INTERFACE m_axi offset = slave port = c bundle = gmem2
 #pragma HLS INTERFACE s_axilite register port = a_rows
 #pragma HLS INTERFACE s_axilite register port = b_cols
 #pragma HLS INTERFACE s_axilite register port = c_cols
