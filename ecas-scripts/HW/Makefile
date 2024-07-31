@@ -4,14 +4,14 @@ TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
 # Setting input file
-HLS_FILES := matvecmul.cpp
-HLS_FILES_NAME := $(basename $(HLS_FILES))
+HLS_FILES := $(wildcard *.cpp)
+HLS_FILES_NAMES := $(HLS_FILES:.cpp=)
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
 BUILD_DIR := ./build.$(TARGET)
 PACKAGE_OUT = ./package.$(TARGET)
-LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILES_NAME).link.xclbin
+LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILE_NAME).link.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 HLS_BUILD = $(TEMP_DIR)/%.xo
 
@@ -19,7 +19,7 @@ HLS_BUILD = $(TEMP_DIR)/%.xo
 XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
 
 # Output files
-HLS_KERNEL_FILES := $(TEMP_DIR)/$(HLS_FILES_NAME).xo
+HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(HLS_FILES:.cpp=.xo))
 
 # Setting V++ Flags
 VPP_PFLAGS :=
@@ -47,6 +47,10 @@ endif
 
 ifdef USE_FX16
 	VPP_FLAGS += -DUSE_FIXED16
+endif
+
+ifdef USE_LUT
+	VPP_FLAGS += -DUSE_LUT
 endif
 
 RMDIR = rm -rf
