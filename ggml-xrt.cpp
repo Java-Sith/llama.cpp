@@ -415,7 +415,7 @@ extern "C" void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
 void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
-     const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
 
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
         return;
@@ -432,44 +432,41 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
     int padded_ne00 = next_power_of_two(ne00);
     int padded_ne01 = next_power_of_two(ne01);
 
-    // If this is the first thread, prepare the input and output buffers
-    if (ith == 0) {
-        // Compute the total size of the tensor
-        int64_t size = ne00 * ne01;
+    // Compute the total size of the tensor
+    int64_t size = ne00 * ne01;
 
-        // Compute the padded size
-        int64_t padded_size = padded_ne00 * padded_ne01;
+    // Compute the padded size
+    int64_t padded_size = padded_ne00 * padded_ne01;
 
-        // Declare Buffers
-        auto bo_a = xrt::bo(myDevice, padded_size * sizeof(float), rmsnorm.group_id(0));
-        auto bo_c = xrt::bo(myDevice, padded_size * sizeof(float), rmsnorm.group_id(1));
+    // Declare Buffers
+    auto bo_a = xrt::bo(myDevice, padded_size * sizeof(float), rmsnorm.group_id(0));
+    auto bo_c = xrt::bo(myDevice, padded_size * sizeof(float), rmsnorm.group_id(1));
 
-        auto bo_a_map = bo_a.map<float*>();
-        auto bo_c_map = bo_c.map<float*>();
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
 
-        // Fill the buffers with zeroes
-        std::fill(bo_a_map, bo_a_map + padded_size, 0.0f);
-        std::fill(bo_c_map, bo_c_map + padded_size, 0.0f);
+    // Fill the buffers with zeroes
+    std::fill(bo_a_map, bo_a_map + padded_size, 0.0f);
+    std::fill(bo_c_map, bo_c_map + padded_size, 0.0f);
 
-        // Copy Data from Tensors to Buffers
-        for (int64_t i = 0; i < size; ++i) {
-            bo_a_map[i] = ((float*)src0->data)[i];
-        }
+    // Copy Data from Tensors to Buffers
+    for (int64_t i = 0; i < size; ++i) {
+        bo_a_map[i] = ((float*)src0->data)[i];
+    }
 
-        // Synchronize input buffer with device
-        bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    // Synchronize input buffer with device
+    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-        // Execute the RMSNorm kernel
-        auto run = rmsnorm(bo_a, bo_c, padded_size);
-        run.wait();
+    // Execute the RMSNorm kernel
+    auto run = rmsnorm(bo_a, bo_c, padded_size);
+    run.wait();
 
-        // Synchronize output buffer with host
-        bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    // Synchronize output buffer with host
+    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-        // Copy Data from Buffers to Tensors
-        for (int64_t i = 0; i < size; ++i) {
-            ((float*)dst->data)[i] = bo_c_map[i];
-        }
+    // Copy Data from Buffers to Tensors
+    for (int64_t i = 0; i < size; ++i) {
+        ((float*)dst->data)[i] = bo_c_map[i];
     }
 }
 
@@ -596,7 +593,7 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
         // Launch the softmax kernel
-        auto run = softmax(bo_a, bo_c, nc);
+        auto run = softmax(bo_a, bo_c, padded_nc);
         run.wait();
 
         // Synchronize buffers from device
