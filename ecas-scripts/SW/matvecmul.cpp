@@ -34,9 +34,9 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[2]);
     int b_cols = std::stoi(argv[3]);
-    b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 4));
+    //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 4));
     int c_cols = std::stoi(argv[4]);
-    c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
+    //c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
     int b_rows = std::stoi(argv[5]);
 
     std::cout << "A rows: " << a_rows << "\n"

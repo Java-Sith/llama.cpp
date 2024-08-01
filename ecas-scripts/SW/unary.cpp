@@ -34,10 +34,10 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[1]);
     int c_cols = std::stoi(argv[2]);
-    c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
+    //c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
 
     std::cout << "A rows: " << a_rows << "\n"
-              << "B cols: " << b_cols << std::endl;
+              << "C cols: " << c_cols << std::endl;
 
     // Compute sizes
     int size = a_rows * c_cols;
