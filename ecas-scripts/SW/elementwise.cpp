@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
     int a_rows = std::stoi(argv[1]);
     int b_cols = std::stoi(argv[2]);
     //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 4));
+    int op = std::stoi(argv[3]);
 
     std::cout << "A rows: " << a_rows << "\n"
               << "B cols: " << b_cols << std::endl;
@@ -98,45 +99,19 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution_1, cynq_profiler, 10)
+    START_PROFILE(kernel_execution, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: elementwise\n";
-    auto run = elementwise(bo_a, bo_b, bo_c, padded_size, 0); // 0: add, 1: mult
+    auto run = elementwise(bo_a, bo_b, bo_c, padded_size, op); // 0: add, 1: mult
     std::cout << "Waiting to the end\n";
     run.wait();
 
     // Get the output;
     std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution_1);
-
-    std::cout << "C: " << std::endl;
-    for (int elem = 0; elem < size; ++elem) {
-        float cs;
-        cs = bo_c_map[elem];
-        //std::cout << cs << " ";
-    }
-    // std::cout << std::endl;
-    // Print the duration
-    std::cout << cynq_profiler << std::endl;
-
-    // Synchronize buffer content with device side
-    std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution_2, cynq_profiler, 10)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-    std::cout << "Second execution of the kernel: elementwise\n";
-    auto run = elementwise(bo_a, bo_b, bo_c, padded_size, 1); // 0: add, 1: mult
-    std::cout << "Waiting to the end\n";
-    run.wait();
-
-    // Get the output;
-    std::cout << "Get the output data from the device" << std::endl;
-    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution_2);
+    END_PROFILE(kernel_execution);
 
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size; ++elem) {

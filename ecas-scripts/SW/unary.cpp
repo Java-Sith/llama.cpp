@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[1]);
     int c_cols = std::stoi(argv[2]);
+    int op = std::stoi(argv[3]);
     //c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
 
     std::cout << "A rows: " << a_rows << "\n"
@@ -84,7 +85,7 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution_1, cynq_profiler, 10)
+    START_PROFILE(kernel_execution, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: unary\n";
@@ -95,32 +96,7 @@ int main(int argc, char** argv) {
     // Get the output;
     std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution_1);
-
-    std::cout << "C: " << std::endl;
-    for (int elem = 0; elem < size; ++elem) {
-        float cs;
-        cs = bo_c_map[elem];
-        //std::cout << cs << " ";
-    }
-    // std::cout << std::endl;
-    // Print the duration
-    std::cout << cynq_profiler << std::endl;
-
-    // Synchronize buffer content with device side
-    std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution_2, cynq_profiler, 10)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-    std::cout << "First execution of the kernel: unary\n";
-    auto run = unary(bo_a, bo_c, padded_size, 2); // 0: pass, 1: relu, 2: silu
-    std::cout << "Waiting to the end\n";
-    run.wait();
-
-    // Get the output;
-    std::cout << "Get the output data from the device" << std::endl;
-    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution_2);
+    END_PROFILE(kernel_execution);
 
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size; ++elem) {
