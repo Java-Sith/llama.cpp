@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
-    if (argc != 3) {
+    if (argc != 4) {
         return EXIT_FAILURE;
     }
 
