@@ -1,14 +1,20 @@
-SRC := $(wildcard *.cpp)
-EXE := $(SRC:.cpp=)
-CFLAGS := -I${XILINX_XRT}/include -Wall -std=c++17 -O0 -g -I. -I./hls-types/include
-LDFLAGS := -L${XILINX_XRT}/lib -pthread -lxrt_core -lxrt_coreutil
+# List of source files and corresponding executables
+SOURCES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp ad08.cpp
+EXECUTABLES := elementwise rmsnorm unary softmax matvecmul ad08
+
+CFLAGS := -I/opt/xilinx/xrt/include -Wall -std=c++17 -O0 -g -I. -I./hls-types/include
+LDFLAGS := -L/opt/xilinx/xrt/lib -pthread -lxrt_core -lxrt_coreutil
 
 .PHONY: all clean
 
-all: $(EXE)
+# Default target to build all executables
+all: $(EXECUTABLES)
 
-$(EXE): $(SRC)
+# Rule to build each executable from its corresponding source file
+$(EXECUTABLES): %: %.cpp
 	$(CXX) -o $@ $< $(CFLAGS) $(LDFLAGS)
 
+# Clean target to remove all executables
 clean:
-	$(RM) $(EXE)
+	$(RM) $(EXECUTABLES)
+
