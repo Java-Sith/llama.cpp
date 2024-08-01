@@ -64,9 +64,9 @@ int main(int argc, char** argv) {
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, size_a * sizeof(float), matvecmul.group_id(0));
-    auto bo_b = xrt::bo(device, size_b * sizeof(float), matvecmul.group_id(1));
-    auto bo_c = xrt::bo(device, size_c * sizeof(float), matvecmul.group_id(2));
+    auto bo_a = xrt::bo(device, padded_size_a * sizeof(float), matvecmul.group_id(0));
+    auto bo_b = xrt::bo(device, padded_size_b * sizeof(float), matvecmul.group_id(1));
+    auto bo_c = xrt::bo(device, padded_size_c * sizeof(float), matvecmul.group_id(2));
 
     // Map the contents of the buffer object into host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    for (int row = 0; i < b_rows; ++row)
+    for (int row = 0; row < b_rows; ++row)
     {
         std::cout << "B: " << std::endl;
         for (int elem = 0; elem < size_b; ++elem) {
