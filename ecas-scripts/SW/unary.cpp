@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
+    START_PROFILE(kernel_execution_1, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: unary\n";
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     // Get the output;
     std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution);
+    END_PROFILE(kernel_execution_1);
 
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size; ++elem) {
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 
     // Synchronize buffer content with device side
     std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
+    START_PROFILE(kernel_execution_2, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: unary\n";
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     // Get the output;
     std::cout << "Get the output data from the device" << std::endl;
     bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution);
+    END_PROFILE(kernel_execution_2);
 
     std::cout << "C: " << std::endl;
     for (int elem = 0; elem < size; ++elem) {
