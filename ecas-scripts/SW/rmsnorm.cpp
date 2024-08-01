@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
 
     std::cout << "A rows: " << a_rows << "\n"
-              << "B cols: " << b_cols << std::endl;
+              << "C cols: " << c_cols << std::endl;
 
     // Compute sizes
     int size = a_rows * c_cols;
@@ -50,12 +50,12 @@ int main(int argc, char** argv) {
     auto device = xrt::device(device_index);
     std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);
-    auto unary = xrt::kernel(device, uuid, "unary");
+    auto rmsnorm = xrt::kernel(device, uuid, "rmsnorm");
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, padded_size * sizeof(float), unary.group_id(0));
-    auto bo_c = xrt::bo(device, padded_size * sizeof(float), unary.group_id(1));
+    auto bo_a = xrt::bo(device, padded_size * sizeof(float), rmsnorm.group_id(0));
+    auto bo_c = xrt::bo(device, padded_size * sizeof(float), rmsnorm.group_id(1));
 
     // Map the contents of the buffer object into host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
         bo_a_map[elem] = as;
         //std::cout << std::hex << as.V << " ";
         as += 0.03;
-        if ((elem + 1) % b_cols == 0) {
+        if ((elem + 1) % c_cols == 0) {
             //std::cout << std::endl;
             as = 0.025;
         }
@@ -87,33 +87,8 @@ int main(int argc, char** argv) {
     START_PROFILE(kernel_execution, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-    std::cout << "First execution of the kernel: unary\n";
-    auto run = unary(bo_a, bo_c, padded_size, 1); // 0: pass, 1: relu, 2: silu
-    std::cout << "Waiting to the end\n";
-    run.wait();
-
-    // Get the output;
-    std::cout << "Get the output data from the device" << std::endl;
-    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution);
-
-    std::cout << "C: " << std::endl;
-    for (int elem = 0; elem < size; ++elem) {
-        float cs;
-        cs = bo_c_map[elem];
-        //std::cout << cs << " ";
-    }
-    // std::cout << std::endl;
-    // Print the duration
-    std::cout << cynq_profiler << std::endl;
-
-    // Synchronize buffer content with device side
-    std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-    std::cout << "First execution of the kernel: unary\n";
-    auto run = unary(bo_a, bo_c, padded_size, 2); // 0: pass, 1: relu, 2: silu
+    std::cout << "First execution of the kernel: rmsnorm\n";
+    auto run = rmsnorm(bo_a, bo_c, padded_size);
     std::cout << "Waiting to the end\n";
     run.wait();
 
