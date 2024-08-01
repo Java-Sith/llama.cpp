@@ -59,7 +59,6 @@ int main(int argc, char** argv) {
     auto device = xrt::device(device_index);
     std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);
-
     auto matvecmul = xrt::kernel(device, uuid, "matvecmul");
     setup_time->tick();
 
@@ -72,7 +71,6 @@ int main(int argc, char** argv) {
     auto bo_a_map = bo_a.map<float*>();
     auto bo_b_map = bo_b.map<float*>();
     auto bo_c_map = bo_c.map<float*>();
-
 
     // Filling data
     std::cout << "Filling Buffers\n";
@@ -110,7 +108,7 @@ int main(int argc, char** argv) {
 
         // Synchronize buffer content with device side
         std::cout << "Synchronize input buffer data to device global memory\n";
-        START_PROFILE(kernel_execution, cynq_profiler, 1000)
+        START_PROFILE(kernel_execution, cynq_profiler, 10)
         bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
         bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
