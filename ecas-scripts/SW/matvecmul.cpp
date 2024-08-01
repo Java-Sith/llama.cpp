@@ -32,12 +32,12 @@ int main(int argc, char** argv) {
 
     // Get input size
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
-    int a_rows = std::stoi(argv[2]);
-    int b_cols = std::stoi(argv[3]);
+    int a_rows = std::stoi(argv[1]);
+    int b_cols = std::stoi(argv[2]);
     //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 4));
-    int c_cols = std::stoi(argv[4]);
+    int c_cols = std::stoi(argv[3]);
     //c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 4));
-    int b_rows = std::stoi(argv[5]);
+    int b_rows = std::stoi(argv[4]);
 
     std::cout << "A rows: " << a_rows << "\n"
               << "B cols: " << b_cols << "\n"
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
             }
         }
         // std::cout << std::endl;
-        std::fill(bo_c_map, bo_c_map + size_c, 0.0f);
+        std::fill(bo_c_map, bo_c_map + padded_size_c, 0.0f);
 
         // Synchronize buffer content with device side
         std::cout << "Synchronize input buffer data to device global memory\n";
