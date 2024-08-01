@@ -3,14 +3,15 @@ ROOT_DIR=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
-# List of kernel source files and corresponding kernel names
-KERNEL_SOURCES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp 
-KERNEL_NAMES := elementwise rmsnorm unary softmax matvecmul
+# Setting input file
+HLS_FILES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp
+HLS_FILES_NAMES := elementwise rmsnorm unary softmax matvecmul 
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
 BUILD_DIR := ./build.$(TARGET)
 PACKAGE_OUT = ./package.$(TARGET)
+LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILE_NAME).link.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 HLS_BUILD = $(TEMP_DIR)/%.xo
 
@@ -18,7 +19,7 @@ HLS_BUILD = $(TEMP_DIR)/%.xo
 XCL_BIN := $(PACKAGE_OUT)/kernels.xclbin
 
 # Output files
-HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(KERNEL_NAMES:=.xo))
+HLS_KERNEL_FILES := $(addprefix $(TEMP_DIR)/,$(HLS_FILES:.cpp=.xo))
 
 # Setting V++ Flags
 VPP_PFLAGS :=
@@ -69,7 +70,7 @@ endif
 
 $(TEMP_DIR)/%.xo: %.cpp
 	mkdir -p $(TEMP_DIR)
-	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $* --temp_dir $(TEMP_DIR) --kernel_frequency $(KERNEL_FREQ) -I'$(<D)' -o '$@' '$<'
+	v++ -c $(VPP_FLAGS) -t $(TARGET) --platform $(PLATFORM) -k $(<:.cpp=) --temp_dir $(TEMP_DIR) --kernel_frequency $(KERNEL_FREQ) -I'$(<D)' -o '$@' '$<'
 
 $(LINK_OUTPUT): $(HLS_KERNEL_FILES)
 	mkdir -p $(BUILD_DIR)
@@ -77,7 +78,7 @@ $(LINK_OUTPUT): $(HLS_KERNEL_FILES)
 
 hls-build: check_platform emconfig $(HLS_KERNEL_FILES)
 
-emconfig: $(EMCONFIG_DIR)/emconfig.json
+emconfig:$(EMCONFIG_DIR)/emconfig.json
 $(EMCONFIG_DIR)/emconfig.json:
 	emconfigutil --platform $(PLATFORM) --od $(EMCONFIG_DIR)
 
