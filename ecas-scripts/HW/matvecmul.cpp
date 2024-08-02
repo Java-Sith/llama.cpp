@@ -153,13 +153,6 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
   // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
   static StreamSingleT stream_out[kPackets];
 
-  // Initialize stream depths
-    for (int a = 0; a < kPackets; ++a) {
-#pragma HLS STREAM variable=stream_a[a] depth=16
-#pragma HLS STREAM variable=stream_b[a] depth=16
-#pragma HLS STREAM variable=stream_out[a] depth=32
-    }
-
 #pragma HLS dataflow
   matvecmul_to_stream_a(a, stream_a, a_rows, b_cols);
   matvecmul_to_stream_b(b, stream_b, b_cols, a_rows);
