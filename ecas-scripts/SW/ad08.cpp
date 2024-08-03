@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     //std::copy(a.begin(), a.end(), bo_a_mm_map);
     //std::copy(b.begin(), b.end(), bo_b_mm_map);
 
-    float as = 0.02, bs = 0.03;
+    DataT as = 0.02, bs = 0.03;
     std::cout << "A: " << std::endl;
     for (int elem = 0; elem < size_a; ++elem) {
         //std::cout << as.V << " ";
