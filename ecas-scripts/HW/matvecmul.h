@@ -11,7 +11,7 @@
 #include "common/config.h"
 
 #ifndef A_ROWS
-static constexpr int kARows = AP_INT_MAX_W;
+static constexpr int kARows = 2;
 #else
 static constexpr int kARows = A_ROWS;
 #pragma message "Refef"
