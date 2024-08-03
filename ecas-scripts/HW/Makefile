@@ -4,14 +4,14 @@ TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
 # Setting input file
-HLS_FILES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp
-HLS_FILES_NAMES := elementwise rmsnorm unary softmax matvecmul 
+HLS_FILES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp matmul.cpp
+HLS_FILES_NAMES := elementwise rmsnorm unary softmax matvecmul matmul
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
 BUILD_DIR := ./build.$(TARGET)
 PACKAGE_OUT = ./package.$(TARGET)
-LINK_OUTPUT := $(BUILD_DIR)/$(HLS_FILE_NAME).link.xclbin
+LINK_OUTPUT := $(BUILD_DIR)/kernels.link.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 HLS_BUILD = $(TEMP_DIR)/%.xo
 
