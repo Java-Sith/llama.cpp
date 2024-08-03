@@ -12,15 +12,9 @@ static constexpr int kBColsPacketised = kBCols / kPackets;
 static constexpr int kCColsPacketised = kCCols / kPackets;
 static constexpr int kCElemsPacketised = (kCCols * kARows) / kPackets;
 
-  // TODO: A stream is in charge of a row, whereas B stream is redundant
 static StreamT stream_a[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_a
 static StreamT stream_b[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_b
-
-  // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
 static StreamSingleT stream_out[kPackets];
-#pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_out
 
 template <int N>
 struct StreamDepthInitializer {
