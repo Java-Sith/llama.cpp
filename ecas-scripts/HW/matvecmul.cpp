@@ -11,6 +11,30 @@ static constexpr int kBColsPacketised = kBCols / kPackets;
 static constexpr int kCColsPacketised = kCCols / kPackets;
 static constexpr int kCElemsPacketised = (kCCols * kARows) / kPackets;
 
+// Define stream arrays
+static StreamT stream_a[kPackets];
+static StreamT stream_b[kPackets];
+static StreamSingleT stream_out[kPackets];
+
+template <int N>
+struct StreamDepthInitializer {
+    static void initialize() {
+#pragma HLS STREAM variable=stream_a[N-1] depth=16
+#pragma HLS STREAM variable=stream_b[N-1] depth=16
+#pragma HLS STREAM variable=stream_out[N-1] depth=32
+        StreamDepthInitializer<N-1>::initialize();
+    }
+};
+
+template <>
+struct StreamDepthInitializer<1> {
+    static void initialize() {
+#pragma HLS STREAM variable=stream_a[0] depth=16
+#pragma HLS STREAM variable=stream_b[0] depth=16
+#pragma HLS STREAM variable=stream_out[0] depth=32
+    }
+};
+
 static void matvecmul_gemm(StreamT a[kPackets], StreamT b[kPackets], StreamSingleT c[kPackets],
                            const int a_rows, const int b_cols) {
 #pragma HLS INLINE off
@@ -145,13 +169,8 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
 #pragma HLS INTERFACE s_axilite register port = c_cols
 #pragma HLS INTERFACE s_axilite register port = return
 
-  // TODO: Make this dynamic through the directive file. Here, we assume two rows at a time
-  // TODO: A stream is in charge of a row, whereas B stream is redundant
-  static StreamT stream_a[kPackets];
-  static StreamT stream_b[kPackets];
-
-  // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
-  static StreamSingleT stream_out[kPackets];
+  // Initialize stream depths using template metaprogramming
+  StreamDepthInitializer<kPackets>::initialize();
 
 #pragma HLS dataflow
   matvecmul_to_stream_a(a, stream_a, a_rows, b_cols);
