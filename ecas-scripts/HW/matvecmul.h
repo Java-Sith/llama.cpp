@@ -17,12 +17,12 @@ static constexpr int kARows = A_ROWS;
 #pragma message "Refef"
 #endif
 #ifndef B_COLS
-static constexpr int kBCols = AP_INT_MAX_W;
+static constexpr int kBCols = 32768;
 #else
 static constexpr int kBCols = B_COLS;
 #endif
 #ifndef C_COLS
-static constexpr int kCCols = AP_INT_MAX_W;
+static constexpr int kCCols = 32768;
 #else
 static constexpr int kCCols = C_COLS;
 #endif
