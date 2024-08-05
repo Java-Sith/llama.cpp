@@ -220,59 +220,17 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_a
 #pragma HLS stream variable = stream_a[0] depth = 16
 #pragma HLS stream variable = stream_a[1] depth = 16
-#pragma HLS stream variable = stream_a[2] depth = 16
-#pragma HLS stream variable = stream_a[3] depth = 16
-#pragma HLS stream variable = stream_a[4] depth = 16
-#pragma HLS stream variable = stream_a[5] depth = 16
-#pragma HLS stream variable = stream_a[6] depth = 16
-#pragma HLS stream variable = stream_a[7] depth = 16
-#pragma HLS stream variable = stream_a[8] depth = 16
-#pragma HLS stream variable = stream_a[9] depth = 16
-#pragma HLS stream variable = stream_a[10] depth = 16
-#pragma HLS stream variable = stream_a[11] depth = 16
-#pragma HLS stream variable = stream_a[12] depth = 16
-#pragma HLS stream variable = stream_a[13] depth = 16
-#pragma HLS stream variable = stream_a[14] depth = 16
-#pragma HLS stream variable = stream_a[15] depth = 16
 
   static StreamT stream_b[kReplicas];
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_b
 #pragma HLS stream variable = stream_b[0] depth = 16
 #pragma HLS stream variable = stream_b[1] depth = 16
-#pragma HLS stream variable = stream_b[2] depth = 16
-#pragma HLS stream variable = stream_b[3] depth = 16
-#pragma HLS stream variable = stream_b[4] depth = 16
-#pragma HLS stream variable = stream_b[5] depth = 16
-#pragma HLS stream variable = stream_b[6] depth = 16
-#pragma HLS stream variable = stream_b[7] depth = 16
-#pragma HLS stream variable = stream_b[8] depth = 16
-#pragma HLS stream variable = stream_b[9] depth = 16
-#pragma HLS stream variable = stream_b[10] depth = 16
-#pragma HLS stream variable = stream_b[11] depth = 16
-#pragma HLS stream variable = stream_b[12] depth = 16
-#pragma HLS stream variable = stream_b[13] depth = 16
-#pragma HLS stream variable = stream_b[14] depth = 16
-#pragma HLS stream variable = stream_b[15] depth = 16
 
   // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
   static StreamSingleT stream_out[kReplicas];
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_out
 #pragma HLS stream variable = stream_out[0] depth = 16
 #pragma HLS stream variable = stream_out[1] depth = 16
-#pragma HLS stream variable = stream_out[2] depth = 16
-#pragma HLS stream variable = stream_out[3] depth = 16
-#pragma HLS stream variable = stream_out[4] depth = 16
-#pragma HLS stream variable = stream_out[5] depth = 16
-#pragma HLS stream variable = stream_out[6] depth = 16
-#pragma HLS stream variable = stream_out[7] depth = 16
-#pragma HLS stream variable = stream_a[8] depth = 16
-#pragma HLS stream variable = stream_a[9] depth = 16
-#pragma HLS stream variable = stream_a[10] depth = 16
-#pragma HLS stream variable = stream_a[11] depth = 16
-#pragma HLS stream variable = stream_a[12] depth = 16
-#pragma HLS stream variable = stream_a[13] depth = 16
-#pragma HLS stream variable = stream_a[14] depth = 16
-#pragma HLS stream variable = stream_a[15] depth = 16
 
 #pragma HLS dataflow
   matvecmul_to_stream_a(a, stream_a, a_rows, b_cols);

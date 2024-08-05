@@ -22,7 +22,7 @@ static constexpr int kBCols = B_COLS;
 #endif
 
 #ifndef REPLICAS
-static constexpr int kReplicas = 16;
+static constexpr int kReplicas = 2;
 #else
 static constexpr int kReplicas = REPLICAS;
 #endif
