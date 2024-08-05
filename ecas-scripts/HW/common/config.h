@@ -12,11 +12,10 @@
 #include <hls_stream.h>
 
 #ifndef BUS
-static constexpr int kBusWidth = 512;
+static constexpr int kBusWidth = 256;
 #else
 static constexpr int kBusWidth = BUS;
 #endif
-//#define USE_FLOAT8
 
 #ifdef USE_FLOAT32
 static constexpr int kDataWidth = 32;
