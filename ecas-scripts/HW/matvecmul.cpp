@@ -215,12 +215,13 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
 #pragma HLS INTERFACE s_axilite register port = c_cols
 #pragma HLS INTERFACE s_axilite register port = return
 
+  // TODO: Make this dynamic through the directive file. Here, we assume two
+  // rows at a time
   // TODO: A stream is in charge of a row, whereas B stream is redundant
   static StreamT stream_a[kReplicas];
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_a
 #pragma HLS stream variable = stream_a[0] depth = 16
 #pragma HLS stream variable = stream_a[1] depth = 16
-
   static StreamT stream_b[kReplicas];
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_b
 #pragma HLS stream variable = stream_b[0] depth = 16
