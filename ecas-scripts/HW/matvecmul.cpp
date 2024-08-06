@@ -72,8 +72,8 @@ gemv_reduce:
   c.write(GET_RAW(tres));
 }
 
-static void matvecmul_gemm(StreamT a[kReplicas], StreamT b[kReplicas],
-                           StreamSingleT c[kReplicas], const int a_rows,
+static void matvecmul_gemm(StreamT &a, StreamT &b,
+                           StreamSingleT &c, const int a_rows,
                            const int b_cols) {
 #pragma HLS INLINE off
 #pragma HLS ARRAY_PARTITION variable = a type = complete dim = 0
@@ -92,12 +92,12 @@ gemv_c_rows:
     for (int s = 0; s < kReplicas; ++s) {
 #pragma HLS UNROLL
 #pragma HLS LOOP_TRIPCOUNT min = kReplicas max = kReplicas avg = kReplicas
-      matvecmul_gemm_stream(a[s], b[s], c[s], b_cols);
+      matvecmul_gemm_stream(a, b, c, b_cols);
     }
   }
 }
 
-static void matvecmul_to_stream_a(RawDataT *a, StreamT sa[kReplicas],
+static void matvecmul_to_stream_a(RawDataT *a, StreamT &sa,
                                   const int rows, const int cols) {
 #pragma HLS INLINE off
   const int tcols = cols / kPackets;
@@ -124,13 +124,13 @@ a_rows:
         const int cols_shift = col;
         const int shift = cols_shift + row_shift;
         RawDataT packet = a[shift];
-        sa[s].write(packet);
+        sa.write(packet);
       }
     }
   }
 }
 
-static void matvecmul_to_stream_b(RawDataT *a, StreamT sa[kReplicas],
+static void matvecmul_to_stream_b(RawDataT *a, StreamT &sa,
                                   const int cols, const int rep_rows) {
 #pragma HLS INLINE off
   const int tcols = cols / kPackets;
@@ -158,13 +158,13 @@ b_mat_reps:
       for (int s = 0; s < kReplicas; ++s) {
 #pragma HLS UNROLL
 #pragma HLS LOOP_TRIPCOUNT min = kReplicas max = kReplicas avg = kReplicas
-        sa[s].write(packet);
+        sa.write(packet);
       }
     }
   }
 }
 
-static void matvecmul_from_stream(RawDataT *a, StreamSingleT sa[kReplicas],
+static void matvecmul_from_stream(RawDataT *a, StreamSingleT &sa,
                                   const int rows) {
 #pragma HLS INLINE off
   const int trows = rows / kPackets;
@@ -187,7 +187,7 @@ c_rows:
 #pragma HLS UNROLL
         const int low = olow + s * kDataWidth;
         const int high = low + kDataWidth - 1;
-        packet(high, low) = sa[s].read();
+        packet(high, low) = sa.read();
       }
       a[i] = packet;
     }
@@ -218,20 +218,18 @@ void matvecmul(RawDataT *a, RawDataT *b, RawDataT *c, int a_rows, int b_cols,
   // TODO: Make this dynamic through the directive file. Here, we assume two
   // rows at a time
   // TODO: A stream is in charge of a row, whereas B stream is redundant
-  static StreamT stream_a[kReplicas];
+  static StreamT stream_a;
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_a
-#pragma HLS stream variable = stream_a[0] depth = 16
-#pragma HLS stream variable = stream_a[1] depth = 16
-  static StreamT stream_b[kReplicas];
+#pragma HLS STREAM variable=stream_a depth=16 type=fifo
+
+  static StreamT stream_b;
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_b
-#pragma HLS stream variable = stream_b[0] depth = 16
-#pragma HLS stream variable = stream_b[1] depth = 16
+#pragma HLS STREAM variable=stream_b depth=16 type=fifo
 
   // TODO: Make this dynamic through the directive file. Here we assume FLOAT32
-  static StreamSingleT stream_out[kReplicas];
+  static StreamSingleT stream_out;
 #pragma HLS ARRAY_PARTITION dim = 0 type = complete variable = stream_out
-#pragma HLS stream variable = stream_out[0] depth = 16
-#pragma HLS stream variable = stream_out[1] depth = 16
+#pragma HLS STREAM variable=stream_out depth=16 type=fifo
 
 #pragma HLS dataflow
   matvecmul_to_stream_a(a, stream_a, a_rows, b_cols);

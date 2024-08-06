@@ -11,18 +11,18 @@
 #include "common/config.h"
 
 #ifndef A_ROWS
-static constexpr int kARows = kPackets; // 4096
+static constexpr int kARows = kPackets;
 #else
 static constexpr int kARows = A_ROWS;
 #endif
 #ifndef B_COLS
-static constexpr int kBCols = 4096;
+static constexpr int kBCols = 32768;
 #else
 static constexpr int kBCols = B_COLS;
 #endif
 
 #ifndef REPLICAS
-static constexpr int kReplicas = 2;
+static constexpr int kReplicas = 1;
 #else
 static constexpr int kReplicas = REPLICAS;
 #endif
