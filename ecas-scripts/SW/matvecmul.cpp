@@ -59,13 +59,12 @@ int main(int argc, char** argv) {
               << "C cols: " << c_cols << std::endl;
 
     // Compute sizes
-    int size_a = a_rows * b_cols;
-    int size_b = c_cols * b_cols;
-    int size_c = a_rows * c_cols;
+    int padded_rows = next_power_of_two(a_rows);
+    int padded_cols = next_power_of_two(b_cols);
 
-    int padded_size_a = next_power_of_two(size_a);
-    int padded_size_b = next_power_of_two(size_b);
-    int padded_size_c = next_power_of_two(size_c);
+    int size_a = padded_rows * padded_cols;
+    int size_b = c_cols * padded_cols;
+    int size_c = padded_rows * c_cols;
 
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
@@ -79,18 +78,18 @@ int main(int argc, char** argv) {
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, padded_size_a * sizeof(float), matvecmul.group_id(0));
-    auto bo_b = xrt::bo(device, padded_size_b * sizeof(float), matvecmul.group_id(1));
-    auto bo_c = xrt::bo(device, padded_size_c * sizeof(float), matvecmul.group_id(2));
+    auto bo_a = xrt::bo(device, size_a * sizeof(float), matvecmul.group_id(0));
+    auto bo_b = xrt::bo(device, size_b * sizeof(float), matvecmul.group_id(1));
+    auto bo_c = xrt::bo(device, size_c * sizeof(float), matvecmul.group_id(2));
 
     // Map the contents of the buffer object into host memory
     auto bo_a_map = bo_a.map<float*>();
     auto bo_b_map = bo_b.map<float*>();
     auto bo_c_map = bo_c.map<float*>();
 
-    std::fill(bo_a_map, bo_a_map + padded_size_a, 0.0f);
-    std::fill(bo_b_map, bo_b_map + padded_size_b, 0.0f);
-    std::fill(bo_c_map, bo_c_map + padded_size_c, 0.0f);
+    std::fill(bo_a_map, bo_a_map + size_a, 0.0f);
+    std::fill(bo_b_map, bo_b_map + size_b, 0.0f);
+    std::fill(bo_c_map, bo_c_map + size_c, 0.0f);
     
     // Filling data
     std::cout << "Filling Buffers\n";
@@ -141,8 +140,8 @@ int main(int argc, char** argv) {
     END_PROFILE(kernel_execution);
 
     // Multiply by software
-    float c_sw[padded_size_c];
-    std::fill(c_sw, c_sw + padded_size_c, 0.0f);
+    float c_sw[size_c];
+    std::fill(c_sw, c_sw + size_c, 0.0f);
     for (int row = 0; row < a_rows; ++row) {
         c_sw[row] = 0.f;
         for (int k = 0; k < b_cols; ++k) {
