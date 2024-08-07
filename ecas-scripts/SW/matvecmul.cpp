@@ -51,20 +51,20 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[1]);
     int b_cols = std::stoi(argv[2]);
-    //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 0b111));
+    b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 0b111));
     int c_cols = 1;
 
     // Compute sizes
-    int padded_rows = next_power_of_two(a_rows);
-    int padded_cols = next_power_of_two(b_cols);
+    //int padded_rows = next_power_of_two(a_rows);
+    //int padded_cols = next_power_of_two(b_cols);
 
-    std::cout << "A rows: " << padded_rows << "\n"
-          << "B cols: " << padded_cols << "\n"
+    std::cout << "A rows: " << a_rows << "\n"
+          << "B cols: " << b_cols << "\n"
           << "C cols: " << c_cols << std::endl;
 
-    int size_a = padded_rows * padded_cols;
-    int size_b = c_cols * padded_cols;
-    int size_c = padded_rows * c_cols;
+    int size_a = a_rows * b_cols;
+    int size_b = c_cols * b_cols;
+    int size_c = a_rows * c_cols;
 
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
@@ -124,13 +124,13 @@ int main(int argc, char** argv) {
     }
 
     // Synchronize buffer content with device side
-    std::cout << "synchronize input buffer data to device global memory\n";
+    std::cout << "Synchronize input buffer data to device global memory\n";
     START_PROFILE(kernel_execution, cynq_profiler, 10)
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     //std::cout << "Execution of the kernel\n";
-    auto run = matvecmul(bo_a, bo_b, bo_c, padded_rows, padded_cols, c_cols);
+    auto run = matvecmul(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
     //std::cout << "Waiting to the end\n";
     run.wait();
 
