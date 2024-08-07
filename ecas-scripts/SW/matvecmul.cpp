@@ -58,8 +58,8 @@ int main(int argc, char** argv) {
     int padded_rows = next_power_of_two(a_rows);
     int padded_cols = next_power_of_two(b_cols);
 
-    std::cout << "A rows: " << a_rows << "\n"
-          << "B cols: " << b_cols << "\n"
+    std::cout << "A rows: " << padded_rows << "\n"
+          << "B cols: " << padded_cols << "\n"
           << "C cols: " << c_cols << std::endl;
 
     int size_a = padded_rows * padded_cols;
