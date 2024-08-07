@@ -54,13 +54,13 @@ int main(int argc, char** argv) {
     //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 0b111));
     int c_cols = 1;
 
-    std::cout << "A rows: " << a_rows << "\n"
-              << "B cols: " << b_cols << "\n"
-              << "C cols: " << c_cols << std::endl;
-
     // Compute sizes
     int padded_rows = next_power_of_two(a_rows);
     int padded_cols = next_power_of_two(b_cols);
+
+    std::cout << "A rows: " << a_rows << "\n"
+          << "B cols: " << b_cols << "\n"
+          << "C cols: " << c_cols << std::endl;
 
     int size_a = padded_rows * padded_cols;
     int size_b = c_cols * padded_cols;
@@ -98,11 +98,11 @@ int main(int argc, char** argv) {
     std::cout << "A: " << std::endl;
     for (int row = 0; row < a_rows; ++row) {
         for (int col = 0; col < b_cols; ++col) {
-        bo_a_map[col + row * b_cols] = as;
-        if (a_rows < 16 && b_cols < 16) {
-          std::cout << as << ", ";
-        }
-        as += 0.01;
+          bo_a_map[col + row * b_cols] = as;
+          if (a_rows < 16 && b_cols < 16) {
+            std::cout << as << ", ";
+          }
+          as += 0.01;
         }
         if (a_rows < 16 && b_cols < 16) {
           std::cout << std::endl;
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     //std::cout << "Execution of the kernel\n";
-    auto run = matvecmul(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
+    auto run = matvecmul(bo_a, bo_b, bo_c, padded_rows, padded_cols, c_cols);
     //std::cout << "Waiting to the end\n";
     run.wait();
 
