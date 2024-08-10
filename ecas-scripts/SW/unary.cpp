@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: unary\n";
-    auto run = unary(bo_a, bo_c, padded_size, op); // 0: pass, 1: relu, 2: silu
+    auto run = unary(bo_a, bo_c, size, op); // 0: pass, 1: relu, 2: silu
     std::cout << "Waiting to the end\n";
     run.wait();
 

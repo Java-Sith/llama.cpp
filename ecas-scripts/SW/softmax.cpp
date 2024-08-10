@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: softmax\n";
-    auto run = softmax(bo_a, bo_c, padded_size);
+    auto run = softmax(bo_a, bo_c, size);
     std::cout << "Waiting to the end\n";
     run.wait();
 

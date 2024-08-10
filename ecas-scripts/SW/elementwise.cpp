@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
     bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: elementwise\n";
-    auto run = elementwise(bo_a, bo_b, bo_c, padded_size, op); // 0: add, 1: mult
+    auto run = elementwise(bo_a, bo_b, bo_c, size, op); // 0: add, 1: mult
     std::cout << "Waiting to the end\n";
     run.wait();
 
