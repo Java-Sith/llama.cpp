@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[1]);
     int b_cols = std::stoi(argv[2]);
-    //b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 4));
+    b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 0b111));
     int op = std::stoi(argv[3]);
 
     std::cout << "A rows: " << a_rows << "\n"
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
     // Compute sizes
     int size = a_rows * b_cols;
-    int padded_size = next_power_of_two(size);
+    //int padded_size = next_power_of_two(size);
 
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
@@ -55,9 +55,9 @@ int main(int argc, char** argv) {
     setup_time->tick();
 
     std::cout << "Allocate Buffer in Global Memory\n";
-    auto bo_a = xrt::bo(device, padded_size * sizeof(float), elementwise.group_id(0));
-    auto bo_b = xrt::bo(device, padded_size * sizeof(float), elementwise.group_id(1));
-    auto bo_c = xrt::bo(device, padded_size * sizeof(float), elementwise.group_id(2));
+    auto bo_a = xrt::bo(device, size * sizeof(float), elementwise.group_id(0));
+    auto bo_b = xrt::bo(device, size * sizeof(float), elementwise.group_id(1));
+    auto bo_c = xrt::bo(device, size * sizeof(float), elementwise.group_id(2));
 
     // Map the contents of the buffer object into host memory
     auto bo_a_map = bo_a.map<float*>();
@@ -68,9 +68,9 @@ int main(int argc, char** argv) {
     std::cout << "Filling Buffers\n";
     //std::copy(a.begin(), a.end(), bo_a_mm_map);
     //std::copy(b.begin(), b.end(), bo_b_mm_map);
-    std::fill(bo_a_map, bo_a_map + padded_size, 0.0f);
-    std::fill(bo_b_map, bo_b_map + padded_size, 0.0f);
-    std::fill(bo_c_map, bo_c_map + padded_size, 0.0f);
+    std::fill(bo_a_map, bo_a_map + size, 0.0f);
+    std::fill(bo_b_map, bo_b_map + size, 0.0f);
+    std::fill(bo_c_map, bo_c_map + size, 0.0f);
 
     float as = 0.02, bs = 0.03;
     std::cout << "A: " << std::endl;
