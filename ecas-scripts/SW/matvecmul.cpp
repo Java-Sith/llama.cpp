@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
-    if (argc != 3) {
+    if (argc != 4) {
         return EXIT_FAILURE;
     }
     
@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
     static std::string binaryFile = "../HW/package.hw/kernels.xclbin";
     int a_rows = std::stoi(argv[1]);
     int b_cols = std::stoi(argv[2]);
+    int b_rows = std::stoi(argv[3]);
     b_cols = b_cols < 8 ? 8 : (b_cols - (b_cols & 0b111));
     int c_cols = 1;
 
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
     GET_PROFILE_INSTANCE(setup_time, cynq_profiler);
     setup_time->reset();
 
-    std::cout << "Open the device" << device_index << std::endl;
+    std::cout << "Open the device " << device_index << std::endl;
     auto device = xrt::device(device_index);
     std::cout << "Load the xclbin " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);;
@@ -123,49 +124,53 @@ int main(int argc, char** argv) {
       std::cout << std::endl;
     }
 
-    // Synchronize buffer content with device side
-    std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    for (int row = 0; row < b_rows; ++row)
+    {
+      // Synchronize buffer content with device side
+      std::cout << "Synchronize input buffer data to device global memory\n";
+      START_PROFILE(kernel_execution, cynq_profiler, 10)
+      bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+      bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-    //std::cout << "Execution of the kernel\n";
-    auto run = matvecmul(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
-    //std::cout << "Waiting to the end\n";
-    run.wait();
+      //std::cout << "Execution of the kernel\n";
+      auto run = matvecmul(bo_a, bo_b, bo_c, a_rows, b_cols, c_cols);
+      //std::cout << "Waiting to the end\n";
+      run.wait();
 
-    // Get the output;
-    //std::cout << "Get the output data from the device" << std::endl;
-    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution);
+      // Get the output;
+      //std::cout << "Get the output data from the device" << std::endl;
+      bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+      END_PROFILE(kernel_execution);
 
-    // Multiply by software
-    float c_sw[size_c];
-    std::fill(c_sw, c_sw + size_c, 0.0f);
-    for (int row = 0; row < a_rows; ++row) {
-        c_sw[row] = 0.f;
-        for (int k = 0; k < b_cols; ++k) {
-          c_sw[row] += bo_a_map[row * b_cols + k] * bo_b_map[k];
+      // Multiply by software
+      float c_sw[size_c];
+      std::fill(c_sw, c_sw + size_c, 0.0f);
+      for (int row = 0; row < a_rows; ++row) {
+          c_sw[row] = 0.f;
+          for (int k = 0; k < b_cols; ++k) {
+            c_sw[row] += bo_a_map[row * b_cols + k] * bo_b_map[k];
+          }
+      }
+
+      // Compare results
+      std::cout << "C_SW - C_HW: " << std::endl;
+      for (int row = 0; row < a_rows; ++row) {
+        if (a_rows < 16 && b_cols < 16) {
+          std::cout << c_sw[row] << " - " << bo_c_map[row] << std::endl;
         }
-    }
-
-    // Compare results
-    std::cout << "C_SW - C_HW: " << std::endl;
-    for (int row = 0; row < a_rows; ++row) {
-      if (a_rows < 16 && b_cols < 16) {
-        std::cout << c_sw[row] << " - " << bo_c_map[row] << std::endl;
+        float err = fabs(c_sw[row] - bo_c_map[row]) / c_sw[row];
+        // Check for 0.1%
+        if (err > 0.001) {
+          std::cerr << "Error in index: " << row
+                    << " Val: " << err
+                    << " C_HW: " << bo_c_map[row] << " C_SW: " << c_sw[row] << std::endl;
+          return -1;
+        }
       }
-      float err = fabs(c_sw[row] - bo_c_map[row]) / c_sw[row];
-      // Check for 0.1%
-      if (err > 0.001) {
-        std::cerr << "Error in index: " << row
-                  << " Val: " << err
-                  << " C_HW: " << bo_c_map[row] << " C_SW: " << c_sw[row] << std::endl;
-        return -1;
-      }
-    }
 
-    std::cout << cynq_profiler << std::endl;
+      std::cout << cynq_profiler << std::endl;
+    }
+    
     std::cout << "TEST PASSED\n";
     return 0;
 }
