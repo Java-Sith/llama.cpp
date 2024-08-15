@@ -454,7 +454,7 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Execute the RMSNorm kernel
-    auto run = rmsnorm(bo_a, bo_c, padded_size);
+    auto run = rmsnorm(bo_a, bo_c, size);
     run.wait();
 
     // Synchronize output buffer with host
@@ -678,9 +678,9 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     auto bo_c_map = bo_c.map<float*>();
 
     // Fill the buffers with zeroes
-    std::fill(bo_a_map, bo_a_map + padded_size0, 0.0f);
-    std::fill(bo_b_map, bo_b_map + padded_size1, 0.0f);
-    std::fill(bo_c_map, bo_c_map + padded_dst_size, 0.0f);
+    std::fill(bo_a_map, bo_a_map + src0_size, 0.0f);
+    std::fill(bo_b_map, bo_b_map + src1_size, 0.0f);
+    std::fill(bo_c_map, bo_c_map + dst_size, 0.0f);
 
     // Copy src0 data to A buffer
     for (int64_t i = 0; i < ne01; ++i) {
