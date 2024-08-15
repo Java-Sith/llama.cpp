@@ -167,10 +167,9 @@ int main(int argc, char** argv) {
           return -1;
         }
       }
-
-      std::cout << cynq_profiler << std::endl;
     }
     
+    std::cout << cynq_profiler << std::endl;
     std::cout << "TEST PASSED\n";
     return 0;
 }
