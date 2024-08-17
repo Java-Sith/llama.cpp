@@ -2419,6 +2419,10 @@ static inline int ggml_up(int n, int m) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef NDEBUG
+int iterations = 0;
+#endif
+
 struct ggml_context * ggml_init(struct ggml_init_params params) {
     // make this function thread safe
     ggml_critical_section_start();
@@ -7475,6 +7479,13 @@ static void ggml_compute_forward_add_f32(
     const int ir0 = dr*ith;
     const int ir1 = MIN(ir0 + dr, nr);
 
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("Add operation using rows: %d, cols: %d", ne1, ne0);
+    }
+#endif
+
     if (nb10 == sizeof(float)) {
         for (int ir = ir0; ir < ir1; ++ir) {
             // src1 is broadcastable across src0 and dst in i1, i2, i3
@@ -8332,16 +8343,15 @@ static void ggml_compute_forward_mul_f32(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-
-#ifdef SHAPES
-    printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
-    printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
-    printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
-    printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
-#endif
-
     GGML_ASSERT( nb0 == sizeof(float));
     GGML_ASSERT(nb00 == sizeof(float));
+
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("Mul operation using rows: %d, cols: %d", ne1, ne0);
+    }
+#endif
 
     if (nb10 == sizeof(float)) {
         for (int64_t ir = ith; ir < nr; ir += nth) {
@@ -9985,17 +9995,17 @@ static void ggml_compute_forward_rms_norm_f32(
 
     GGML_TENSOR_UNARY_OP_LOCALS
 
-
-#ifdef SHAPES
-    printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
-    printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
-    printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
-#endif
-
     float eps;
     memcpy(&eps, dst->op_params, sizeof(float));
 
     GGML_ASSERT(eps > 0.0f);
+
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("RMS Norm operation using rows: %d, cols: %d", ne01, ne00);
+    }
+#endif
 
     // TODO: optimize
     for (int64_t i03 = 0; i03 < ne03; i03++) {
@@ -10532,6 +10542,13 @@ void ggml_compute_forward_mul_mat(
 
     const int64_t ir110 = dr1*ith1;
     const int64_t ir111 = MIN(ir110 + dr1, nr1);
+
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("Matmul operation using A rows: %d, B cols: %d, C cols: %d", ne01, ne10, ne0);
+    }
+#endif
 
     //printf("ir010 = %6lld, ir011 = %6lld, ir110 = %6lld, ir111 = %6lld\n", ir010, ir011, ir110, ir111);
 
@@ -11893,13 +11910,6 @@ static void ggml_compute_forward_soft_max_f32(
 
     const int64_t ne11 = src1 ? src1->ne[1] : 1;
 
-
-#ifdef SHAPES
-    printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
-    printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
-    printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
-#endif
-
     // TODO: is this supposed to be ceil instead of floor?
     //       https://huggingface.co/mosaicml/mpt-7b/blob/main/attention.py#L370
     const uint32_t n_head_kv   = ne02;
@@ -11922,6 +11932,13 @@ static void ggml_compute_forward_soft_max_f32(
 
     // when max_bias <= 0.0f, src2 is not used and we default it to src0 to avoid branching
     float * pos = src2 ? (float *) src2->data : src0->data;
+
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("Softmax operation using size: %d", nc);
+    }
+#endif
 
     for (int i1 = ir0; i1 < ir1; i1++) {
         float * sp = (float *)((char *) src0->data + i1*src0->nb[1]);
@@ -14789,6 +14806,13 @@ void ggml_compute_forward_unary(
 
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
+#ifndef NDEBUG
+    if (iterations < 100)
+    {
+        printf("Unary operation using rows: %d, cols: %d and operation %d", dst->ne[0], dst->ne[1], op);
+    }
+#endif
+
     switch (op) {
         case GGML_UNARY_OP_ABS:
             {
@@ -15837,6 +15861,9 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
             tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
             tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3]);
         }
+    #endif
+    #ifndef NDEBUG
+        iterations++;
     #endif
 }
 

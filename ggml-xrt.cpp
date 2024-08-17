@@ -29,6 +29,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <chrono>
+#include <mutex>
+
+std::mutex kernel_mutex;
 
 #include "ggml-xrt.h"
 #include "ggml-backend-impl.h"
@@ -148,6 +151,9 @@ extern "C" void ggml_xrt_add_f32(const struct ggml_compute_params * params,
 void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
+
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
@@ -185,7 +191,6 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10 * padded_ne11;
     // int padded_dst_size = padded_ne00 * padded_ne01;
-    printf("Add operation using sizes: %d, %d, %d", src0_size, src1_size, dst_size);
 
     // Allocate XRT buffers
     auto bo_a = xrt::bo(myDevice, src0_size * sizeof(float), elementwise.group_id(0));
@@ -263,6 +268,9 @@ extern "C" void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
 void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
                       struct ggml_tensor * dst) {
 
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
+
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
@@ -295,9 +303,7 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
 
     int64_t src0_size = ne00 * ne01;
     int64_t src1_size = ne10 * ne11;
-    int64_t dst_size = ne00 * ne01;
-
-    printf("Mul operation using sizes: %d, %d, %d", src0_size, src1_size, dst_size);
+    int64_t dst_size = ne0 * ne1;
 
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10 * padded_ne11;
@@ -414,6 +420,9 @@ extern "C" void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
 void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
+
     const struct ggml_tensor * src0 = dst->src[0];
 
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
@@ -436,7 +445,6 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
 
     // Compute the padded size
     // int64_t padded_size = padded_ne00 * padded_ne01;
-    printf("RMS Norm operation using size: %d", size);
 
     // Declare Buffers
     auto bo_a = xrt::bo(myDevice, size * sizeof(float), rmsnorm.group_id(0));
@@ -503,6 +511,9 @@ extern "C" void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
 void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
+
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
     const struct ggml_tensor * src2 = dst->src[2];
@@ -566,8 +577,6 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         if (mp) {
             ggml_vec_acc_f32(nc, wp, mp);
         }
-
-        printf("Softmax operation using size: %d", nc);
 
         // Apply ALiBi bias if max_bias > 0
         if (max_bias > 0.0f) {
@@ -635,6 +644,9 @@ extern "C" void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
 void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
+
     const struct ggml_tensor * src0 = dst->src[0]; // Matrix
     const struct ggml_tensor * src1 = dst->src[1]; // Vector
 
@@ -672,7 +684,6 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10;  
     // int padded_dst_size = padded_ne00 * padded_ne11;
-    printf("Matmul operation using A rows: %d, B cols: %d, C cols: %d", ne01, ne10, ne0);
 
     // Allocate XRT buffers
     auto bo_a = xrt::bo(myDevice, src0_size * sizeof(float), matvecmul.group_id(0));
@@ -746,6 +757,9 @@ extern "C" void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
 
 void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
+
+    // Lock the mutex at the start of the function
+    std::lock_guard<std::mutex> lock(kernel_mutex);
         
     const struct ggml_tensor * src0 = dst->src[0];
 
@@ -774,8 +788,6 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
 
         // Compute the total size of the tensor
         int64_t size = ne00 * ne01;
-
-        printf("Unary operation: %d using size: %d", operation, size);
 
         // Declare Buffers
         auto bo_a = xrt::bo(myDevice, size * sizeof(float), unary.group_id(0));
