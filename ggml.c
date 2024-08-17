@@ -7462,13 +7462,6 @@ static void ggml_compute_forward_add_f32(
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
-#ifdef SHAPES
-    printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
-    printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
-    printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
-    printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
-#endif
-
     GGML_ASSERT( nb0 == sizeof(float));
     GGML_ASSERT(nb00 == sizeof(float));
 
@@ -7533,6 +7526,9 @@ static void ggml_compute_forward_add_f32(
             }
         }
     }
+    #ifndef NDEBUG
+    iterations++;
+    #endif
 }
 
 static void ggml_compute_forward_add_f16_f32(
@@ -8403,6 +8399,9 @@ static void ggml_compute_forward_mul_f32(
             }
         }
     }
+    #ifndef NDEBUG
+    iterations++;
+    #endif
 }
 
 void ggml_compute_forward_mul(
@@ -10033,6 +10032,9 @@ static void ggml_compute_forward_rms_norm_f32(
             }
         }
     }
+    #ifndef NDEBUG
+    iterations++;
+    #endif
 }
 
 void ggml_compute_forward_rms_norm(
@@ -10371,14 +10373,6 @@ void ggml_compute_forward_mul_mat(
     UNUSED(t0);
 
     GGML_TENSOR_BINARY_OP_LOCALS
-
-
-#ifdef SHAPES
-    printf("Source A: NE00 = %d, NE01 = %d\n", ne00, ne01);
-    printf("Source B: NE10 = %d, NE11 = %d\n", ne10, ne11);
-    printf("Destiny A: NE0 = %d, NE1 = %d\n", ne0, ne1);
-    printf("Destiny B: NB2 = %d, NB3 = %d\n", nb2, nb3);
-#endif
 
     const int ith = params->ith;
     const int nth = params->nth;
@@ -12001,6 +11995,9 @@ static void ggml_compute_forward_soft_max_f32(
         }
 #endif
     }
+    #ifndef NDEBUG
+    iterations++;
+    #endif
 }
 
 void ggml_compute_forward_soft_max(
@@ -14867,6 +14864,9 @@ void ggml_compute_forward_unary(
                 GGML_ASSERT(false);
             } break;
     }
+    #ifndef NDEBUG
+    iterations++;
+    #endif
 }
 
 // ggml_compute_forward_get_rel_pos
@@ -15861,9 +15861,6 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
             tensor->name, tensor->src0->name, tensor->src1->name, tensor->ne[0], tensor->ne[1],
             tensor->ne[2], tensor->ne[3], tensor->src0->ne[0], tensor->src0->ne[1], tensor->src0->ne[2], tensor->src0->ne[3]);
         }
-    #endif
-    #ifndef NDEBUG
-        iterations++;
     #endif
 }
 
