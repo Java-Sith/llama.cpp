@@ -7473,10 +7473,12 @@ static void ggml_compute_forward_add_f32(
     const int ir1 = MIN(ir0 + dr, nr);
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("Add operation using dimensions A: %ld,: %ld, B: %d, %d and C: %d, %d\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
+#endif
 #endif
 
     if (nb10 == sizeof(float)) {
@@ -8343,10 +8345,12 @@ static void ggml_compute_forward_mul_f32(
     GGML_ASSERT(nb00 == sizeof(float));
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("Mul operation using dimensions A: %ld, %ld B: %ld, %ld and C: %ld, %ld\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
+#endif
 #endif
 
     if (nb10 == sizeof(float)) {
@@ -10000,10 +10004,12 @@ static void ggml_compute_forward_rms_norm_f32(
     GGML_ASSERT(eps > 0.0f);
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("RMS Norm operation using dimensions A: %ld, %ld and C: %ld, %ld\n", ne00, ne01, ne0, ne1);
     }
+#endif
 #endif
 
     // TODO: optimize
@@ -10538,10 +10544,12 @@ void ggml_compute_forward_mul_mat(
     const int64_t ir111 = MIN(ir110 + dr1, nr1);
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("Matmul operation using dimensions A: %ld, %ld, B: %ld, %ld, and C: %ld, %ld\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
+#endif
 #endif
 
     //printf("ir010 = %6lld, ir011 = %6lld, ir110 = %6lld, ir111 = %6lld\n", ir010, ir011, ir110, ir111);
@@ -11928,10 +11936,12 @@ static void ggml_compute_forward_soft_max_f32(
     float * pos = src2 ? (float *) src2->data : src0->data;
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("Softmax operation using dimensions A: %ld, %ld and C: %ld, %ld\n", nc, nr, ne0, ne1);
     }
+#endif
 #endif
 
     for (int i1 = ir0; i1 < ir1; i1++) {
@@ -14804,10 +14814,12 @@ void ggml_compute_forward_unary(
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
 #ifndef NDEBUG
+#ifndef GGML_USE_XRT
     if (iterations < 100)
     {
         printf("Unary operation %u using dimensions: %ld, %ld\n", op, dst->ne[0], dst->ne[1]);
     }
+#endif
 #endif
 
     switch (op) {
