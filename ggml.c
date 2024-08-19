@@ -7475,7 +7475,7 @@ static void ggml_compute_forward_add_f32(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("Add operation using rows: %ld, cols: %ld\n", ne1, ne0);
+        printf("Add operation using dimensions A: %ld,: %ld, B: %d, %d and C: %d, %d\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
 #endif
 
@@ -8345,7 +8345,7 @@ static void ggml_compute_forward_mul_f32(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("Mul operation using rows: %ld, cols: %ld\n", ne1, ne0);
+        printf("Mul operation using dimensions A: %ld, %ld B: %ld, %ld and C: %ld, %ld\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
 #endif
 
@@ -10002,7 +10002,7 @@ static void ggml_compute_forward_rms_norm_f32(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("RMS Norm operation using rows: %ld, cols: %ld\n", ne01, ne00);
+        printf("RMS Norm operation using dimensions A: %ld, %ld and C: %ld, %ld\n", ne00, ne01, ne0, ne1);
     }
 #endif
 
@@ -10540,7 +10540,7 @@ void ggml_compute_forward_mul_mat(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("Matmul operation using A rows: %ld, B cols: %ld, C cols: %ld\n", ne01, ne10, ne1);
+        printf("Matmul operation using dimensions A: %ld, %ld, B: %ld, %ld, and C: %ld, %ld\n", ne00, ne01, ne10, ne11, ne0, ne1);
     }
 #endif
 
@@ -11930,7 +11930,7 @@ static void ggml_compute_forward_soft_max_f32(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("Softmax operation using size: %d\n", nc);
+        printf("Softmax operation using dimensions A: %ld, %ld and C: %ld, %ld\n", nc, nr, ne0, ne1);
     }
 #endif
 
@@ -14806,7 +14806,7 @@ void ggml_compute_forward_unary(
 #ifndef NDEBUG
     if (iterations < 100)
     {
-        printf("Unary operation using rows: %ld, cols: %ld and operation %u\n", dst->ne[0], dst->ne[1], op);
+        printf("Unary operation %u using dimensions: %ld, %ld\n", op, dst->ne[0], dst->ne[1]);
     }
 #endif
 

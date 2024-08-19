@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
-    if (argc != 3) {
+    if (argc != 4) {
         return EXIT_FAILURE;
     }
 
@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
     int a_rows = std::stoi(argv[1]);
     int c_cols = std::stoi(argv[2]);
     c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 0b111));
+    int c_rows = std::stoi(argv[3]);
 
     std::cout << "A rows: " << a_rows << "\n"
               << "C cols: " << c_cols << std::endl;
@@ -82,27 +83,31 @@ int main(int argc, char** argv) {
     }
     // std::cout << std::endl;
 
-    // Synchronize buffer content with device side
-    std::cout << "Synchronize input buffer data to device global memory\n";
-    START_PROFILE(kernel_execution, cynq_profiler, 10)
-    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    for (int row = 0; row < c_rows; ++row)
+    {
+        // Synchronize buffer content with device side
+        std::cout << "Synchronize input buffer data to device global memory\n";
+        START_PROFILE(kernel_execution, cynq_profiler, 10)
+        bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
-    std::cout << "First execution of the kernel: softmax\n";
-    auto run = softmax(bo_a, bo_c, size);
-    std::cout << "Waiting to the end\n";
-    run.wait();
+        std::cout << "First execution of the kernel: softmax\n";
+        auto run = softmax(bo_a, bo_c, size);
+        std::cout << "Waiting to the end\n";
+        run.wait();
 
-    // Get the output;
-    std::cout << "Get the output data from the device" << std::endl;
-    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    END_PROFILE(kernel_execution);
+        // Get the output;
+        std::cout << "Get the output data from the device" << std::endl;
+        bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+        END_PROFILE(kernel_execution);
 
-    std::cout << "C: " << std::endl;
-    for (int elem = 0; elem < size; ++elem) {
-        float cs;
-        cs = bo_c_map[elem];
-        //std::cout << cs << " ";
+        std::cout << "C: " << std::endl;
+        for (int elem = 0; elem < size; ++elem) {
+            float cs;
+            cs = bo_c_map[elem];
+            //std::cout << cs << " ";
+        }
     }
+    
     // std::cout << std::endl;
     // Print the duration
     std::cout << cynq_profiler << std::endl;
