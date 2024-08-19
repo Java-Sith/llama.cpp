@@ -619,7 +619,7 @@ static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -633,7 +633,8 @@ static void ggml_xrt_soft_max(
             {
                 ggml_compute_forward_soft_max(params, dst);
             } break;
-    }
+    }*/
+   ggml_compute_forward_soft_max(params, dst);
 }
 
 extern "C" void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
