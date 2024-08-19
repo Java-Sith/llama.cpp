@@ -152,7 +152,7 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
@@ -269,7 +269,7 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
                       struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
@@ -421,7 +421,7 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
 
     const struct ggml_tensor * src0 = dst->src[0];
 
@@ -512,7 +512,7 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
 
     const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
@@ -643,7 +643,7 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
 
     const struct ggml_tensor * src0 = dst->src[0]; // Matrix
     const struct ggml_tensor * src1 = dst->src[1]; // Vector
@@ -757,7 +757,7 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
-    std::lock_guard<std::mutex> lock(kernel_mutex);
+    //std::lock_guard<std::mutex> lock(kernel_mutex);
         
     const struct ggml_tensor * src0 = dst->src[0];
 
