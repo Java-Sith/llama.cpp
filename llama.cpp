@@ -11492,9 +11492,9 @@ void llama_backend_free(void) {
 #ifdef GGML_USE_MPI
     ggml_mpi_backend_free();
 #endif
-#ifdef GGML_USE_XRT
+/* #ifdef GGML_USE_XRT
     ggml_end_xrt();
-#endif
+#endif */
     ggml_quantize_free();
 }
 
