@@ -62,7 +62,6 @@ static xrt::kernel rmsnorm;
 static xrt::kernel unary;
 
 static bool g_xrt_loaded = false;
-using DataT = ap_fixed<16, 6>;
 
 bool ggml_xrt_loaded(void) {
     return g_xrt_loaded;

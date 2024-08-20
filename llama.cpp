@@ -1413,8 +1413,6 @@ static ggml_backend_buffer_type_t llama_default_buffer_type_cpu(bool host_buffer
     buft = ggml_backend_sycl_host_buffer_type();
 #elif defined(GGML_USE_CPU_HBM)
     buft = ggml_backend_cpu_hbm_buffer_type();
-// #elif defined(GGML_USE_XRT)
-//     buft = ggml_backend_xrt_host_buffer_type();
 #elif defined(GGML_USE_VULKAN)
     if (host_buffer) {
         buft = ggml_backend_vk_host_buffer_type();
@@ -1442,8 +1440,6 @@ static ggml_backend_buffer_type_t llama_default_buffer_type_offload(int gpu) {
     buft = ggml_backend_sycl_buffer_type(gpu);
 #elif defined(GGML_USE_CLBLAST)
     buft = ggml_backend_opencl_buffer_type();
-// #elif defined(GGML_USE_XRT)
-//     buft = ggml_backend_xrt_buffer_type(0);
 #elif defined(GGML_USE_KOMPUTE)
     buft = ggml_backend_kompute_buffer_type(gpu);
     if (buft == nullptr) {
@@ -11437,8 +11433,6 @@ size_t llama_max_devices(void) {
     return 1;
 #elif defined(GGML_USE_CUBLAS)
     return GGML_CUDA_MAX_DEVICES;
-// #elif defined(GGML_USE_XRT)
-//     return GGML_XRT_MAX_DEVICES;
 #elif defined(GGML_USE_VULKAN)
     return GGML_VK_MAX_DEVICES;
 #else
@@ -11498,9 +11492,9 @@ void llama_backend_free(void) {
 #ifdef GGML_USE_MPI
     ggml_mpi_backend_free();
 #endif
-#ifdef GGML_USE_XRT
+/* #ifdef GGML_USE_XRT
     ggml_end_xrt();
-#endif
+#endif */
     ggml_quantize_free();
 }
 
@@ -11674,14 +11668,6 @@ struct llama_context * llama_new_context_with_model(
             }
             ctx->backends.push_back(backend);
         }
-// #elif defined(GGML_USE_XRT)
-//         ggml_backend_t backend = ggml_backend_xrt_init(0);
-//         if (backend == nullptr) {
-//             LLAMA_LOG_ERROR("%s: failed to initialize XRT%d backend\n", __func__, 0);
-//             llama_free(ctx);
-//             return nullptr;
-//         }
-//         ctx->backends.push_back(backend);
 #elif defined(GGML_USE_KOMPUTE)
         if (model->n_gpu_layers > 0) {
             auto * backend = ggml_backend_kompute_init(model->main_gpu);

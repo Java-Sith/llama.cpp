@@ -2482,9 +2482,9 @@ struct ggml_context * ggml_init(struct ggml_init_params params) {
         ggml_vk_init_cpu_assist();
 #elif defined(GGML_USE_SYCL)
         ggml_init_sycl();
-#elif defined(GGML_USE_XRT)
+/* #elif defined(GGML_USE_XRT)
         ggml_init_xrt();
-#endif
+#endif */
 
         ggml_setup_op_has_task_pass();
 
