@@ -2483,8 +2483,8 @@ struct ggml_context * ggml_init(struct ggml_init_params params) {
 #elif defined(GGML_USE_SYCL)
         ggml_init_sycl();
 /* #elif defined(GGML_USE_XRT)
-        ggml_init_xrt();
-#endif */
+        ggml_init_xrt();*/
+#endif
 
         ggml_setup_op_has_task_pass();
 
