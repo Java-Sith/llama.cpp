@@ -69,8 +69,6 @@ bool ggml_xrt_loaded(void) {
 
 bool ggml_backend_is_xrt(ggml_backend_t backend);
 
-typedef void (*ggml_xrt_func_t)(const struct ggml_compute_params *params, struct ggml_tensor * dst);
-
 inline static void ggml_vec_cpy_f32 (const int n, float * y, const float * x) { for (int i = 0; i < n; ++i) y[i]  = x[i]; }
 inline static void ggml_vec_scale_f32(const int n, float * y, const float   v) { for (int i = 0; i < n; ++i) y[i] *= v; }
 inline static void ggml_vec_acc_f32 (const int n, float * y, const float * x) { for (int i = 0; i < n; ++i) y[i] += x[i]; }
@@ -355,7 +353,6 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     }
 }
 
-
 static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
@@ -500,7 +497,7 @@ static void ggml_xrt_rms_norm(
     ggml_compute_forward_rms_norm(params, dst);
 }
 
-void ggml_xrt_rope(
+static void ggml_xrt_rope(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
@@ -867,7 +864,6 @@ static void ggml_xrt_unary(
 }
 
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
-    ggml_xrt_func_t func;
     if (tensor->op == GGML_OP_MUL_MAT) {
        if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
 #ifndef NDEBUG
@@ -882,44 +878,41 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
 #endif
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
-            func = ggml_xrt_get_rows;
+            ggml_xrt_get_rows(params, tensor);
             break;
         case GGML_OP_ADD:
-            func = ggml_xrt_add;
+            ggml_xrt_add(params, tensor);
             break;
         case GGML_OP_MUL:
-            func = ggml_xrt_mul;
+            ggml_xrt_mul(params, tensor);
             break;
         case GGML_OP_UNARY:
-            func = ggml_xrt_unary;
+            ggml_xrt_unary(params, tensor);
             break;
         case GGML_OP_SOFT_MAX:
-            func = ggml_xrt_soft_max;
+            ggml_xrt_soft_max(params, tensor);
             break;
         case GGML_OP_ROPE:
-            func = ggml_xrt_rope;
+            ggml_xrt_rope(params, tensor);
             break;
         case GGML_OP_RMS_NORM:
-            func = ggml_xrt_rms_norm;
+            ggml_xrt_rms_norm(params, tensor);
             break;
         case GGML_OP_MUL_MAT:
-            func = ggml_xrt_mul_mat;
-            break;
-        case GGML_OP_MUL_MAT_ID:
-            func = ggml_xrt_mul_mat;
+            ggml_xrt_mul_mat(params, tensor);
             break;
         case GGML_OP_CPY:
-            func = ggml_xrt_dup;
+            ggml_xrt_dup(params, tensor);
             break;
         case GGML_OP_CONT:
-            func = ggml_xrt_dup;
+            ggml_xrt_dup(params, tensor);
             break;
         case GGML_OP_NONE:
         case GGML_OP_RESHAPE:
         case GGML_OP_VIEW:
         case GGML_OP_PERMUTE:
         case GGML_OP_TRANSPOSE:
-            func = ggml_xrt_nop;
+            ggml_xrt_nop(params, tensor);
             break;
         case GGML_OP_DUP:
             //func = ggml_xrt_dup;
@@ -960,6 +953,9 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         case GGML_OP_IM2COL:
             //func = ggml_xrt_im2col;
             //break;
+        case GGML_OP_MUL_MAT_ID:
+            //ggml_xrt_nop(params, tensor);
+            //break;
         case GGML_OP_SUM_ROWS:
             //func = ggml_xrt_sum_rows;
             //break;
@@ -989,7 +985,6 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     {
         func(params, tensor);
     } */
-    func(params, tensor);
     #ifdef XRT_CLOCK
     end = clock();
     time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
