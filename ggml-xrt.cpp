@@ -919,7 +919,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         case GGML_OP_VIEW:
         case GGML_OP_PERMUTE:
         case GGML_OP_TRANSPOSE:
-            ggml_xrt_nop(params, tensor);
+            func = ggml_xrt_nop;
             break;
         case GGML_OP_DUP:
             //func = ggml_xrt_dup;
@@ -978,7 +978,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         default:
             return false;
     }
-    if (params->ith != 0) {
+    /* if (params->ith != 0) {
         return true;
     }
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
@@ -988,7 +988,8 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     tensor->op != GGML_OP_TRANSPOSE && tensor->op != GGML_OP_PERMUTE)
     {
         func(params, tensor);
-    }
+    } */
+    func(params, tensor);
     #ifdef XRT_CLOCK
     end = clock();
     time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
