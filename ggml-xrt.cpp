@@ -84,7 +84,6 @@ GGML_CALL static void ggml_xrt_set_device(const int main_device) {
 
     if (g_main_device != main_device && g_device_count > 1) {
         g_main_device = main_device;
-        g_main_device_index = get_device_index_by_id(g_main_device);
         //cudaDeviceProp prop;
         //CUDA_CHECK(cudaGetDeviceProperties(&prop, g_main_device));
         //fprintf(stderr, "%s: using device %d (%s) as main device\n", __func__, g_main_device, prop.name);
