@@ -227,7 +227,7 @@ static void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -241,8 +241,8 @@ static void ggml_xrt_add(
             {
                 ggml_compute_forward_add(params, dst);
             } break;
-    }
-    //ggml_compute_forward_add(params, dst);
+    }*/
+    ggml_compute_forward_add(params, dst);
 }
 
 // ggml_compute_forward_mul
@@ -322,6 +322,10 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
             ggml_vec_cpy_f32(src0_size, bo_a_map, x);
             ggml_vec_cpy_f32(src1_size, bo_b_map, y);
 
+#ifndef NDEBUG
+            std::cout << "Execution of the kernel Elementwise Mul\n";
+#endif
+
             // Synchronize buffers with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -332,6 +336,10 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
 
             // Synchronize results back to host
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+#ifndef NDEBUG
+            std::cout << "Get the output data from the device" << std::endl;
+#endif
 
             // Copy results to dst
             /*for (int i = 0; i < dst_size; ++i) {
@@ -346,7 +354,7 @@ static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -360,8 +368,8 @@ static void ggml_xrt_mul(
             {
                 ggml_compute_forward_mul(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_mul(params, dst);
+    }
+    //ggml_compute_forward_mul(params, dst);
 }
 
 // ggml_compute_forward_transpose
