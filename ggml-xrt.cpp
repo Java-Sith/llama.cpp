@@ -908,6 +908,9 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
             }*/
             const float * x = (float *) src0->data + i02*nb2 + i03*nb3;
             ggml_vec_cpy_f32(size, bo_a_map, x);
+#ifndef NDEBUG
+            std::cout << "Execution of the kernel Matmul\n";
+#endif
             // Synchronize input buffer with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -917,6 +920,10 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
 
             // Synchronize output buffer with host
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+#ifndef NDEBUG
+            std::cout << "Get the output data from the device" << std::endl;
+#endif
 
             // Copy Data from Buffers to Tensors
             /*for (int64_t i = 0; i < size; ++i) {
