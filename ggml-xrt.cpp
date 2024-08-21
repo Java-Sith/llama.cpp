@@ -194,6 +194,8 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
             ggml_vec_cpy_f32(src0_size, bo_a_map, x);
             ggml_vec_cpy_f32(src1_size, bo_b_map, y);
 
+            std::cout << "Execution of the kernel\n";
+
             // Synchronize buffers with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -204,6 +206,8 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
 
             // Synchronize results back to host
             bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+            std::cout << "Get the output data from the device" << std::endl;
 
             // Copy results to dst
             /*for (int i = 0; i < dst_size; ++i) {
