@@ -663,10 +663,16 @@ static bool ggml_xrt_can_mul_mat(const struct ggml_tensor * src0, const struct g
         src0->type == GGML_TYPE_F32 &&
         (ne0 >= 32 && ne1 >= 32 && ne10 >= 32)) {
 
+#ifndef NDEBUG
+        printf("Can matmul: True")
+#endif
         return true;
+    } else {
+#ifndef NDEBUG
+        printf("Can matmul: False")
+#endif
+        return false;
     }
-
-    return false;
 }
 
 void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
