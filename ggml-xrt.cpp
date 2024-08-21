@@ -195,7 +195,7 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
             ggml_vec_cpy_f32(src1_size, bo_b_map, y);
 
 #ifndef NDEBUG
-            std::cout << "Execution of the kernel\n";
+            std::cout << "Execution of the kernel Elementwise Add\n";
 #endif
 
             // Synchronize buffers with device
