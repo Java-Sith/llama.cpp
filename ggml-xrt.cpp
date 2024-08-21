@@ -602,6 +602,10 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         // Copy input data to device buffer
         ggml_vec_cpy_f32(nc, bo_a_map, wp);
 
+#ifndef NDEBUG
+        std::cout << "Execution of the kernel Elementwise Mul\n";
+#endif
+
         // Synchronize buffers to device
         bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -611,6 +615,10 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
 
         // Synchronize buffers from device
         bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+#ifndef NDEBUG
+        std::cout << "Get the output data from the device" << std::endl;
+#endif
 
         // Copy output data to destination tensor
         ggml_vec_cpy_f32(nc, dp, bo_c_map);
