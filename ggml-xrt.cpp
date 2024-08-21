@@ -820,6 +820,10 @@ static void ggml_xrt_mul_mat(
             {
                 ggml_xrt_mul_mat_f32(params, dst);
             } break;
+        case GGML_TYPE_F16:
+            {
+                ggml_xrt_mul_mat_f32(params, dst);
+            } break;
         default:
             {
                 ggml_compute_forward_mul_mat(params, dst);
