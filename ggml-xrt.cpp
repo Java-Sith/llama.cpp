@@ -856,7 +856,6 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
     const struct ggml_tensor * src0 = dst->src[0];
 
     GGML_ASSERT(src0->nb[0] == sizeof(float));
-    assert(params->ith == 0);
     assert(ggml_are_same_shape(src0, dst));
 
     if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
@@ -909,7 +908,7 @@ void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
             const float * x = (float *) src0->data + i02*nb2 + i03*nb3;
             ggml_vec_cpy_f32(size, bo_a_map, x);
 #ifndef NDEBUG
-            std::cout << "Execution of the kernel Matmul\n";
+            std::cout << "Execution of the kernel Unary\n";
 #endif
             // Synchronize input buffer with device
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
