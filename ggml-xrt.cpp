@@ -815,11 +815,15 @@ static void ggml_xrt_mul_mat(
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
 
-    if (ggml_xrt_can_mul_mat(src0, src1, dst))
-    {
-        ggml_xrt_mul_mat_f32(params, dst);
-    } else {
-        ggml_compute_forward_mul_mat(params, dst);
+    switch (src0->type) {
+        case GGML_TYPE_F32:
+            {
+                ggml_xrt_mul_mat_f32(params, dst);
+            } break;
+        default:
+            {
+                ggml_compute_forward_mul_mat(params, dst);
+            } break;
     }
     //ggml_compute_forward_mul_mat(params, dst);
 }
