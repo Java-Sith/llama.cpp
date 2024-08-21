@@ -689,6 +689,8 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
+    const enum ggml_type type = src0->type;
+
     GGML_ASSERT(ne0 == ne01);
     GGML_ASSERT(ne1 == ne11);
     GGML_ASSERT(ne2 == ne12);
@@ -736,6 +738,13 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     // broadcast factors
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
+    const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
+
+    if (type != GGML_TYPE_F32)
+    {
+        assert(params->wsize >= desired_wsize);
+    }
+    
 
     /*for (int64_t i = 0; i < ne01; ++i) {
         for (int64_t j = 0; j < ne00; ++j) {
@@ -773,6 +782,9 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
             const int64_t i02 = i12/r2;
 
             const float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
+            if (type != GGML_TYPE_F32) {
+                x = (float *) params->wdata + i13*ne12*src0_size + i12*src0_size;
+            }
             ggml_vec_cpy_f32(src0_size, bo_a_map, x);
 
             for (int64_t row = 0; row < ne11; ++row)
