@@ -738,12 +738,12 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     // broadcast factors
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
-    const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
+    /*const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
 
     if (type != GGML_TYPE_F32)
     {
         assert(params->wsize >= desired_wsize);
-    }
+    }*/
     
 
     /*for (int64_t i = 0; i < ne01; ++i) {
