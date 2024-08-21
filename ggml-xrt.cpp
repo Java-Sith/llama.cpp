@@ -660,8 +660,7 @@ static bool ggml_xrt_can_mul_mat(const struct ggml_tensor * src0, const struct g
     if (dst->op != GGML_OP_MUL_MAT_ID &&
         ggml_is_contiguous(src0) &&
         ggml_is_contiguous(src1) &&
-        src0->type == GGML_TYPE_F32 &&
-        (ne0 >= 32 && ne1 >= 32 && ne10 >= 32)) {
+        src0->type == GGML_TYPE_F32) {
 
 #ifndef NDEBUG
         printf("Can matmul: True\n");
