@@ -664,12 +664,12 @@ static bool ggml_xrt_can_mul_mat(const struct ggml_tensor * src0, const struct g
         (ne0 >= 32 && ne1 >= 32 && ne10 >= 32)) {
 
 #ifndef NDEBUG
-        printf("Can matmul: True");
+        printf("Can matmul: True\n");
 #endif
         return true;
     } else {
 #ifndef NDEBUG
-        printf("Can matmul: False");
+        printf("Can matmul: False\n");
 #endif
         return false;
     }
