@@ -746,7 +746,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
                 const int64_t i03 = i13/r3;
                 const int64_t i02 = i12/r2;
 
-                const float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
+                const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
                 if (type != GGML_TYPE_F32) {
                     x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
                 }
