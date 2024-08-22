@@ -174,18 +174,6 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
         for (int64_t i02 = 0; i02 < ne02; i02++)
         {
             // Copy tensor data to buffers with broadcasting
-            /*for (int i = 0; i < src0_size; ++i) {
-                bo_a_map[i] = ((float*)src0->data)[i];
-            }
-
-            for (int i = 0; i < src1_size; ++i) {
-                int row = i / ne10;
-                int col = i % ne10;
-                int src1_i = (ne11 == 1) ? 0 : (row % ne11);
-                int src1_j = col % ne10;
-
-                bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
-            }*/
 
             float *x = (float *)src0->data + i02*nb2 + i03*nb3;
             float *y = (float *)src1->data + i02*nb2 + i03*nb3;
@@ -213,10 +201,6 @@ void ggml_xrt_add_f32(const struct ggml_compute_params * params,
             std::cout << "Get the output data from the device" << std::endl;
 #endif
 
-            // Copy results to dst
-            /*for (int i = 0; i < dst_size; ++i) {
-                ((float*)dst->data)[i] = bo_c_map[i];
-            }*/
             ggml_vec_cpy_f32(dst_size, d, bo_c_map);
         }
     }
@@ -301,19 +285,6 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
     {
         for (int64_t i02 = 0; i02 < ne02; i02++)
         {
-            // Copy tensor data to buffers with broadcasting
-            /*for (int i = 0; i < src0_size; ++i) {
-                bo_a_map[i] = ((float*)src0->data)[i];
-            }
-
-            for (int i = 0; i < src1_size; ++i) {
-                int row = i / ne10;
-                int col = i % ne10;
-                int src1_i = (ne11 == 1) ? 0 : (row % ne11);
-                int src1_j = col % ne10;
-
-                bo_b_map[i] = ((float*)src1->data)[src1_i * ne10 + src1_j];
-            }*/
 
             float *x = (float *)src0->data + i02*nb2 + i03*nb3;
             float *y = (float *)src1->data + i02*nb2 + i03*nb3;
@@ -342,9 +313,6 @@ void ggml_xrt_mul_f32(const struct ggml_compute_params * params,
 #endif
 
             // Copy results to dst
-            /*for (int i = 0; i < dst_size; ++i) {
-                ((float*)dst->data)[i] = bo_c_map[i];
-            }*/
             ggml_vec_cpy_f32(dst_size, d, bo_c_map);
         }
     }
@@ -453,10 +421,6 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
     {
         for (int64_t i02 = 0; i02 < ne02; i02++)
         {
-            // Copy Data from Tensors to Buffers
-            /*for (int64_t i = 0; i < size; ++i) {
-                bo_a_map[i] = ((float*)src0->data)[i];
-            }*/
             const float * x = (float *) src0->data + i02*nb2 + i03*nb3;
             ggml_vec_cpy_f32(size, bo_a_map, x);
 
@@ -477,9 +441,6 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
             std::cout << "Get the output data from the device" << std::endl;
 #endif
             // Copy Data from Buffers to Tensors
-            /*for (int64_t i = 0; i < size; ++i) {
-                ((float*)dst->data)[i] = bo_c_map[i];
-            }*/
             float * y = (float *) dst->data + i02*nb2 + i03*nb3;
             ggml_vec_cpy_f32(size, y, bo_c_map);
         }  
@@ -603,7 +564,7 @@ void ggml_xrt_soft_max_f32(const struct ggml_compute_params * params,
         ggml_vec_cpy_f32(nc, bo_a_map, wp);
 
 #ifndef NDEBUG
-        std::cout << "Execution of the kernel Elementwise Mul\n";
+        std::cout << "Execution of the kernel Softmax\n";
 #endif
 
         // Synchronize buffers to device
@@ -636,7 +597,7 @@ static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -650,39 +611,14 @@ static void ggml_xrt_soft_max(
             {
                 ggml_compute_forward_soft_max(params, dst);
             } break;
-    }
-   //ggml_compute_forward_soft_max(params, dst);
+    }*/
+    ggml_compute_forward_soft_max(params, dst);
 }
 
-extern "C" void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
+extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst);
 
-static bool ggml_xrt_can_mul_mat(const struct ggml_tensor * src0, const struct ggml_tensor * src1,
-            struct ggml_tensor* dst) {
-
-    const int64_t ne10 = src1->ne[0];
-
-    const int64_t ne0 = dst->ne[0];
-    const int64_t ne1 = dst->ne[1];
-
-    if (dst->op != GGML_OP_MUL_MAT_ID &&
-        ggml_is_contiguous(src0) &&
-        ggml_is_contiguous(src1) &&
-        src0->type == GGML_TYPE_F32) {
-
-#ifndef NDEBUG
-        printf("Can matmul: True\n");
-#endif
-        return true;
-    } else {
-#ifndef NDEBUG
-        printf("Can matmul: False\n");
-#endif
-        return false;
-    }
-}
-
-void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
+void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
               struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
@@ -698,6 +634,8 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     GGML_TENSOR_BINARY_OP_LOCALS
 
     const enum ggml_type type = src0->type;
+    const int ith = params->ith;
+    const int nth = params->nth;
 
     GGML_ASSERT(ne0 == ne01);
     GGML_ASSERT(ne1 == ne11);
@@ -723,6 +661,7 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     int src0_size = ne00 * ne01;
     int src1_size = ne10;
     int dst_size = ne01;
+    const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
 
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10;  
@@ -746,42 +685,36 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
     // broadcast factors
     const int64_t r2 = ne12 / ne02;
     const int64_t r3 = ne13 / ne03;
-    /*const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
 
-    if (type != GGML_TYPE_F32)
-    {
-        assert(params->wsize >= desired_wsize);
-    }*/
-    
+    if (params->type == GGML_TASK_INIT) {
+        if (type != GGML_TYPE_F32)
+        {
+            assert(params->wsize >= desired_wsize);
+            for (int64_t i13 = 0; i13 < ne13; i13++)
+            {
+                for (int64_t i12 = 0; i12 < ne12; i12++)
+                {
+                    const int64_t i03 = i13/r3;
+                    const int64_t i02 = i12/r2;
+                    
+                    const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
+                    const float * wdata = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
+                    const ggml_to_float_t to_float = ggml_internal_get_type_traits(type).to_float;
 
-    /*for (int64_t i = 0; i < ne01; ++i) {
-        for (int64_t j = 0; j < ne00; ++j) {
-            bo_a_map[i * ne10 + j] = ((float*)src0->data)[i * ne00 + j];
+                    for (int64_t i01 = ith; i01 < ne01; i01 += nth)
+                    {
+                        to_float((const char *) x + i01 * nb01, wdata + i01 * ne00, ne00);
+                    }
+                }
+            }
         }
+        return;
     }
 
-    // Handle case where src1 has 1 or 2 rows
-    for (int64_t row = 0; row < ne11; ++row) {
-        for (int64_t j = 0; j < ne10; ++j) {
-            bo_b_map[j] = ((float*)((char*)src1->data + row * nb11))[j];
-        }
+    if (params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
 
-        // Synchronize buffers with device
-        bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-        bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-        // Execute the GEMV kernel
-        auto run = matvecmul(bo_a, bo_b, bo_c, ne01, ne10, 1);
-        run.wait();
-
-        // Synchronize results back to host
-        bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-
-        // Copy result to dst, assuming dst shape matches the shape of src0
-        for (int64_t i = 0; i < ne01; ++i) {
-            ((float*)((char*)dst->data + row * nb1))[i] = bo_c_map[i];
-        }
-    }*/
     for (int64_t i13 = 0; i13 < ne13; i13++)
     {
         for (int64_t i12 = 0; i12 < ne12; i12++)
@@ -791,7 +724,7 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
 
             const float * x = (float *)(char *) src0->data + i02*nb02 + i03*nb03;
             if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i13*ne12*src0_size + i12*src0_size;
+                x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
             }
             ggml_vec_cpy_f32(src0_size, bo_a_map, x);
 
@@ -824,32 +757,7 @@ void ggml_xrt_mul_mat_f32(const struct ggml_compute_params * params,
             }          
         }
     }
-}
-
-static void ggml_xrt_mul_mat(
-        const struct ggml_compute_params * params,
-        struct ggml_tensor * dst) {
-
-    /*const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
-
-    GGML_ASSERT(src1->type == GGML_TYPE_F32);
-
-    switch (src0->type) {
-        case GGML_TYPE_F32:
-            {
-                ggml_xrt_mul_mat_f32(params, dst);
-            } break;
-        case GGML_TYPE_F16:
-            {
-                ggml_xrt_mul_mat_f32(params, dst);
-            } break;
-        default:
-            {
-                ggml_compute_forward_mul_mat(params, dst);
-            } break;
-    }*/
-    ggml_compute_forward_mul_mat(params, dst);
+    //ggml_compute_forward_mul_mat(params, dst);
 }
 
 extern "C" void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
