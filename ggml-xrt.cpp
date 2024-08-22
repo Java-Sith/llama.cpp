@@ -750,7 +750,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
                 if (type != GGML_TYPE_F32) {
                     x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
                 }
-                ggml_vec_cpy_f32(src0_size, bo_a_map, x);
+                ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
 
                 for (int64_t row = 0; row < ne11; ++row)
                 {
