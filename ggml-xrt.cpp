@@ -622,11 +622,6 @@ static bool ggml_can_mul_mat_use_xrt(struct ggml_tensor * dst) {
     //const int64_t ne00 = src0->ne[0];
     //const int64_t ne01 = src0->ne[1];
 
-    const int64_t ne10 = src1->ne[0];
-
-    const int64_t ne0 = dst->ne[0];
-    const int64_t ne1 = dst->ne[1];
-
     if (dst->op != GGML_OP_MUL_MAT_ID &&
         ggml_is_contiguous(src0) &&
         ggml_is_contiguous(src1) &&
@@ -650,10 +645,6 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     //{
     const struct ggml_tensor * src0 = dst->src[0]; // Matrix
     const struct ggml_tensor * src1 = dst->src[1]; // Vector
-
-    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
-        return;
-    }
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
