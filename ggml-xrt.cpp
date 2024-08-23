@@ -646,144 +646,144 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 
     // Lock the mutex at the start of the function
     //std::lock_guard<std::mutex> lock(kernel_mutex);
-    if (ggml_can_mul_mat_use_xrt(dst))
-    {
-        const struct ggml_tensor * src0 = dst->src[0]; // Matrix
-        const struct ggml_tensor * src1 = dst->src[1]; // Vector
+    //if (ggml_can_mul_mat_use_xrt(dst))
+    //{
+    const struct ggml_tensor * src0 = dst->src[0]; // Matrix
+    const struct ggml_tensor * src1 = dst->src[1]; // Vector
 
-        if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
-            return;
-        }
+    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
 
-        GGML_TENSOR_BINARY_OP_LOCALS
+    GGML_TENSOR_BINARY_OP_LOCALS
 
-        const enum ggml_type type = src0->type;
-        const int ith = params->ith;
-        const int nth = params->nth;
+    const enum ggml_type type = src0->type;
+    const int ith = params->ith;
+    const int nth = params->nth;
 
-        GGML_ASSERT(ne0 == ne01);
-        GGML_ASSERT(ne1 == ne11);
-        GGML_ASSERT(ne2 == ne12);
-        GGML_ASSERT(ne3 == ne13);
+    GGML_ASSERT(ne0 == ne01);
+    GGML_ASSERT(ne1 == ne11);
+    GGML_ASSERT(ne2 == ne12);
+    GGML_ASSERT(ne3 == ne13);
 
-        // we don't support permuted src0 or src1
-        GGML_ASSERT(nb00 == ggml_type_size(src0->type));
-        GGML_ASSERT(nb10 == ggml_type_size(src1->type));
+    // we don't support permuted src0 or src1
+    GGML_ASSERT(nb00 == ggml_type_size(src0->type));
+    GGML_ASSERT(nb10 == ggml_type_size(src1->type));
 
-        // dst cannot be transposed or permuted
-        GGML_ASSERT(nb0 == sizeof(float));
-        GGML_ASSERT(nb0 <= nb1);
-        GGML_ASSERT(nb1 <= nb2);
-        GGML_ASSERT(nb2 <= nb3);
+    // dst cannot be transposed or permuted
+    GGML_ASSERT(nb0 == sizeof(float));
+    GGML_ASSERT(nb0 <= nb1);
+    GGML_ASSERT(nb1 <= nb2);
+    GGML_ASSERT(nb2 <= nb3);
 
-        // Determine next power of two sizes
-        // int padded_ne00 = next_power_of_two(ne00); 
-        // int padded_ne01 = next_power_of_two(ne01); 
-        // int padded_ne10 = next_power_of_two(ne10); 
-        // int padded_ne11 = ne11;                    
+    // Determine next power of two sizes
+    // int padded_ne00 = next_power_of_two(ne00); 
+    // int padded_ne01 = next_power_of_two(ne01); 
+    // int padded_ne10 = next_power_of_two(ne10); 
+    // int padded_ne11 = ne11;                    
 
-        int src0_size = ne00 * ne01;
-        int src1_size = ne10;
-        int dst_size = ne01;
-        const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
+    int src0_size = ne00 * ne01;
+    int src1_size = ne10;
+    int dst_size = ne01;
+    const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
 
-        // int padded_size0 = padded_ne00 * padded_ne01;
-        // int padded_size1 = padded_ne10;  
-        // int padded_dst_size = padded_ne00 * padded_ne11;
+    // int padded_size0 = padded_ne00 * padded_ne01;
+    // int padded_size1 = padded_ne10;  
+    // int padded_dst_size = padded_ne00 * padded_ne11;
 
-        // Allocate XRT buffers
-        auto bo_a = xrt::bo(myDevice, src0_size * sizeof(float), matvecmul.group_id(0));
-        auto bo_b = xrt::bo(myDevice, src1_size * sizeof(float), matvecmul.group_id(1)); // Single row vector size
-        auto bo_c = xrt::bo(myDevice, dst_size * sizeof(float), matvecmul.group_id(2));
+    // Allocate XRT buffers
+    auto bo_a = xrt::bo(myDevice, src0_size * sizeof(float), matvecmul.group_id(0));
+    auto bo_b = xrt::bo(myDevice, src1_size * sizeof(float), matvecmul.group_id(1)); // Single row vector size
+    auto bo_c = xrt::bo(myDevice, dst_size * sizeof(float), matvecmul.group_id(2));
 
-        // Map buffers to host memory
-        auto bo_a_map = bo_a.map<float*>();
-        auto bo_b_map = bo_b.map<float*>();
-        auto bo_c_map = bo_c.map<float*>();
+    // Map buffers to host memory
+    auto bo_a_map = bo_a.map<float*>();
+    auto bo_b_map = bo_b.map<float*>();
+    auto bo_c_map = bo_c.map<float*>();
 
-        // Fill the buffers with zeroes
-        std::fill(bo_a_map, bo_a_map + src0_size, 0.0f);
-        std::fill(bo_b_map, bo_b_map + src1_size, 0.0f);
-        std::fill(bo_c_map, bo_c_map + dst_size, 0.0f);
+    // Fill the buffers with zeroes
+    std::fill(bo_a_map, bo_a_map + src0_size, 0.0f);
+    std::fill(bo_b_map, bo_b_map + src1_size, 0.0f);
+    std::fill(bo_c_map, bo_c_map + dst_size, 0.0f);
 
-        // broadcast factors
-        const int64_t r2 = ne12 / ne02;
-        const int64_t r3 = ne13 / ne03;
+    // broadcast factors
+    const int64_t r2 = ne12 / ne02;
+    const int64_t r3 = ne13 / ne03;
 
-        if (params->type == GGML_TASK_INIT) {
-            if (type != GGML_TYPE_F32)
+    if (params->type == GGML_TASK_INIT) {
+        if (type != GGML_TYPE_F32)
+        {
+            assert(params->wsize >= desired_wsize);
+            for (int64_t i13 = 0; i13 < ne13; i13++)
             {
-                assert(params->wsize >= desired_wsize);
-                for (int64_t i13 = 0; i13 < ne13; i13++)
+                for (int64_t i12 = 0; i12 < ne12; i12++)
                 {
-                    for (int64_t i12 = 0; i12 < ne12; i12++)
-                    {
-                        const int64_t i03 = i13/r3;
-                        const int64_t i02 = i12/r2;
-                        
-                        const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
-                        float * const wdata = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
-                        ggml_to_float_t const to_float = ggml_internal_get_type_traits(type).to_float;
+                    const int64_t i03 = i13/r3;
+                    const int64_t i02 = i12/r2;
+                    
+                    const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
+                    float * const wdata = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
+                    ggml_to_float_t const to_float = ggml_internal_get_type_traits(type).to_float;
 
-                        for (int64_t i01 = ith; i01 < ne01; i01 += nth)
-                        {
-                            to_float((const char *) x + i01 * nb01, wdata + i01 * ne00, ne00);
-                        }
+                    for (int64_t i01 = ith; i01 < ne01; i01 += nth)
+                    {
+                        to_float((const char *) x + i01 * nb01, wdata + i01 * ne00, ne00);
                     }
                 }
             }
-            return;
         }
-
-        if (params->type == GGML_TASK_FINALIZE) {
-            return;
-        }
-
-        for (int64_t i13 = 0; i13 < ne13; i13++)
-        {
-            for (int64_t i12 = 0; i12 < ne12; i12++)
-            {
-                const int64_t i03 = i13/r3;
-                const int64_t i02 = i12/r2;
-
-                const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
-                if (type != GGML_TYPE_F32) {
-                    x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
-                }
-                ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
-
-                for (int64_t row = 0; row < ne11; ++row)
-                {
-                    const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13 + row * nb11);
-                    float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3 + row * nb11);
-                    ggml_vec_cpy_f32(src1_size, bo_b_map, y);
-
-    #ifndef NDEBUG
-                    std::cout << "Execution of the kernel Matmul\n";
-    #endif
-
-                    // Synchronize buffers with device
-                    bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-                    bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-                    // Execute the GEMV kernel
-                    auto run = matvecmul(bo_a, bo_b, bo_c, ne01, ne10, 1);
-                    run.wait();
-
-                    // Synchronize results back to host
-                    bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-
-    #ifndef NDEBUG
-                    std::cout << "Get the output data from the device" << std::endl;
-    #endif
-
-                    ggml_vec_cpy_f32(dst_size, d, bo_c_map);
-                }          
-            }
-        }
-    } else {
-        ggml_compute_forward_mul_mat(params, dst);
+        return;
     }
+
+    if (params->type == GGML_TASK_FINALIZE) {
+        return;
+    }
+
+    for (int64_t i13 = 0; i13 < ne13; i13++)
+    {
+        for (int64_t i12 = 0; i12 < ne12; i12++)
+        {
+            const int64_t i03 = i13/r3;
+            const int64_t i02 = i12/r2;
+
+            const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
+            if (type != GGML_TYPE_F32) {
+                x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
+            }
+            ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
+
+            for (int64_t row = 0; row < ne11; ++row)
+            {
+                const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13 + row * nb11);
+                float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3 + row * nb11);
+                ggml_vec_cpy_f32(src1_size, bo_b_map, y);
+
+#ifndef NDEBUG
+                std::cout << "Execution of the kernel Matmul\n";
+#endif
+
+                // Synchronize buffers with device
+                bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+                bo_b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+                // Execute the GEMV kernel
+                auto run = matvecmul(bo_a, bo_b, bo_c, ne01, ne10, 1);
+                run.wait();
+
+                // Synchronize results back to host
+                bo_c.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+#ifndef NDEBUG
+                std::cout << "Get the output data from the device" << std::endl;
+#endif
+
+                ggml_vec_cpy_f32(dst_size, d, bo_c_map);
+            }          
+        }
+    }
+    // } else {
+    //     ggml_compute_forward_mul_mat(params, dst);
+    // }
     //ggml_compute_forward_mul_mat(params, dst);
 }
 
