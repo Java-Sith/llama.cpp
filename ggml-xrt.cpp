@@ -704,21 +704,18 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     if (params->type == GGML_TASK_INIT) {
         if (type != GGML_TYPE_F32)
         {
-            assert(params->wsize >= desired_wsize);
-            for (int64_t i13 = 0; i13 < ne13; i13++)
-            {
-                for (int64_t i12 = 0; i12 < ne12; i12++)
-                {
-                    const int64_t i03 = i13/r3;
-                    const int64_t i02 = i12/r2;
-                    
-                    const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
-                    float * const wdata = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
-                    ggml_to_float_t const to_float = ggml_internal_get_type_traits(type).to_float;
+            float * const wdata = (float *)params->wdata;
+            const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne00);  // Dequantized row size in float
 
-                    for (int64_t i01 = ith; i01 < ne01; i01 += nth)
-                    {
-                        to_float((const char *) x + i01 * nb01, wdata + i01 * ne00, ne00);
+            assert(params->wsize >= ne01*ne02*ne03*row_size);
+            ggml_to_float_t const to_float = ggml_internal_get_type_traits(type).to_float;
+
+            for (int64_t i03 = 0; i03 < ne03; ++i03) {
+                for (int64_t i02 = 0; i02 < ne02; ++i02) {
+                    for (int64_t i01 = 0; i01 < ne01; ++i01) {
+                        // Dequantize data from src0 (quantized) into wdata (float32)
+                        to_float((char *)src0->data + i03*nb03 + i02*nb02 + i01*nb01, wdata, ne00);
+                        wdata += ne00;  // Move the wdata pointer to the next row
                     }
                 }
             }
@@ -739,7 +736,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 
             const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
             if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i13 * ne12 * src0_size + i12 * src0_size;
+                x = (float *) params->wdata + i03 * ne12 * ne01 * ne00 + i02 * ne01 * ne00;
             }
             ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
 
