@@ -10345,6 +10345,8 @@ static void ggml_compute_forward_mul_mat(
             if (type != GGML_TYPE_F32) {
                 assert(params->wsize >= desired_wsize);
                 // parallelize by src0 rows
+                printf("Wsize: %ld\n", params->wsize);
+                printf("Desired size: %ld\n", desired_wsize);
                 for (int64_t i13 = 0; i13 < ne13; i13++) {
                     for (int64_t i12 = 0; i12 < ne12; i12++) {
                         // broadcast src0 into src1 across 2nd,3rd dimension
