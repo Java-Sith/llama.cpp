@@ -677,6 +677,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     int src1_size = ne10;
     int dst_size = ne01;
     const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
+    ggml_to_float_t to_float = ggml_internal_get_type_traits(type).to_float;
 
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10;  
@@ -708,7 +709,6 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
             const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne00);  // Dequantized row size in float
 
             //assert(params->wsize >= ne01*ne02*ne03*row_size);
-            ggml_to_float_t const to_float = ggml_internal_get_type_traits(type).to_float;
 
             for (int64_t i03 = 0; i03 < ne03; ++i03) {
                 for (int64_t i02 = 0; i02 < ne02; ++i02) {
