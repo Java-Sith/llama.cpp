@@ -704,7 +704,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     if (params->type == GGML_TASK_INIT) {
         if (type != GGML_TYPE_F32)
         {
-            float * const wdata = (float *)params->wdata;
+            float * wdata = (float *)params->wdata;
             const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne00);  // Dequantized row size in float
 
             assert(params->wsize >= ne01*ne02*ne03*row_size);
