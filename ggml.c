@@ -10473,6 +10473,9 @@ void ggml_compute_forward_mul_mat(
                 const float * y = (float *) ((char *) src1->data + i12*nb12 + i13*nb13);
                       float * d = (float *) ((char *)  dst->data + i12*nb2  + i13*nb3);
 
+                printf("Wsize: %ld\n", params->wsize);
+                printf("Desired size: %ld\n", desired_wsize);
+
                 if (type != GGML_TYPE_F32) {
                     x = (float *) params->wdata + i13*ne12*ne_plane + i12*ne_plane;
                 }
