@@ -23,7 +23,7 @@ static constexpr int kRows = M_ROWS;
 static constexpr uint64_t kTotalMaxSize = kCols * kRows / kPackets;
 
 extern "C" {
-void rmsnorm(RawDataT *in1, RawDataT *out, uint64_t size);
+void rmsnorm(RawDataT *in1, RawDataT *out, uint64_t size, float epsilon);
 }
 
 #endif // __RMSNORM_H__
