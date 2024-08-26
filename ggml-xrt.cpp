@@ -405,6 +405,10 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
 
     // Compute the padded size
     // int64_t padded_size = padded_ne00 * padded_ne01;
+    float eps;
+    memcpy(&eps, dst->op_params, sizeof(float));
+
+    GGML_ASSERT(eps > 0.0f);
 
     // Declare Buffers
     auto bo_a = xrt::bo(myDevice, size * sizeof(float), rmsnorm.group_id(0));
@@ -431,7 +435,7 @@ void ggml_xrt_rms_norm_f32(const struct ggml_compute_params * params,
             bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
             // Execute the RMSNorm kernel
-            auto run = rmsnorm(bo_a, bo_c, size);
+            auto run = rmsnorm(bo_a, bo_c, size, eps);
             run.wait();
 
             // Synchronize output buffer with host
@@ -633,11 +637,21 @@ static bool ggml_can_mul_mat_use_xrt(struct ggml_tensor * dst) {
     return false;
 }
 
+void free_wdata(float* & buffer) {
+    if (buffer != nullptr) {
+        free(buffer);  // Free the memory
+        buffer = nullptr;  // Set the pointer to nullptr to avoid dangling pointer
+        std::cout << "Memory freed." << std::endl;
+    } else {
+        std::cerr << "Buffer was already freed or not allocated!" << std::endl;
+    }
+}
+
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
-              struct ggml_tensor * dst);
+              struct ggml_tensor * dst, float*& wdata);
 
 void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
-              struct ggml_tensor * dst) {
+              struct ggml_tensor * dst, float*& wdata) {
 
     // Lock the mutex at the start of the function
     //std::lock_guard<std::mutex> lock(kernel_mutex);
@@ -678,7 +692,6 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     int dst_size = ne01;
     const size_t  desired_wsize = ne13 * ne12 * src0_size * sizeof(float);
     ggml_to_float_t to_float = ggml_internal_get_type_traits(type).to_float;
-    float * wdata = calloc(src0_size * ne13 * ne12, sizeof(float));
 
     // int padded_size0 = padded_ne00 * padded_ne01;
     // int padded_size1 = padded_ne10;  
@@ -737,7 +750,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 
             const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
             if (type != GGML_TYPE_F32) {
-                x = (float *) params->wdata + i03 * ne12 * ne01 * ne00 + i02 * ne01 * ne00;
+                x = (float *) wdata + i03 * ne12 * ne01 * ne00 + i02 * ne01 * ne00;
             }
             ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
 
@@ -770,7 +783,6 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
             }          
         }
     }
-    free(wdata);
     // } else {
     //     ggml_compute_forward_mul_mat(params, dst);
     // }
@@ -885,7 +897,9 @@ static void ggml_xrt_unary(
 }
 
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
+    float* wdata = nullptr;  // Declare the buffer pointer
     if (tensor->op == GGML_OP_MUL_MAT) {
+        wdata = (float*)calloc(tensor->src[0]->ne[0] * tensor->src[0]->ne[1], sizeof(float));
        if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
 #ifndef NDEBUG
            fprintf(stderr, "%s: cannot compute %s: src0->ne[3] = %" PRId64 ", src1->ne[3] = %" PRId64 " - fallback to CPU\n", __func__, tensor->name, tensor->src[0]->ne[3], tensor->src[1]->ne[3]);
@@ -1012,6 +1026,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
     operationCounters[tensor->op]++;
     printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
     #endif
+    free_wdata(wdata);
     return true;
 }
 

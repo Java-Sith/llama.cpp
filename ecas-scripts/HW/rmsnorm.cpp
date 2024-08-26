@@ -7,12 +7,12 @@
 #include "rmsnorm.h"
 
 static void compute(hls::stream<RawDataT> &in1_stream,
-                    hls::stream<RawDataT> &out_stream, uint64_t size) {
+                    hls::stream<RawDataT> &out_stream, uint64_t size, float epsilon) {
 #pragma HLS INLINE off
   AccT sum, mean, nelems, scale;
   AccT eps;
   GET_NUMBER(sum) = 0;
-  GET_NUMBER(eps) = 0.01;
+  GET_NUMBER(eps) = epsilon;
   GET_NUMBER(nelems) = size;
 
 cumsum_out:
@@ -116,7 +116,7 @@ extern "C" {
  * b: weights (outputs, inputs) assumed transposed
  * c: output (samples, outputs)
  */
-void rmsnorm(RawDataT *in1, RawDataT *out, uint64_t size) {
+void rmsnorm(RawDataT *in1, RawDataT *out, uint64_t size, float epsilon) {
 #pragma HLS INTERFACE m_axi offset = slave port = in1 bundle = gmem0
 #pragma HLS INTERFACE m_axi offset = slave port = out bundle = gmem1
 #pragma HLS INTERFACE s_axilite register port = size
@@ -129,7 +129,7 @@ void rmsnorm(RawDataT *in1, RawDataT *out, uint64_t size) {
 
 #pragma HLS dataflow
   load_input(in1, stream_a, size);
-  compute(stream_a, stream_c, size);
+  compute(stream_a, stream_c, size, epsilon);
   store_result(out, stream_c, size);
 }
 }
