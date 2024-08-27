@@ -722,7 +722,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
             //float * wdata = (float *)params->wdata;
             const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne00);  // Dequantized row size in float
 
-            assert(wdata >= desired_wsize);
+            assert(src0_size * sizeof(float) >= desired_wsize);
 
             for (int64_t i03 = 0; i03 < ne03; ++i03) {
                 for (int64_t i02 = 0; i02 < ne02; ++i02) {
