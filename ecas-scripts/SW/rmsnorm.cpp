@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     INIT_PROFILER(cynq_profiler)
     int device_index = 0;
 
-    if (argc != 3) {
+    if (argc != 4) {
         return EXIT_FAILURE;
     }
 
@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
     int a_rows = std::stoi(argv[1]);
     int c_cols = std::stoi(argv[2]);
     c_cols = c_cols < 8 ? 8 : (c_cols - (c_cols & 0b111));
+    float eps = std::stoi(argv[3]);
 
     std::cout << "A rows: " << a_rows << "\n"
               << "C cols: " << c_cols << std::endl;
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
     bo_a.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     std::cout << "First execution of the kernel: rmsnorm\n";
-    auto run = rmsnorm(bo_a, bo_c, size);
+    auto run = rmsnorm(bo_a, bo_c, size, eps);
     std::cout << "Waiting to the end\n";
     run.wait();
 
