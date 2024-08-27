@@ -934,7 +934,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             ggml_xrt_rms_norm(params, tensor);
             break;
         case GGML_OP_MUL_MAT:
-            ggml_xrt_mul_mat(params, tensor);
+            ggml_xrt_mul_mat(params, tensor, wdata);
             break;
         case GGML_OP_CPY:
             ggml_xrt_dup(params, tensor);
