@@ -211,7 +211,7 @@ static void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -225,8 +225,8 @@ static void ggml_xrt_add(
             {
                 ggml_compute_forward_add(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_add(params, dst);
+    }
+    //ggml_compute_forward_add(params, dst);
 }
 
 // ggml_compute_forward_mul
@@ -322,7 +322,7 @@ static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -336,8 +336,8 @@ static void ggml_xrt_mul(
             {
                 ggml_compute_forward_mul(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_mul(params, dst);
+    }
+    //ggml_compute_forward_mul(params, dst);
 }
 
 // ggml_compute_forward_transpose
@@ -455,7 +455,7 @@ static void ggml_xrt_rms_norm(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
 
@@ -468,8 +468,8 @@ static void ggml_xrt_rms_norm(
             {
                 ggml_compute_forward_rms_norm(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_rms_norm(params, dst);
+    }
+    //ggml_compute_forward_rms_norm(params, dst);
 }
 
 static void ggml_xrt_rope(
@@ -601,7 +601,7 @@ static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -615,36 +615,8 @@ static void ggml_xrt_soft_max(
             {
                 ggml_compute_forward_soft_max(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_soft_max(params, dst);
-}
-
-static bool ggml_can_mul_mat_use_xrt(struct ggml_tensor * dst) {
-    const struct ggml_tensor * src0 = dst->src[0];
-    const struct ggml_tensor * src1 = dst->src[1];
-
-    //const int64_t ne00 = src0->ne[0];
-    //const int64_t ne01 = src0->ne[1];
-
-    if (dst->op != GGML_OP_MUL_MAT_ID &&
-        ggml_is_contiguous(src0) &&
-        ggml_is_contiguous(src1) &&
-        src1->type == GGML_TYPE_F32) {
-
-        return true;
     }
-
-    return false;
-}
-
-void free_wdata(float* & buffer) {
-    if (buffer != nullptr) {
-        free(buffer);  // Free the memory
-        buffer = nullptr;  // Set the pointer to nullptr to avoid dangling pointer
-        std::cout << "Memory freed." << std::endl;
-    } else {
-        std::cerr << "Buffer was already freed or not allocated!" << std::endl;
-    }
+    //ggml_compute_forward_soft_max(params, dst);
 }
 
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
@@ -655,9 +627,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 
     // Lock the mutex at the start of the function
     //std::lock_guard<std::mutex> lock(kernel_mutex);
-    //if (ggml_can_mul_mat_use_xrt(dst))
-    //{
-    const struct ggml_tensor * src0 = dst->src[0]; // Matrix
+    /*const struct ggml_tensor * src0 = dst->src[0]; // Matrix
     const struct ggml_tensor * src1 = dst->src[1]; // Vector
 
     GGML_TENSOR_BINARY_OP_LOCALS
@@ -782,11 +752,8 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
                 ggml_vec_cpy_f32(dst_size, d, bo_c_map);
             }          
         }
-    }
-    // } else {
-    //     ggml_compute_forward_mul_mat(params, dst);
-    // }
-    //ggml_compute_forward_mul_mat(params, dst);
+    }*/
+    ggml_compute_forward_mul_mat(params, dst);
 }
 
 extern "C" void ggml_xrt_unary_f32(const struct ggml_compute_params * params,
@@ -883,7 +850,7 @@ static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
@@ -892,8 +859,8 @@ static void ggml_xrt_unary(
         ggml_xrt_unary_f32(params, dst);
     } else {
         ggml_compute_forward_unary(params, dst);
-    }*/
-    ggml_compute_forward_unary(params, dst);
+    }
+    //ggml_compute_forward_unary(params, dst);
 }
 
 #ifdef XRT_CLOCK
@@ -1013,17 +980,6 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         default:
             return false;
     }
-    /* if (params->ith != 0) {
-        return true;
-    }
-    if (params->type == GGML_TASK_INIT || params->type == GGML_TASK_FINALIZE) {
-        return true;
-    }
-    if (tensor->op != GGML_OP_NONE && tensor->op != GGML_OP_RESHAPE && tensor->op != GGML_OP_VIEW &&
-    tensor->op != GGML_OP_TRANSPOSE && tensor->op != GGML_OP_PERMUTE)
-    {
-        func(params, tensor);
-    } */
     #ifdef XRT_CLOCK
     // Get the ending time
     clock_gettime(CLOCK_MONOTONIC, &end_times);
