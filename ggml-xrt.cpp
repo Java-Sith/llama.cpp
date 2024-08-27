@@ -648,10 +648,10 @@ void free_wdata(float* & buffer) {
 }
 
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
-              struct ggml_tensor * dst, float*& wdata);
+              struct ggml_tensor * dst);
 
 void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
-              struct ggml_tensor * dst, float*& wdata) {
+              struct ggml_tensor * dst) {
 
     // Lock the mutex at the start of the function
     //std::lock_guard<std::mutex> lock(kernel_mutex);
@@ -719,10 +719,10 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
     if (params->type == GGML_TASK_INIT) {
         if (type != GGML_TYPE_F32)
         {
-            //float * wdata = (float *)params->wdata;
+            float * wdata = (float *)params->wdata;
             const size_t row_size = ggml_row_size(GGML_TYPE_F32, ne00);  // Dequantized row size in float
 
-            assert(src0_size * sizeof(float) >= desired_wsize);
+            //assert(params->wsize >= ne01*ne02*ne03*row_size);
 
             for (int64_t i03 = 0; i03 < ne03; ++i03) {
                 for (int64_t i02 = 0; i02 < ne02; ++i02) {
@@ -750,7 +750,7 @@ void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
 
             const void * x = (char *) src0->data + i02*nb02 + i03*nb03;
             if (type != GGML_TYPE_F32) {
-                x = (float *) wdata + i03 * ne12 * ne01 * ne00 + i02 * ne01 * ne00;
+                x = (float *) params->wdata + i03 * ne12 * ne01 * ne00 + i02 * ne01 * ne00;
             }
             ggml_vec_cpy_f32(src0_size, bo_a_map, (float *)x);
 
@@ -896,10 +896,13 @@ static void ggml_xrt_unary(
     ggml_compute_forward_unary(params, dst);
 }
 
+#ifdef XRT_CLOCK
+int operationCounters[GGML_OP_COUNT] = {0};
+struct timespec start_times, end_times;
+#endif
+
 bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_tensor * tensor) {
-    float* wdata = nullptr;  // Declare the buffer pointer
     if (tensor->op == GGML_OP_MUL_MAT) {
-        wdata = (float*)calloc(tensor->src[0]->ne[0] * tensor->src[0]->ne[1], sizeof(float));
        if (tensor->src[0]->ne[3] != tensor->src[1]->ne[3]) {
 #ifndef NDEBUG
            fprintf(stderr, "%s: cannot compute %s: src0->ne[3] = %" PRId64 ", src1->ne[3] = %" PRId64 " - fallback to CPU\n", __func__, tensor->name, tensor->src[0]->ne[3], tensor->src[1]->ne[3]);
@@ -908,8 +911,9 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
        }
    }
 #ifdef XRT_CLOCK
-    double time_used;
-    start = clock();
+    // Get the starting time
+    int64_t elapsed_ns;
+    clock_gettime(CLOCK_MONOTONIC, &start_times);
 #endif
    switch (tensor->op) {
         case GGML_OP_GET_ROWS:
@@ -934,7 +938,7 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
             ggml_xrt_rms_norm(params, tensor);
             break;
         case GGML_OP_MUL_MAT:
-            ggml_xrt_mul_mat(params, tensor, wdata);
+            ggml_xrt_mul_mat(params, tensor);
             break;
         case GGML_OP_CPY:
             ggml_xrt_dup(params, tensor);
@@ -1021,12 +1025,13 @@ bool ggml_xrt_compute_forward(struct ggml_compute_params * params, struct ggml_t
         func(params, tensor);
     } */
     #ifdef XRT_CLOCK
-    end = clock();
-    time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000000;
+    // Get the ending time
+    clock_gettime(CLOCK_MONOTONIC, &end_times);
+    // Calculate the elapsed time in nanoseconds
+    elapsed_ns = (end_times.tv_sec - start_times.tv_sec) * BILLION + (end_times.tv_nsec - start_times.tv_nsec);
     operationCounters[tensor->op]++;
-    printf("Operation %d executed in %f microseconds. Count: %d\n", tensor->op, time_used, operationCounters[tensor->op]);
+    printf("Operation %d executed in %llu nanoseconds. Count: %d\n", tensor->op, elapsed_ns, operationCounters[tensor->op]);
     #endif
-    free_wdata(wdata);
     return true;
 }
 
