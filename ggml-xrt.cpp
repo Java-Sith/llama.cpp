@@ -211,7 +211,7 @@ static void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -225,8 +225,8 @@ static void ggml_xrt_add(
             {
                 ggml_compute_forward_add(params, dst);
             } break;
-    }
-    //ggml_compute_forward_add(params, dst);
+    }*/
+    ggml_compute_forward_add(params, dst);
 }
 
 // ggml_compute_forward_mul
@@ -322,7 +322,7 @@ static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -336,8 +336,8 @@ static void ggml_xrt_mul(
             {
                 ggml_compute_forward_mul(params, dst);
             } break;
-    }
-    //ggml_compute_forward_mul(params, dst);
+    }*/
+    ggml_compute_forward_mul(params, dst);
 }
 
 // ggml_compute_forward_transpose
@@ -601,7 +601,7 @@ static void ggml_xrt_soft_max(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -615,8 +615,8 @@ static void ggml_xrt_soft_max(
             {
                 ggml_compute_forward_soft_max(params, dst);
             } break;
-    }
-    //ggml_compute_forward_soft_max(params, dst);
+    }*/
+    ggml_compute_forward_soft_max(params, dst);
 }
 
 extern "C" void ggml_xrt_mul_mat(const struct ggml_compute_params * params,
@@ -850,7 +850,7 @@ static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    const struct ggml_tensor * src0 = dst->src[0];
+    /*const struct ggml_tensor * src0 = dst->src[0];
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
@@ -859,8 +859,8 @@ static void ggml_xrt_unary(
         ggml_xrt_unary_f32(params, dst);
     } else {
         ggml_compute_forward_unary(params, dst);
-    }
-    //ggml_compute_forward_unary(params, dst);
+    }*/
+    ggml_compute_forward_unary(params, dst);
 }
 
 #ifdef XRT_CLOCK
