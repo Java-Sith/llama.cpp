@@ -850,7 +850,7 @@ static void ggml_xrt_unary(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const enum ggml_unary_op op = ggml_get_unary_op(dst);
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
@@ -859,7 +859,7 @@ static void ggml_xrt_unary(
         ggml_xrt_unary_f32(params, dst);
     } else {
         ggml_compute_forward_unary(params, dst);
-    }*/
+    }
     ggml_compute_forward_unary(params, dst);
 }
 
