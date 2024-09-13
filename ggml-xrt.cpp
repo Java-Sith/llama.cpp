@@ -860,7 +860,7 @@ static void ggml_xrt_unary(
     } else {
         ggml_compute_forward_unary(params, dst);
     }
-    ggml_compute_forward_unary(params, dst);
+    //ggml_compute_forward_unary(params, dst);
 }
 
 #ifdef XRT_CLOCK
