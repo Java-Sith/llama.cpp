@@ -211,7 +211,7 @@ static void ggml_xrt_add(
     struct ggml_tensor *dst)
 {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -225,8 +225,8 @@ static void ggml_xrt_add(
             {
                 ggml_compute_forward_add(params, dst);
             } break;
-    }*/
-    ggml_compute_forward_add(params, dst);
+    }
+    //ggml_compute_forward_add(params, dst);
 }
 
 // ggml_compute_forward_mul
@@ -322,7 +322,7 @@ static void ggml_xrt_mul(
         const struct ggml_compute_params * params,
         struct ggml_tensor * dst) {
 
-    /*const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src0 = dst->src[0];
     const struct ggml_tensor * src1 = dst->src[1];
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
@@ -336,7 +336,7 @@ static void ggml_xrt_mul(
             {
                 ggml_compute_forward_mul(params, dst);
             } break;
-    }*/
+    }
     ggml_compute_forward_mul(params, dst);
 }
 
