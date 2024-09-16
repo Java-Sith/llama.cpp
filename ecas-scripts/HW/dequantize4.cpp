@@ -15,6 +15,13 @@ static float half_to_float(half val) {
     return (float)val;  // Implicit conversion in HLS
 }
 
+static int kSubBlocks;
+static int kTotalMaxSize;
+
+void initialize_constants(int subblocks, int maxsize) {
+    kSubBlocks = subblocks;
+    kTotalMaxSize = maxsize;
+}
 
 static void load_input(block_q4_K *in, hls::stream<block_q4_K> &inStream, uint64_t size) {
     const uint64_t size_raw = size / sizeof(block_q4_K);
@@ -76,6 +83,9 @@ void dequantize4(block_q4_K *in, float *out, uint64_t size) {
 #pragma HLS stream variable=in_stream depth=32
 #pragma HLS stream variable=out_stream depth=32
 #pragma HLS dataflow
+
+    // Initialize the constants
+    initialize_constants(size / QK_K, size);
 
     // Load input blocks
     load_input(in, in_stream, size);
