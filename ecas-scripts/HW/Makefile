@@ -4,8 +4,8 @@ TARGET := hw
 PLATFORM ?= $(ROOT_DIR)/../kv260_custom.xpfm
 
 # Setting input file
-HLS_FILES := elementwise.cpp unary.cpp softmax.cpp rmsnorm.cpp matvecmul.cpp dequantize4.cpp
-HLS_FILES_NAMES := elementwise unary softmax rmsnorm matvecmul dequantize4
+HLS_FILES := elementwise.cpp unary.cpp dequantize4.cpp softmax.cpp rmsnorm.cpp matvecmul.cpp 
+HLS_FILES_NAMES := elementwise unary dequantize4 softmax rmsnorm matvecmul 
 
 # Setting directories
 TEMP_DIR := ./tmp.$(TARGET)
