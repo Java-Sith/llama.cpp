@@ -23,9 +23,18 @@ static constexpr int kRows = M_ROWS;
 #endif
 
 // The number of elements processed in each block (QK4)
-#ifndef QK_K
+#ifndef M_QK
 static constexpr int QK_K = 256;
+#else
+static constexpr int QK_K = M_QK;
 #endif
+
+#ifndef M_SCALE
+static constexpr int K_SCALE_SIZE = 12;
+#else
+static constexpr int K_SCALE_SIZE = M_SCALE;
+#endif
+
 
 typedef struct {
     ap_fixed<16, 5> d;    // half-precision scale

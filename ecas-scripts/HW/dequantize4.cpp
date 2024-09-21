@@ -14,7 +14,6 @@ void load_input(const block_q4_K *x, hls::stream<block_q4_K> &input_stream, uint
     }
 }
 
-#pragma HLS inline
 void get_scale_min_k4(int j, const ap_uint<8> *q, ap_uint<6> *d, ap_uint<6> *m) {
     if (j < 4) {
         *d = q[j].range(5, 0);       // Extract lower 6 bits from q[j]
