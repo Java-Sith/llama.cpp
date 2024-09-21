@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 
     // Execute the kernel
     std::cout << "Running kernel..." << std::endl;
-    auto run = kernel(bo_in, bo_out, k);  // Kernel invocation
+    auto run = dequantize(bo_in, bo_out, k);  // Kernel invocation
     run.wait();
 
     // Synchronize output buffer from device to host
