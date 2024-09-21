@@ -7,13 +7,13 @@
 #include "../HW/dequantize4.h"
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <input_size> <xclbin_file>" << std::endl;
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <input_size>" << std::endl;
         return EXIT_FAILURE;
     }
 
-    int k = std::stoi(argv[1]);  // Size of the input (multiple of QK_K)
-    std::string binaryFile = argv[2];  // Path to the xclbin file
+    int k = std::stoi(argv[1]);
+    std::string binaryFile = "../HW/package.hw/kernels.xclbin";
 
     // Validate input size
     if (k % QK_K != 0) {
@@ -28,14 +28,12 @@ int main(int argc, char** argv) {
     // Load the xclbin file
     std::cout << "Loading the xclbin file: " << binaryFile << std::endl;
     auto uuid = device.load_xclbin(binaryFile);
-
-    // Create kernel handle
-    auto kernel = xrt::kernel(device, uuid, "dequantize_row_q4_K");
+    auto dequantize = xrt::kernel(device, uuid, "dequantize4");
 
     // Allocate Buffers in Global Memory for block_q4_K and output
     std::cout << "Allocating input/output buffers..." << std::endl;
-    auto bo_in = xrt::bo(device, k * sizeof(block_q4_K), kernel.group_id(0));  // Input buffer
-    auto bo_out = xrt::bo(device, k * sizeof(float), kernel.group_id(1));      // Output buffer
+    auto bo_in = xrt::bo(device, k * sizeof(block_q4_K), dequantize.group_id(0));  // Input buffer
+    auto bo_out = xrt::bo(device, k * sizeof(float), dequantize.group_id(1));      // Output buffer
 
     // Map the input buffer to host memory
     auto bo_in_map = bo_in.map<block_q4_K*>();
