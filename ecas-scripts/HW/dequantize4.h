@@ -24,12 +24,19 @@ static constexpr int kRows = M_ROWS;
 
 // The number of elements processed in each block (QK4)
 #ifndef QK_K
-static constexpr int QK_K = 32;
+static constexpr int QK_K = 256;
 #endif
+
+typedef struct {
+    ap_fixed<16, 5> d;    // half-precision scale
+    ap_fixed<16, 5> dmin; // half-precision min
+    ap_uint<8> scales[K_SCALE_SIZE]; // 6-bit quantized scales and mins
+    ap_uint<8> qs[QK_K / 2];         // 4-bit quantized values
+} block_q4_K;
 
 extern "C" {
 // Dequantize function, based on Q4 block tensor layout
-void dequantize4(uint8_t *in, RawDataT *out, uint64_t size);
+void dequantize4(block_q4_K *x, float *y, uint64_t k);
 }
 
 #endif // __DEQUANTIZE_H__

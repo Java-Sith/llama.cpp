@@ -5,95 +5,96 @@
 
 #include "dequantize4.h"
 
-struct block_q4_K {
-    half d;  // HLS half for 16-bit float
-    uint8_t ql[32];  // Quantized low bits
-    uint8_t qh[16];  // Quantized high bits
-};
-
-static float half_to_float(half val) {
-    return (float)val;  // Implicit conversion in HLS
-}
-
-static int kSubBlocks;
-static int kTotalMaxSize;
-
-void initialize_constants(int subblocks, int maxsize) {
-    kSubBlocks = subblocks;
-    kTotalMaxSize = maxsize;
-}
-
-static void load_input(block_q4_K *in, hls::stream<block_q4_K> &inStream, uint64_t size) {
-    const uint64_t size_raw = size / sizeof(block_q4_K);
-mem_rd:
-    for (uint64_t i = 0; i < size_raw; ++i) {
-#pragma HLS PIPELINE
-        inStream << in[i];
+// Load function that streams block_q4_K structures into the input stream
+void load_input(const block_q4_K *x, hls::stream<block_q4_K> &input_stream, uint64_t k) {
+    const int nb = k / QK_K;
+    for (int i = 0; i < nb; ++i) {
+        #pragma HLS PIPELINE
+        input_stream.write(x[i]);
     }
 }
 
-static void store_output(float *out, hls::stream<float> &outStream, uint64_t size) {
-    const uint64_t size_raw = size / sizeof(float);
-mem_wr:
-    for (uint64_t i = 0; i < size_raw; ++i) {
-#pragma HLS PIPELINE
-        out[i] = outStream.read();
+#pragma HLS inline
+void get_scale_min_k4(int j, const ap_uint<8> *q, ap_uint<6> *d, ap_uint<6> *m) {
+    if (j < 4) {
+        *d = q[j].range(5, 0);       // Extract lower 6 bits from q[j]
+        *m = q[j + 4].range(5, 0);   // Extract lower 6 bits from q[j + 4]
+    } else {
+        *d = q[j + 4].range(3, 0) | (q[j - 4].range(7, 6) << 4);  // Extract 4 bits + 2 shifted bits
+        *m = q[j + 4].range(7, 4) | (q[j].range(7, 6) << 4);      // Extract 4 bits + 2 shifted bits
     }
 }
 
-// Perform dequantization for a block of Q4 data and write to output stream
-static void dequantize_block(hls::stream<block_q4_K> &input_stream,
-                              hls::stream<float> &output_stream,
-                              uint64_t size) {
-    const uint64_t num_blocks = size / kPackets;
+// Convert half-precision to full-precision in HLS
+float half_to_float(ap_fixed<16, 5> half_val) {
+    return half_val.to_float();  // Converts ap_fixed 16-bit to float
+}
 
-block_loop:
-    for (uint64_t i = 0; i < num_blocks; ++i) {
-#pragma HLS PIPELINE
-#pragma HLS LOOP_TRIPCOUNT min = kTotalMaxSize max = kTotalMaxSize avg = kTotalMaxSize
+// Dequantize function that processes the streamed data
+void dequantize(hls::stream<block_q4_K> &input_stream, hls::stream<float> &output_stream, uint64_t k) {
+    const int nb = k / QK_K;
+    for (int i = 0; i < nb; ++i) {
+        #pragma HLS PIPELINE
         block_q4_K block = input_stream.read();
 
-    subblock_loop:
-        for (int l = 0; l < kSubBlocks; ++l) {
-#pragma HLS UNROLL
-            float dequantized_value;
-            
-            int8_t ql_val = (int8_t)(block.ql[l] & 0xF) - 32;
-            int8_t qh_val = (int8_t)((block.qh[l] >> 0) & 3);
+        const ap_fixed<16, 5> d = block.d;
+        const ap_fixed<16, 5> dmin = block.dmin;
+        const ap_uint<8> *q = block.qs;
 
-            float d = (float)block.d;
-            dequantized_value = ((ql_val | (qh_val << 4)) * d);
+        int is = 0;
+        ap_uint<6> sc, m;
+        for (int j = 0; j < QK_K; j += 64) {
+            #pragma HLS UNROLL
+            get_scale_min_k4(is, block.scales, &sc, &m);
+            const float d1 = half_to_float(d) * sc;
+            const float m1 = half_to_float(dmin) * m;
+            get_scale_min_k4(is + 1, block.scales, &sc, &m);
+            const float d2 = half_to_float(d) * sc;
+            const float m2 = half_to_float(dmin) * m;
 
-            output_stream << dequantized_value;
+            for (int l = 0; l < 32; ++l) {
+                #pragma HLS UNROLL
+                output_stream.write(d1 * (q[l] & 0xF) - m1);  // Lower 4 bits
+                output_stream.write(d2 * (q[l] >> 4) - m2);  // Upper 4 bits
+            }
+            q += 32;
+            is += 2;
         }
     }
 }
 
+// Store function that streams the output results to memory
+void store_result(float *y, hls::stream<float> &output_stream, uint64_t k) {
+    const int nb = k / QK_K;
+    for (int i = 0; i < nb * QK_K; ++i) {
+        #pragma HLS PIPELINE
+        y[i] = output_stream.read();
+    }
+}
 
+// Dequantization kernel
 extern "C" {
-void dequantize4(block_q4_K *in, float *out, uint64_t size) {
-#pragma HLS INTERFACE m_axi port=in bundle=gmem0
-#pragma HLS INTERFACE m_axi port=out bundle=gmem1
-#pragma HLS INTERFACE s_axilite port=size
-#pragma HLS INTERFACE s_axilite port=return
+void dequantize4(block_q4_K *x, float *y, uint64_t k) {
+    #pragma HLS INTERFACE m_axi port=x bundle=gmem0
+    #pragma HLS INTERFACE m_axi port=y bundle=gmem1
+    #pragma HLS INTERFACE s_axilite port=k
+    #pragma HLS INTERFACE s_axilite port=return
 
-    hls::stream<block_q4_K> in_stream("in_stream");
-    hls::stream<float> out_stream("out_stream");
+    hls::stream<block_q4_K> input_stream;
+    hls::stream<float> output_stream;
 
-#pragma HLS stream variable=in_stream depth=32
-#pragma HLS stream variable=out_stream depth=32
-#pragma HLS dataflow
+    #pragma HLS STREAM variable=input_stream depth=32
+    #pragma HLS STREAM variable=output_stream depth=32
+    #pragma HLS dataflow
 
-    // Initialize the constants
-    initialize_constants(size / QK_K, size);
+    // Stream in the block_q4_K structures from memory
+    load_input(x, input_stream, k);
 
-    // Load input blocks
-    load_input(in, in_stream, size);
+    // Dequantize the stream
+    dequantize(input_stream, output_stream, k);
 
-    // Dequantize each block and convert to float
-    dequantize_block(in_stream, out_stream, size);
+    // Stream the results back to memory
+    store_result(y, output_stream, k);
 
-    // Store the result in output memory
-    store_output(out, out_stream, size);
 }
 }
