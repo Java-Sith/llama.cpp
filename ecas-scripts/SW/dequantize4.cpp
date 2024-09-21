@@ -1,10 +1,22 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <ap_int.h>
+#include <ap_fixed.h>
+
 #include "experimental/xrt_bo.h"
 #include "experimental/xrt_device.h"
 #include "experimental/xrt_kernel.h"
-#include "../HW/dequantize4.h"
+
+#define K_SCALE_SIZE 12
+#define QK_K 256
+
+typedef struct {
+    ap_fixed<16, 5> d;    // half-precision scale
+    ap_fixed<16, 5> dmin; // half-precision min
+    ap_uint<8> scales[K_SCALE_SIZE]; // 6-bit quantized scales and mins
+    ap_uint<8> qs[QK_K / 2];         // 4-bit quantized values
+} block_q4_K;
 
 int main(int argc, char** argv) {
     if (argc != 2) {
