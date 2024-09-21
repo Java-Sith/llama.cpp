@@ -57,8 +57,16 @@ int main(int argc, char** argv) {
         // Initialize the block_q4_K struct (dummy data)
         bo_in_map[i].d = 0x3C00;    // Half-precision scale (1.0f)
         bo_in_map[i].dmin = 0x3800; // Half-precision min (-0.5f)
+        std::cout << "Block " << i << ": d = 1.0, dmin = -0.5" << std::endl;
+        std::cout << "Quantized values (4-bit):" << std::endl;
+
         for (int j = 0; j < QK_K / 2; ++j) {
             bo_in_map[i].qs[j] = 0xF0;  // Fill with dummy quantized values (4-bit)
+            // Print both 4-bit quantized values from the byte
+            uint8_t lower_4bits = bo_in_map[i].qs[j] & 0xF;  // Lower 4 bits
+            uint8_t upper_4bits = (bo_in_map[i].qs[j] >> 4) & 0xF;  // Upper 4 bits
+            std::cout << "  Quantized value [" << (j * 2) << "]: " << (int)lower_4bits << std::endl;
+            std::cout << "  Quantized value [" << (j * 2 + 1) << "]: " << (int)upper_4bits << std::endl;
         }
     }
 
