@@ -1,6 +1,6 @@
 # List of source files and corresponding executables
-SOURCES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp
-EXECUTABLES := elementwise rmsnorm unary softmax matvecmul
+SOURCES := elementwise.cpp rmsnorm.cpp unary.cpp softmax.cpp matvecmul.cpp dequantize4.cpp
+EXECUTABLES := elementwise rmsnorm unary softmax matvecmul dequantize4
 
 CFLAGS := -I/opt/xilinx/xrt/include -Wall -std=c++17 -O0 -g -I. -I./hls-types/include
 LDFLAGS := -L/opt/xilinx/xrt/lib -pthread -lxrt_core -lxrt_coreutil
