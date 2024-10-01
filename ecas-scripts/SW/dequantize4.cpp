@@ -1,9 +1,11 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <cstdlib>   // For rand()
+#include <ctime>     // For seeding rand()
+
 #include <ap_int.h>
 #include <ap_fixed.h>
-
 #include "experimental/xrt_bo.h"
 #include "experimental/xrt_device.h"
 #include "experimental/xrt_kernel.h"
@@ -33,6 +35,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    // Seed for random number generation
+    srand(time(0));
+
     // Open the Xilinx device
     std::cout << "Opening the device..." << std::endl;
     auto device = xrt::device(0);
@@ -61,10 +66,14 @@ int main(int argc, char** argv) {
         std::cout << "Quantized values (4-bit):" << std::endl;
 
         for (int j = 0; j < QK_K / 2; ++j) {
-            bo_in_map[i].qs[j] = 0xF0;  // Fill with dummy quantized values (4-bit)
-            // Print both 4-bit quantized values from the byte
-            uint8_t lower_4bits = bo_in_map[i].qs[j] & 0xF;  // Lower 4 bits
-            uint8_t upper_4bits = (bo_in_map[i].qs[j] >> 4) & 0xF;  // Upper 4 bits
+            // Generate two random 4-bit values (0-15)
+            uint8_t lower_4bits = rand() % 16;  // Random 4-bit value (0-15)
+            uint8_t upper_4bits = rand() % 16;  // Random 4-bit value (0-15)
+
+            // Combine the two 4-bit values into one byte
+            bo_in_map[i].qs[j] = (upper_4bits << 4) | lower_4bits;
+
+            // Print the generated values
             std::cout << "  Quantized value [" << (j * 2) << "]: " << (int)lower_4bits << std::endl;
             std::cout << "  Quantized value [" << (j * 2 + 1) << "]: " << (int)upper_4bits << std::endl;
         }
