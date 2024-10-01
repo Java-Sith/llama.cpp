@@ -65,6 +65,12 @@ int main(int argc, char** argv) {
         std::cout << "Block " << i << ": d = 1.0, dmin = -0.5" << std::endl;
         std::cout << "Quantized values (4-bit):" << std::endl;
 
+        // Fill scales array with random 6-bit values (0 to 63)
+        for (int s = 0; s < K_SCALE_SIZE; ++s) {
+            bo_in_map[i].scales[s] = rand() % 64;  // 6-bit random value
+            std::cout << "  Scale [" << s << "] = " << (int)bo_in_map[i].scales[s] << std::endl;
+        }
+
         for (int j = 0; j < QK_K / 2; ++j) {
             // Generate two random 4-bit values (0-15)
             uint8_t lower_4bits = rand() % 16;  // Random 4-bit value (0-15)
