@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
         // Initialize the block_q4_K struct (dummy data)
         bo_in_map[i].d = 0x3C00;    // Half-precision scale (1.0f)
         bo_in_map[i].dmin = 0x3800; // Half-precision min (-0.5f)
-        std::cout << "Block " << i << ": d = 1.0, dmin = -0.5" << std::endl;
+        std::cout << "Block " << i << ": d = " << (int)bo_in_map[i].d << ", dmin = " << (int)bo_in_map[i].dmin << std::endl;
         std::cout << "Quantized values (4-bit):" << std::endl;
 
         // Fill scales array with random 6-bit values (0 to 63)
