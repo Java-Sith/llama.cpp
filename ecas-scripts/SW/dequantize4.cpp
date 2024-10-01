@@ -20,6 +20,15 @@ typedef struct {
     ap_uint<8> qs[QK_K / 2];         // 4-bit quantized values
 } block_q4_K;
 
+// Helper function to convert half-precision to full-precision
+float half_to_float(uint16_t half_val) {
+    // Simple conversion function (this could use a library or be expanded)
+    // For now, we assume 0x3C00 is 1.0 and 0x3800 is -0.5
+    if (half_val == 0x3C00) return 1.0f;
+    if (half_val == 0x3800) return -0.5f;
+    return 0.0f;  // Default case for other values (implement full conversion if needed)
+}
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <input_size>" << std::endl;
@@ -62,8 +71,12 @@ int main(int argc, char** argv) {
         // Initialize the block_q4_K struct (dummy data)
         bo_in_map[i].d = 0x3C00;    // Half-precision scale (1.0f)
         bo_in_map[i].dmin = 0x3800; // Half-precision min (-0.5f)
-        std::cout << "Block " << i << ": d = " << bo_in_map[i].d << ", dmin = " << bo_in_map[i].dmin << std::endl;
-        std::cout << "Quantized values (4-bit):" << std::endl;
+        
+        // Convert to float for printing
+        float d_full = half_to_float(bo_in_map[i].d.to_uint());  // Properly convert half to float
+        float dmin_full = half_to_float(bo_in_map[i].dmin.to_uint());
+
+        std::cout << "Block " << i << ": d = " << d_full << ", dmin = " << dmin_full << std::endl;
 
         // Fill scales array with random 6-bit values (0 to 63)
         for (int s = 0; s < K_SCALE_SIZE; ++s) {
